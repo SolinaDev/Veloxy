@@ -1,73 +1,164 @@
-# Welcome to your Lovable project
+*Veloxy App*
 
-## Project info
+Train smarter. Run further. Stay connected.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Uma plataforma moderna de corrida que combina tracking de atividades,
+gamificação e um ecossistema de e-commerce inteligente, incentivando usuários a
+melhorarem seu desempenho através de recompensas reais.
 
-## How can I edit this code?
+## 👁️ *Visão*
 
-There are several ways of editing your application.
+Transformar a corrida em uma experiência engajadora,social e orientada por dados, 
+conectando pessoas e incentivando hábitos saudáveis através da tecnologia.
 
-**Use Lovable**
+## 🛒 *Produto*
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+O Running App vai oferecer uma experiência completa para corredores:
 
-Changes made via Lovable will be committed automatically to this repo.
+- Monitoramento de corridas em tempo real
+- Insights de desempenho
+- Sistema de gamificação
+- Feed social de atividades
+- E-commerce com descontos baseados no desempenho do corredo
 
-**Use your preferred IDE**
+## 💡 *Diferencial*
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+O grande diferencial da plataforma é a integração entre atividade física e benefícios reais, portanto 
+quanto mais o usuário corre, maior o seu desempenho e maiores são seus descontos na loja.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Como funciona:
 
-Follow these steps:
+Usuários acumulam:
+- Km percorridos
+- Frequência de treinos
+- Pontos e nível
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+O sistema converte isso em:
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- Descontos progressivos
+- Recompensas exclusivas
+- Benefícios na loja
 
-# Step 3: Install the necessary dependencies.
-npm i
+Exemplo:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+- 50km/mês → 5% de desconto
+- 100km/mês → 10% de desconto
+- 200km/mês → 20% + bônus
 
-**Edit a file directly in GitHub**
+## *Features*
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🔒 Autenticação
+- Login com Email/Senha
+- Login social (Google, Microsoft, Apple)
+- Persistência de sessão segura
 
-**Use GitHub Codespaces**
+## 🏃 Tracking de Corridas
+- Registro de distância, tempo e ritmo
+- Estrutura pronta para GPS
+- Histórico de atividades (em evolução)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 📊 Dashboard Inteligente
+- Estatísticas personalizadas
+- Evolução do desempenho
+- Resumo de atividades
+  
+## 🏆 Gamificação
+- Sistema de pontos
+- Níveis e progressão
+- Conquistas
 
-## What technologies are used for this project?
+## 🛜 Social
+- Feed de atividades
+- Compartilhamento de corridas
 
-This project is built with:
+Marketplace Inteligente
+- Produtos esportivos
+- Sistema de descontos dinâmico
+- Integração com performance do usuário
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🛠️ *Arquitetura*
 
-## How can I deploy this project?
+Aplicação construída com foco em:
+- Escalabilidade
+- Separação de responsabilidades
+- Experiência do usuário
+- Integração entre módulos (fitness + e-commerce)
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## 🔧 *Stack Tecnológica*
 
-## Can I connect a custom domain to my Lovable project?
+Frontend: React + Vite
 
-Yes, you can!
+Estilização: TailwindCSS
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Animações: Framer Motion
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Roteamento: React Router
+
+Data Fetching: React Query
+
+Backend: Firebase
+- Authentication
+- Firestore
+
+## 🗂️ *Estrutura do Projeto*
+
+src/
+
+ ├── components/
+ 
+ ├── hooks/
+ 
+ ├── lib/
+ 
+ ├── pages/
+ 
+ │    ├── auth/
+ 
+ │    └── app/
+ 
+ └── App.tsx
+
+## 💻 *Setup*
+- git clone https://github.com/seu-usuario/seu-repo.git
+- cd seu-repo
+- npm install
+- npm run dev
+
+## 🗺️ *Roadmap*
+
+[X] Autenticação completa
+
+[X] Estrutura base do app
+
+[X] Interface inicial
+
+[ ] Tracking real com GPS
+
+[ ] Sistema de pontos
+
+[ ] Engine de descontos baseada em performance
+
+[ ] Dashboard com dados reais
+
+[ ] Feed social
+
+[ ] Marketplace funcional
+
+## 🎯 *Objetivo*
+
+Criar uma aplicação que una:
+
+- Fitness
+- Tecnologia
+- Engajamento
+- Monetização inteligente
+
+## 👨‍🎓 *Autores*
+- Cauã Morais Lima
+- João Vitor da Silva Santos
+- Marcelo Henrique Martins de Andrade
+- Raphael Henrique Paiva Solina
+
+## 🎓 *Orientadores*
+- Renato de Mattos Onofre
+- Douglas de Cassio Quinzani Gaspar
