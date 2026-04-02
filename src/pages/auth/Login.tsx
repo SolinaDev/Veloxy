@@ -5,10 +5,7 @@ import { motion } from "framer-motion";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/firebase";
 
-// Funções de login social
-import { loginComGoogle, loginComMicrosoft, loginComApple } from "@/service/auth";
-
-// Ícones
+// ICONES
 import { FcGoogle } from "react-icons/fc";
 import { FaApple, FaMicrosoft } from "react-icons/fa";
 
@@ -18,55 +15,19 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
 
-  // Login com email/senha
   const handleLogin = async () => {
     try {
       await signInWithEmailAndPassword(auth, email, senha);
       navigate("/");
     } catch (err) {
-      alert("Erro ao fazer login com email/senha");
-      console.error(err);
-    }
-  };
-
-  // Login com Google
-  const handleLoginGoogle = async () => {
-    try {
-      const user = await loginComGoogle();
-      console.log("Usuário Google:", user);
-      navigate("/");
-    } catch (err) {
-      alert("Erro ao fazer login com Google");
-      console.error(err);
-    }
-  };
-
-  // Login com Microsoft
-  const handleLoginMicrosoft = async () => {
-    try {
-      const user = await loginComMicrosoft();
-      console.log("Usuário Microsoft:", user);
-      navigate("/");
-    } catch (err) {
-      alert("Erro ao fazer login com Microsoft");
-      console.error(err);
-    }
-  };
-
-  // Login com Apple
-  const handleLoginApple = async () => {
-    try {
-      const user = await loginComApple();
-      console.log("Usuário Apple:", user);
-      navigate("/");
-    } catch (err) {
-      alert("Erro ao fazer login com Apple");
+      alert("Erro ao fazer login");
       console.error(err);
     }
   };
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center px-6 text-white">
+
       {/* LOGO */}
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
@@ -86,6 +47,7 @@ export default function Login() {
         transition={{ duration: 0.6 }}
         className="w-full max-w-sm flex flex-col gap-4"
       >
+
         {/* EMAIL */}
         <div className="flex items-center bg-zinc-200 rounded-xl px-3 py-2 shadow-inner focus-within:ring-2 focus-within:ring-purple-500 transition">
           <Mail size={18} className="text-gray-500 mr-2" />
@@ -116,6 +78,7 @@ export default function Login() {
             <input type="checkbox" className="accent-purple-500" />
             Remember Me
           </label>
+
           <span className="text-cyan-400 cursor-pointer hover:underline">
             Forgot password?
           </span>
@@ -149,12 +112,12 @@ export default function Login() {
           <div className="flex-1 h-[1px] bg-gray-700" />
         </div>
 
-        {/* SOCIAL LOGIN */}
+        {/* SOCIAL LOGIN (PEQUENO E CENTRALIZADO) */}
         <div className="flex justify-center gap-4">
+
           <motion.button
             whileTap={{ scale: 0.9 }}
             whileHover={{ scale: 1.1 }}
-            onClick={handleLoginGoogle}
             className="bg-white p-2 rounded-lg shadow-md hover:shadow-lg transition"
           >
             <FcGoogle size={18} />
@@ -163,7 +126,6 @@ export default function Login() {
           <motion.button
             whileTap={{ scale: 0.9 }}
             whileHover={{ scale: 1.1 }}
-            onClick={handleLoginMicrosoft}
             className="bg-white p-2 rounded-lg shadow-md hover:shadow-lg transition"
           >
             <FaMicrosoft size={18} className="text-blue-600" />
@@ -172,12 +134,13 @@ export default function Login() {
           <motion.button
             whileTap={{ scale: 0.9 }}
             whileHover={{ scale: 1.1 }}
-            onClick={handleLoginApple}
             className="bg-white p-2 rounded-lg shadow-md hover:shadow-lg transition"
           >
             <FaApple size={18} className="text-black" />
           </motion.button>
+
         </div>
+
       </motion.div>
     </div>
   );
