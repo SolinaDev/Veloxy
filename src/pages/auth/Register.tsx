@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { User, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "@/firebase";
+import { toast } from "sonner";
+import logo from "@/assets/logo.jpg";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -13,27 +15,61 @@ export default function Register() {
   const [confirmEmail, setConfirmEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleRegister = async () => {
+    if (!username.trim()) {
+      toast.error("Preencha o nome de usuário");
+      return;
+    }
+
+    if (!email || !password) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+
     if (email !== confirmEmail) {
-      alert("Emails não coincidem");
+      toast.error("Emails não coincidem");
       return;
     }
 
     if (password !== confirmPassword) {
-      alert("Senhas não coincidem");
+      toast.error("Senhas não coincidem");
       return;
     }
 
+    if (password.length < 6) {
+      toast.error("A senha deve ter pelo menos 6 caracteres");
+      return;
+    }
+
+    setLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+      // 🔥 Salva o username como displayName no perfil do Firebase Auth
+      await updateProfile(userCredential.user, {
+        displayName: username.trim(),
+      });
+
+      toast.success(`Bem-vindo, ${username}! Conta criada com sucesso.`);
       navigate("/");
-    } catch (err) {
-      alert("Erro ao registrar");
+    } catch (err: any) {
       console.error(err);
+      if (err.code === "auth/email-already-in-use") {
+        toast.error("Este email já está em uso");
+      } else if (err.code === "auth/invalid-email") {
+        toast.error("Email inválido");
+      } else if (err.code === "auth/weak-password") {
+        toast.error("Senha muito fraca. Use pelo menos 6 caracteres");
+      } else {
+        toast.error("Erro ao criar conta. Tente novamente.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -43,7 +79,7 @@ export default function Register() {
       {/* LOGO */}
       <div className="mb-10">
         <div>
-          <img src="../public/logo.jpg" alt="Logo" className="w-48 h-48 object-cover" />
+          <img src={logo} alt="Logo" className="w-50 h-48" />
         </div>
       </div>
 

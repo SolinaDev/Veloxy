@@ -1,5 +1,5 @@
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import {
   Play,
   MapPin,
@@ -8,200 +8,191 @@ import {
   TrendingUp,
   Zap,
   ChevronRight,
+  BarChart3,
+  Calendar,
+  Activity
 } from "lucide-react";
-import StatCard from "@/components/StatCard";
-import ChallengeCard from "@/components/ChallengeCard";
+import { auth } from "@/firebase";
 
 const weeklyData = [
-  { day: "Seg", km: 5.2 },
-  { day: "Ter", km: 0 },
-  { day: "Qua", km: 8.1 },
-  { day: "Qui", km: 3.4 },
-  { day: "Sex", km: 0 },
-  { day: "Sáb", km: 12.3 },
-  { day: "Dom", km: 0 },
+  { day: "SEG", km: 5.2 },
+  { day: "TER", km: 0 },
+  { day: "QUA", km: 8.1 },
+  { day: "QUI", km: 3.4 },
+  { day: "SEX", km: 0 },
+  { day: "SÁB", km: 12.3 },
+  { day: "DOM", km: 0 },
 ];
 
 const maxKm = Math.max(...weeklyData.map((d) => d.km), 1);
 
 const Dashboard = () => {
-  const navigate = useNavigate();
+    const navigate = useNavigate();
+    const user = auth.currentUser;
+    const displayName = user?.displayName || "Corredor";
+    const userInitials = displayName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "U";
 
   return (
-    <div className="min-h-screen bg-background pb-24 safe-top">
+    <div className="min-h-screen bg-black text-white pb-24 safe-top">
       {/* Header */}
-      <div className="px-5 pt-6 pb-4">
+      <header className="px-6 py-4 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur-md z-40">
+        <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 overflow-hidden">
+          {user?.photoURL ? (
+            <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-xs font-bold text-purple-500">{userInitials}</span>
+          )}
+        </div>
+        
+        <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500">
+          KINETIC STATS
+        </h1>
+        
+        <button className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center border border-zinc-800 text-zinc-400">
+          <Calendar size={18} />
+        </button>
+      </header>
+
+      {/* Hero: Welcome & Quick Stats */}
+      <section className="px-6 mt-8">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
         >
-          <p className="text-muted-foreground text-sm">Olá, Corredor 👋</p>
-          <h1 className="font-display text-2xl font-bold text-foreground mt-1">
-            Pronto para correr?
-          </h1>
+          <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Bem-vindo de volta,</p>
+          <h2 className="font-display font-black text-4xl italic tracking-tighter text-white uppercase">
+            {displayName.split(" ")[0]}
+          </h2>
         </motion.div>
-      </div>
 
-      {/* Start Run Button */}
-      <div className="px-5 mb-6">
+        {/* Start Run Button (Restyled) */}
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => navigate("/run")}
-          className="w-full bg-gradient-lime text-primary-foreground rounded-2xl p-5 flex items-center justify-between shadow-glow"
+          className="w-full bg-purple-600 rounded-[2.5rem] p-6 flex items-center justify-between shadow-[0_10px_40px_rgba(147,51,234,0.3)] group relative overflow-hidden"
         >
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-              <Play size={28} className="ml-1" />
+          <div className="relative z-10 flex items-center gap-5">
+            <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform">
+              <Play size={28} className="text-white fill-current ml-1" />
             </div>
             <div className="text-left">
-              <h3 className="font-display font-bold text-lg">Iniciar Corrida</h3>
-              <p className="text-primary-foreground/70 text-sm">GPS • Mapa em tempo real</p>
+              <h3 className="font-display font-black text-xl italic text-white uppercase leading-none mb-1">Gravar Corrida</h3>
+              <p className="text-purple-200 text-[10px] font-bold tracking-widest uppercase opacity-70">GPS Ativo • Pronto para ir</p>
             </div>
           </div>
-          <ChevronRight size={24} />
+          <ChevronRight size={24} className="text-white opacity-40 group-hover:opacity-100 transition-opacity" />
+          
+          {/* Shape background */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-white/10 transition-all" />
         </motion.button>
-      </div>
+      </section>
 
-      {/* Weekly Stats */}
-      <div className="px-5 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-display font-semibold text-foreground">Esta Semana</h2>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard
-            icon={<MapPin size={14} />}
-            label="Distância"
-            value="29.0"
-            unit="km"
-            color="lime"
-          />
-          <StatCard
-            icon={<Timer size={14} />}
-            label="Tempo"
-            value="2:45"
-            unit="hrs"
-            color="blue"
-          />
-          <StatCard
-            icon={<Flame size={14} />}
-            label="Calorias"
-            value="1,840"
-            unit="kcal"
-            color="orange"
-          />
-          <StatCard
-            icon={<TrendingUp size={14} />}
-            label="Ritmo Médio"
-            value={"5'42\""}
-            unit="/km"
-            color="purple"
-          />
-        </div>
-      </div>
-
-      {/* Weekly Chart */}
-      <div className="px-5 mb-6">
-        <div className="bg-card border border-border rounded-xl p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display font-semibold text-sm text-foreground">
-              Atividade Semanal
+      {/* Weekly Momentum Grid */}
+      <section className="px-6 mt-10">
+        <div className="flex items-center justify-between mb-6">
+            <h3 className="font-display font-black text-sm italic tracking-tighter uppercase flex items-center gap-2">
+                <Activity size={16} className="text-purple-500" />
+                Performance Semanal
             </h3>
-            <div className="flex items-center gap-1 text-primary">
-              <Zap size={12} />
-              <span className="text-xs font-medium">3 corridas</span>
-            </div>
-          </div>
-          <div className="flex items-end justify-between gap-2 h-24">
-            {weeklyData.map((d, i) => (
-              <div key={i} className="flex flex-col items-center gap-1 flex-1">
-                <motion.div
-                  initial={{ height: 0 }}
-                  animate={{ height: `${(d.km / maxKm) * 80}px` }}
-                  transition={{ delay: i * 0.1, duration: 0.5 }}
-                  className={`w-full rounded-t-md ${
-                    d.km > 0 ? "bg-gradient-lime" : "bg-muted"
-                  }`}
-                  style={{ minHeight: d.km > 0 ? "8px" : "4px" }}
-                />
-                <span className="text-[10px] text-muted-foreground">{d.day}</span>
-              </div>
-            ))}
-          </div>
+            <span className="text-[10px] font-black text-zinc-500 tracking-widest">FEV 2025</span>
         </div>
-      </div>
 
-      {/* Active Challenges */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between px-5 mb-3">
-          <h2 className="font-display font-semibold text-foreground">Desafios Ativos</h2>
-          <span className="text-xs text-primary font-medium cursor-pointer" onClick={() => navigate("/challenges")}>
-            Ver todos
-          </span>
-        </div>
-        <div className="flex gap-3 overflow-x-auto px-5 snap-x snap-mandatory no-scrollbar">
-          <ChallengeCard
-            title="Corredor de Fevereiro"
-            description="Corra 50km este mês"
-            progress={29}
-            target={50}
-            unit="km"
-            reward="20% desconto Nike"
-            daysLeft={3}
-          />
-          <ChallengeCard
-            title="5 Dias Seguidos"
-            description="Corra 5 dias consecutivos"
-            progress={3}
-            target={5}
-            unit="dias"
-            reward="100 pontos"
-            daysLeft={7}
-          />
-          <ChallengeCard
-            title="Velocidade Máxima"
-            description="Alcance 15km/h em uma corrida"
-            progress={12.8}
-            target={15}
-            unit="km/h"
-            reward="Medalha Velocista"
-            daysLeft={14}
-          />
-        </div>
-      </div>
-
-      {/* Recent Activity */}
-      <div className="px-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-display font-semibold text-foreground">Última Corrida</h2>
-        </div>
-        <div className="bg-card border border-border rounded-xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h4 className="font-display font-semibold text-sm text-foreground">
-                Corrida Matinal
-              </h4>
-              <p className="text-xs text-muted-foreground">Hoje, 06:30</p>
-            </div>
-            <span className="text-xs text-primary bg-primary/10 px-2 py-1 rounded-full">
-              Novo recorde!
-            </span>
-          </div>
-          <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 gap-4">
             {[
-              { label: "Distância", value: "8.1 km" },
-              { label: "Tempo", value: "42:15" },
-              { label: "Ritmo", value: "5'13\"" },
-              { label: "Calorias", value: "520" },
-            ].map((s) => (
-              <div key={s.label} className="text-center">
-                <p className="text-sm font-display font-bold text-foreground">{s.value}</p>
-                <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                { label: "Distância Total", value: "29.0", unit: "KM", icon: <MapPin size={16} />, color: "purple" },
+                { label: "Tempo de Atividade", value: "2:45", unit: "HR", icon: <Timer size={16} />, color: "zinc" },
+                { label: "Energia Gasta", value: "1,840", unit: "KCAL", icon: <Flame size={16} />, color: "zinc" },
+                { label: "Ritmo Médio", value: "5'42\"", unit: "MIN/KM", icon: <TrendingUp size={16} />, color: "zinc" },
+            ].map((stat, i) => (
+                <motion.div 
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className="bg-zinc-900/40 border border-zinc-800/50 p-6 rounded-[2.5rem] relative group"
+                >
+                    <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2">{stat.label}</p>
+                    <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-black font-display text-white">{stat.value}</span>
+                        <span className="text-[9px] font-black text-purple-500 uppercase tracking-tighter italic">{stat.unit}</span>
+                    </div>
+                </motion.div>
+            ))}
+        </div>
+      </section>
+
+      {/* Weekly Activity Chart (Premium Style) */}
+      <section className="px-6 mt-10">
+        <div className="bg-zinc-900/60 border border-zinc-800 rounded-[3rem] p-7">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="font-display font-black text-sm italic tracking-tighter uppercase text-white">
+              Histórico Diário
+            </h3>
+            <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
+              <Zap size={10} className="text-purple-500 fill-current" />
+              <span className="text-[9px] font-black text-purple-400">3 CORRIDAS ATIVAS</span>
+            </div>
+          </div>
+          
+          <div className="flex items-end justify-between gap-3 h-32">
+            {weeklyData.map((d, i) => (
+              <div key={i} className="flex flex-col items-center gap-3 flex-1">
+                <div className="relative w-full flex flex-col items-center">
+                    <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: `${(d.km / maxKm) * 100}px` }}
+                        transition={{ delay: i * 0.1, duration: 0.8, ease: "easeOut" }}
+                        className={`w-full rounded-2xl ${
+                            d.km > 0 
+                            ? "bg-gradient-to-t from-purple-600 to-purple-400 shadow-[0_0_15px_rgba(147,51,234,0.3)]" 
+                            : "bg-zinc-800/50"
+                        }`}
+                        style={{ minHeight: d.km > 0 ? "10px" : "4px" }}
+                    />
+                </div>
+                <span className={`text-[8px] font-black tracking-tighter ${d.km > 0 ? "text-purple-400" : "text-zinc-600"}`}>
+                    {d.day}
+                </span>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* Latest Record Card */}
+      <section className="px-6 mt-12 pb-10">
+        <h3 className="font-display font-black text-sm italic tracking-tighter uppercase mb-6 flex items-center gap-2">
+            <BarChart3 size={16} className="text-purple-500" />
+            Último Recorde
+        </h3>
+        <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-[2.5rem] p-8 relative overflow-hidden">
+          <div className="relative z-10 flex items-center justify-between mb-8">
+            <div>
+              <h4 className="font-display font-black text-xl italic text-white uppercase">Corrida Matinal</h4>
+              <p className="text-[10px] font-bold text-zinc-500 tracking-widest uppercase">HOJE • 06:30 • IBIRAPUERA</p>
+            </div>
+            <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-full">
+                <span className="text-[9px] font-black text-purple-500 tracking-widest italic">PR Record!</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 gap-4">
+            {[
+              { label: "KM", value: "8.1" },
+              { label: "MIN", value: "42" },
+              { label: "PACE", value: "5'13\"" },
+              { label: "KCAL", value: "520" },
+            ].map((s) => (
+              <div key={s.label} className="text-left">
+                <p className="font-display font-black text-lg italic text-white leading-none mb-1">{s.value}</p>
+                <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-[0.2em]">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

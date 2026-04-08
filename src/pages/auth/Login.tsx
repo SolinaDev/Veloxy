@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Lock } from "lucide-react";
+import { Mail, Lock, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/firebase";
+import { loginComGoogle, loginComMicrosoft, loginComApple } from "@/service/auth";
+import { toast } from "sonner";
+import logo from "@/assets/logo.jpg";
 
 // ICONES
 import { FcGoogle } from "react-icons/fc";
@@ -14,14 +17,72 @@ export default function Login() {
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    if (!email || !senha) {
+      toast.error("Preencha email e senha");
+      return;
+    }
+    setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, senha);
+      toast.success("Login realizado com sucesso!");
       navigate("/");
-    } catch (err) {
-      alert("Erro ao fazer login");
+    } catch (err: any) {
       console.error(err);
+      if (err.code === "auth/user-not-found") {
+        toast.error("Usuário não encontrado");
+      } else if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
+        toast.error("Senha incorreta");
+      } else if (err.code === "auth/invalid-email") {
+        toast.error("Email inválido");
+      } else {
+        toast.error("Erro ao fazer login. Tente novamente.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSocialLogin = async (provider: "google" | "microsoft" | "apple") => {
+    setLoading(true);
+    try {
+      switch (provider) {
+        case "google":
+          await loginComGoogle();
+          break;
+        case "microsoft":
+          await loginComMicrosoft();
+          break;
+        case "apple":
+          await loginComApple();
+          break;
+      }
+      toast.success("Login realizado com sucesso!");
+
+      // Verifica se é o primeiro login (perfil não completado)
+      const loggedUser = auth.currentUser;
+      const profileComplete = localStorage.getItem(
+        `veloxy_profile_complete_${loggedUser?.uid}`
+      );
+
+      if (!profileComplete) {
+        navigate("/complete-profile");
+      } else {
+        navigate("/");
+      }
+    } catch (err: any) {
+      console.error(err);
+      if (err.code === "auth/popup-closed-by-user") {
+        toast.info("Login cancelado");
+      } else if (err.code === "auth/account-exists-with-different-credential") {
+        toast.error("Já existe uma conta com esse email usando outro provedor");
+      } else {
+        toast.error(`Erro ao fazer login com ${provider}. Verifique se o provedor está habilitado.`);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -36,7 +97,7 @@ export default function Login() {
         className="mb-10"
       >
         <div>
-          <img src="../public/logo.jpg" alt="Logo" className="w-48 h-48 object-cover" />
+          <img src={logo} alt="Logo" className="w-50 h-48" />
         </div>
       </motion.div>
 
@@ -57,6 +118,7 @@ export default function Login() {
             className="bg-transparent outline-none text-black w-full text-sm"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
           />
         </div>
 
@@ -69,6 +131,7 @@ export default function Login() {
             className="bg-transparent outline-none text-black w-full text-sm"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
+            disabled={loading}
           />
         </div>
 
@@ -89,9 +152,17 @@ export default function Login() {
           whileTap={{ scale: 0.96 }}
           whileHover={{ scale: 1.02 }}
           onClick={handleLogin}
-          className="mt-2 bg-gradient-to-r from-purple-500 to-purple-700 py-3 rounded-xl font-semibold shadow-lg hover:shadow-purple-500/30 transition-all"
+          disabled={loading}
+          className="mt-2 bg-gradient-to-r from-purple-500 to-purple-700 py-3 rounded-xl font-semibold shadow-lg hover:shadow-purple-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          Enter
+          {loading ? (
+            <>
+              <Loader2 size={18} className="animate-spin" />
+              Entrando...
+            </>
+          ) : (
+            "Enter"
+          )}
         </motion.button>
 
         {/* REGISTER */}
@@ -118,7 +189,9 @@ export default function Login() {
           <motion.button
             whileTap={{ scale: 0.9 }}
             whileHover={{ scale: 1.1 }}
-            className="bg-white p-2 rounded-lg shadow-md hover:shadow-lg transition"
+            onClick={() => handleSocialLogin("google")}
+            disabled={loading}
+            className="bg-white p-2 rounded-lg shadow-md hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FcGoogle size={18} />
           </motion.button>
@@ -126,7 +199,9 @@ export default function Login() {
           <motion.button
             whileTap={{ scale: 0.9 }}
             whileHover={{ scale: 1.1 }}
-            className="bg-white p-2 rounded-lg shadow-md hover:shadow-lg transition"
+            onClick={() => handleSocialLogin("microsoft")}
+            disabled={loading}
+            className="bg-white p-2 rounded-lg shadow-md hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FaMicrosoft size={18} className="text-blue-600" />
           </motion.button>
@@ -134,7 +209,9 @@ export default function Login() {
           <motion.button
             whileTap={{ scale: 0.9 }}
             whileHover={{ scale: 1.1 }}
-            className="bg-white p-2 rounded-lg shadow-md hover:shadow-lg transition"
+            onClick={() => handleSocialLogin("apple")}
+            disabled={loading}
+            className="bg-white p-2 rounded-lg shadow-md hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FaApple size={18} className="text-black" />
           </motion.button>

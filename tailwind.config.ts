@@ -66,6 +66,7 @@ export default {
           orange: "hsl(var(--stat-orange))",
           purple: "hsl(var(--stat-purple))",
           red: "hsl(var(--stat-red))",
+          cyan: "hsl(var(--stat-cyan))",
         },
       },
       borderRadius: {

@@ -1,7 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Pause, Play, Square, MapPin, Timer, Zap, TrendingUp } from "lucide-react";
+import { 
+  ArrowLeft, 
+  Pause, 
+  Play, 
+  Square, 
+  MapPin, 
+  Timer, 
+  Zap, 
+  TrendingUp,
+  Map as MapIcon,
+  Navigation
+} from "lucide-react";
 
 const RunTracking = () => {
   const navigate = useNavigate();
@@ -9,129 +20,109 @@ const RunTracking = () => {
   const [isPaused, setIsPaused] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col safe-top">
-      {/* Top Bar */}
-      <div className="flex items-center justify-between px-5 pt-6 pb-3">
-        <button onClick={() => navigate("/")} className="text-muted-foreground">
-          <ArrowLeft size={24} />
+    <div className="min-h-screen bg-black text-white flex flex-col safe-top">
+      {/* Premium Header */}
+      <header className="px-6 py-4 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur-md z-40 border-b border-zinc-900/50">
+        <button onClick={() => navigate("/")} className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center border border-zinc-800 text-zinc-400">
+          <ArrowLeft size={20} />
         </button>
-        <h1 className="font-display font-bold text-foreground">
-          {isRunning ? "Correndo..." : "Iniciar Corrida"}
+        <h1 className="font-display font-black text-xl italic tracking-tighter text-purple-500 uppercase">
+          {isRunning ? "MONITORANDO" : "INICIAR TREINO"}
         </h1>
-        <div className="w-6" />
-      </div>
+        <div className="w-10" />
+      </header>
 
-      {/* Map Placeholder */}
-      <div className="flex-1 relative mx-5 rounded-2xl overflow-hidden bg-muted border border-border mb-4">
+      {/* Map Content Section */}
+      <div className="flex-1 relative mx-6 mt-6 rounded-[3rem] overflow-hidden bg-zinc-900/50 border border-zinc-800/50 shadow-inner group">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <MapPin size={48} className="text-primary mx-auto mb-3 animate-pulse-glow" />
-            <p className="text-muted-foreground text-sm">
-              {isRunning ? "Rastreando rota..." : "Aguardando sinal GPS"}
+            <div className="w-20 h-20 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20 mb-4 animate-pulse-glow">
+                <Navigation size={32} className="text-purple-500" />
+            </div>
+            <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">
+              {isRunning ? "RASTREANDO ROTA..." : "AGUARDANDO GPS"}
             </p>
-            {isRunning && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="mt-2 flex items-center gap-1 justify-center"
-              >
-                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                <span className="text-xs text-primary">GPS ativo</span>
-              </motion.div>
-            )}
           </div>
         </div>
 
-        {/* Floating stats during run */}
+        {/* Floating Mini Stats Group */}
         <AnimatePresence>
           {isRunning && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="absolute top-4 left-4 right-4 glass rounded-xl p-3"
+              exit={{ opacity: 0, y: -20 }}
+              className="absolute top-6 left-6 right-6 grid grid-cols-2 gap-3"
             >
-              <div className="grid grid-cols-4 gap-2 text-center">
-                <div>
-                  <p className="text-lg font-display font-bold text-primary">3.24</p>
-                  <p className="text-[10px] text-muted-foreground">KM</p>
+                <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-purple-500/20 flex items-center justify-center text-purple-400">
+                        <MapIcon size={18} />
+                    </div>
+                    <div>
+                        <p className="text-[8px] font-black text-zinc-500 uppercase leading-none mb-1">Ritmo</p>
+                        <p className="text-sm font-black font-display italic leading-none">5'47"</p>
+                    </div>
                 </div>
-                <div>
-                  <p className="text-lg font-display font-bold text-foreground">18:42</p>
-                  <p className="text-[10px] text-muted-foreground">TEMPO</p>
+                <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-purple-500/20 flex items-center justify-center text-purple-400">
+                        <Zap size={18} />
+                    </div>
+                    <div>
+                        <p className="text-[8px] font-black text-zinc-500 uppercase leading-none mb-1">Frequência</p>
+                        <p className="text-sm font-black font-display italic leading-none">164</p>
+                    </div>
                 </div>
-                <div>
-                  <p className="text-lg font-display font-bold text-foreground">5'47"</p>
-                  <p className="text-[10px] text-muted-foreground">RITMO</p>
-                </div>
-                <div>
-                  <p className="text-lg font-display font-bold text-foreground">210</p>
-                  <p className="text-[10px] text-muted-foreground">KCAL</p>
-                </div>
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Main Stats */}
-      <div className="px-5 mb-4">
-        <div className="bg-card border border-border rounded-2xl p-6">
-          <div className="text-center mb-6">
+      {/* Primary Running Stats Card */}
+      <section className="px-6 py-8">
+        <motion.div 
+            layout
+            className="bg-zinc-900 border border-zinc-800/50 rounded-[3rem] p-8 shadow-[0_0_50px_rgba(0,0,0,0.5)]"
+        >
+          <div className="text-center mb-10">
             <motion.p
               key={isRunning ? "running" : "idle"}
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="text-5xl font-display font-bold text-primary"
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              className="text-7xl font-display font-black text-purple-500 italic tracking-tighter"
             >
               {isRunning ? "3.24" : "0.00"}
             </motion.p>
-            <p className="text-sm text-muted-foreground mt-1">quilômetros</p>
+            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mt-2 italic">DISTÂNCIA TOTAL (KM)</p>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 divide-x divide-zinc-800">
             <div className="text-center">
-              <div className="flex items-center justify-center gap-1 text-stat-blue mb-1">
-                <Timer size={14} />
-              </div>
-              <p className="font-display font-bold text-foreground">
-                {isRunning ? "18:42" : "00:00"}
-              </p>
-              <p className="text-[10px] text-muted-foreground">Tempo</p>
-            </div>
-            <div className="text-center border-x border-border">
-              <div className="flex items-center justify-center gap-1 text-stat-orange mb-1">
-                <TrendingUp size={14} />
-              </div>
-              <p className="font-display font-bold text-foreground">
-                {isRunning ? "5'47\"" : "--'--\""}
-              </p>
-              <p className="text-[10px] text-muted-foreground">Ritmo</p>
+              <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Tempo</p>
+              <p className="font-display font-black text-lg italic">{isRunning ? "18:42" : "00:00"}</p>
             </div>
             <div className="text-center">
-              <div className="flex items-center justify-center gap-1 text-stat-red mb-1">
-                <Zap size={14} />
-              </div>
-              <p className="font-display font-bold text-foreground">
-                {isRunning ? "10.4" : "0.0"}
-              </p>
-              <p className="text-[10px] text-muted-foreground">km/h</p>
+              <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Ritmo</p>
+              <p className="font-display font-black text-lg italic">{isRunning ? "5'47\"" : "--'--\""}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Velocidade</p>
+              <p className="font-display font-black text-lg italic">{isRunning ? "10.4" : "0.0"}</p>
             </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </section>
 
-      {/* Controls */}
-      <div className="px-5 pb-8 safe-bottom">
-        <div className="flex items-center justify-center gap-6">
+      {/* Control Actions Section */}
+      <footer className="px-6 pb-12 safe-bottom">
+        <div className="flex items-center justify-center gap-8">
           {!isRunning ? (
             <motion.button
               whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.9 }}
               onClick={() => setIsRunning(true)}
-              className="w-20 h-20 rounded-full bg-gradient-lime flex items-center justify-center shadow-glow"
+              className="w-24 h-24 rounded-full bg-purple-600 flex items-center justify-center shadow-[0_10px_40px_rgba(147,51,234,0.4)] border-4 border-black group"
             >
-              <Play size={32} className="text-primary-foreground ml-1" />
+              <Play size={40} className="text-white fill-current ml-2 group-hover:scale-110 transition-transform" />
             </motion.button>
           ) : (
             <>
@@ -143,27 +134,40 @@ const RunTracking = () => {
                   setIsRunning(false);
                   setIsPaused(false);
                 }}
-                className="w-14 h-14 rounded-full bg-destructive flex items-center justify-center"
+                className="w-16 h-16 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-red-500 shadow-xl"
               >
-                <Square size={20} className="text-destructive-foreground" />
+                <Square size={24} className="fill-current" />
               </motion.button>
+              
               <motion.button
-                whileTap={{ scale: 0.95 }}
+                whileTap={{ scale: 0.9 }}
                 onClick={() => setIsPaused(!isPaused)}
-                className="w-20 h-20 rounded-full bg-gradient-lime flex items-center justify-center shadow-glow"
+                className="w-24 h-24 rounded-full bg-zinc-200 flex items-center justify-center shadow-xl border-4 border-black group"
               >
                 {isPaused ? (
-                  <Play size={32} className="text-primary-foreground ml-1" />
+                  <Play size={40} className="text-black fill-current ml-2" />
                 ) : (
-                  <Pause size={32} className="text-primary-foreground" />
+                  <Pause size={40} className="text-black fill-current" />
                 )}
+              </motion.button>
+
+              <motion.button
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                whileTap={{ scale: 0.9 }}
+                className="w-16 h-16 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-purple-500 shadow-xl"
+              >
+                <TabIcon icon={MapIcon} size={24} />
               </motion.button>
             </>
           )}
         </div>
-      </div>
+      </footer>
     </div>
   );
 };
+
+// Helper component for lucide icons in custom buttons
+const TabIcon = ({ icon: Icon, size }: { icon: any, size: number }) => <Icon size={size} />;
 
 export default RunTracking;

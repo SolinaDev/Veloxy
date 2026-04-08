@@ -1,125 +1,166 @@
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Users, ChevronRight, Star } from "lucide-react";
+import { Calendar, MapPin, Users, ChevronRight, Bell, Tag, Clock } from "lucide-react";
+import { auth } from "@/firebase";
 
 const events = [
   {
-    title: "Corrida Noturna SP",
-    date: "15 Mar 2026",
-    location: "Parque Ibirapuera, São Paulo",
-    distance: "10km",
-    participants: 2340,
-    price: "R$ 89",
-    featured: true,
+    id: 1,
+    title: "Maratona de São Paulo 2025",
+    date: "15 JUN",
+    location: "Parque do Ibirapuera",
+    participants: 1250,
+    category: "MARATONA",
+    image: "https://images.unsplash.com/photo-1530541930197-ff16ac917b0e?q=80&w=800&auto=format&fit=crop",
+    price: "R$ 120"
   },
   {
-    title: "Meia Maratona RJ",
-    date: "22 Mar 2026",
-    location: "Aterro do Flamengo, Rio de Janeiro",
-    distance: "21km",
-    participants: 5100,
-    price: "R$ 150",
-    featured: false,
+    id: 2,
+    title: "Night Run: Edição Verão",
+    date: "22 MAR",
+    location: "Marginal Pinheiros",
+    participants: 450,
+    category: "10K / 5K",
+    image: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=800&auto=format&fit=crop",
+    price: "R$ 85"
   },
   {
-    title: "Trail Run Serra",
-    date: "05 Abr 2026",
-    location: "Serra da Cantareira, SP",
-    distance: "15km",
-    participants: 800,
-    price: "R$ 120",
-    featured: false,
-  },
-  {
-    title: "Maratona de Curitiba",
-    date: "19 Abr 2026",
-    location: "Centro, Curitiba",
-    distance: "42km",
-    participants: 3200,
-    price: "R$ 200",
-    featured: false,
-  },
+    id: 3,
+    title: "Eco Trail: Serra do Mar",
+    date: "08 ABR",
+    location: "Trilha da Mantiqueira",
+    participants: 120,
+    category: "TRAIL RUN",
+    image: "https://images.unsplash.com/photo-1541625602330-2277a1cd13a1?q=80&w=800&auto=format&fit=crop",
+    price: "GRATUITO"
+  }
 ];
 
+const categories = ["Próximos", "Inscrito", "Passados", "Clubes"];
+
 const Events = () => {
+    const user = auth.currentUser;
+    const userInitials = user?.displayName?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "U";
+
   return (
-    <div className="min-h-screen bg-background pb-24 safe-top">
-      <div className="px-5 pt-6 pb-4">
-        <h1 className="font-display text-2xl font-bold text-foreground">Eventos</h1>
-        <p className="text-muted-foreground text-sm mt-1">Corridas perto de você</p>
-      </div>
+    <div className="min-h-screen bg-black text-white pb-24 safe-top">
+      {/* Header */}
+      <header className="px-6 py-4 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur-md z-40 border-b border-zinc-900/50">
+        <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 overflow-hidden">
+          {user?.photoURL ? (
+            <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-xs font-bold text-purple-500">{userInitials}</span>
+          )}
+        </div>
+        
+        <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500">
+          KINETIC EVENTS
+        </h1>
+        
+        <button className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center border border-zinc-800 text-zinc-400">
+          <Calendar size={18} />
+        </button>
+      </header>
 
-      {/* Featured */}
-      <div className="px-5 mb-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-card border border-primary/30 rounded-2xl p-5 relative overflow-hidden"
-        >
-          <div className="absolute top-3 right-3 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-            <Star size={10} />
-            Destaque
-          </div>
-          <h3 className="font-display font-bold text-lg text-foreground mb-1">
-            {events[0].title}
-          </h3>
-          <div className="flex items-center gap-1 text-muted-foreground text-xs mb-1">
-            <Calendar size={12} />
-            {events[0].date}
-          </div>
-          <div className="flex items-center gap-1 text-muted-foreground text-xs mb-3">
-            <MapPin size={12} />
-            {events[0].location}
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex gap-3">
-              <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-medium">
-                {events[0].distance}
-              </span>
-              <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full flex items-center gap-1">
-                <Users size={10} />
-                {events[0].participants.toLocaleString()}
-              </span>
-            </div>
-            <span className="font-display font-bold text-primary">{events[0].price}</span>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* List */}
-      <div className="px-5">
-        <h2 className="font-display font-semibold text-foreground mb-3">Próximos Eventos</h2>
-        <div className="space-y-3">
-          {events.slice(1).map((e, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="bg-card border border-border rounded-xl p-4 flex items-center gap-4"
+      {/* Categories Horizontal */}
+      <section className="mt-8 px-6">
+        <div className="flex gap-3 overflow-x-auto no-scrollbar">
+          {categories.map((c, i) => (
+            <button
+              key={c}
+              className={`px-6 py-2 rounded-full text-[10px] font-black tracking-widest transition-all ${
+                i === 0
+                  ? "bg-white text-black"
+                  : "bg-zinc-900 text-zinc-500 border border-zinc-800"
+              }`}
             >
-              <div className="w-12 h-12 rounded-xl bg-secondary flex flex-col items-center justify-center flex-shrink-0">
-                <span className="text-xs font-bold text-foreground">
-                  {e.date.split(" ")[0]}
-                </span>
-                <span className="text-[10px] text-muted-foreground">
-                  {e.date.split(" ")[1]}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="font-display font-semibold text-sm text-foreground truncate">
-                  {e.title}
-                </h4>
-                <p className="text-xs text-muted-foreground truncate">{e.location}</p>
-                <div className="flex gap-2 mt-1">
-                  <span className="text-[10px] text-primary font-medium">{e.distance}</span>
-                  <span className="text-[10px] text-muted-foreground">{e.price}</span>
-                </div>
-              </div>
-              <ChevronRight size={16} className="text-muted-foreground" />
-            </motion.div>
+              {c.toUpperCase()}
+            </button>
           ))}
         </div>
-      </div>
+      </section>
+
+      {/* Featured Event Banner */}
+      <section className="px-6 mt-10">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="group relative h-64 rounded-[3rem] overflow-hidden border border-zinc-800/50 cursor-pointer shadow-[0_20px_40px_rgba(0,0,0,0.5)]"
+          >
+              <img src={events[0].image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="featured" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+              <div className="absolute bottom-8 left-8 right-8">
+                  <div className="flex items-center gap-2 mb-3">
+                      <div className="bg-purple-600 px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase shadow-lg shadow-purple-600/30">EM BREVE</div>
+                      <div className="bg-black/50 backdrop-blur-md border border-white/10 px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase">Geral</div>
+                  </div>
+                  <h2 className="font-display font-black text-2xl italic tracking-tighter uppercase mb-2 leading-none">{events[0].title}</h2>
+                  <div className="flex items-center gap-4 text-zinc-400 text-[10px] font-bold uppercase tracking-widest">
+                      <span className="flex items-center gap-1.5"><Calendar size={12} className="text-purple-500" /> {events[0].date}</span>
+                      <span className="flex items-center gap-1.5"><MapPin size={12} className="text-purple-500" /> SÃO PAULO</span>
+                  </div>
+              </div>
+          </motion.div>
+      </section>
+
+      {/* All Events List */}
+      <section className="mt-12 px-6 pb-10 space-y-8">
+        <div className="flex items-center justify-between mb-2">
+            <h3 className="font-display font-black text-sm italic tracking-tighter uppercase">Todas as Corridas</h3>
+            <span className="text-[10px] font-black text-zinc-500 tracking-widest">3 DISPONÍVEIS</span>
+        </div>
+
+        {events.map((event, i) => (
+          <motion.div
+            key={event.id}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="bg-zinc-900/40 border border-zinc-800/50 rounded-[2.5rem] p-5 flex flex-col gap-6"
+          >
+             <div className="flex items-center gap-5">
+                <div className="w-24 h-24 rounded-[2rem] overflow-hidden border border-zinc-800 relative flex-shrink-0">
+                    <img src={event.image} className="w-full h-full object-cover" alt="event" />
+                    <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md p-1.5 rounded-xl border border-white/10">
+                        <Tag size={12} className="text-purple-500" />
+                    </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                    <h4 className="font-display font-black text-lg italic tracking-tighter uppercase truncate leading-tight mb-1">{event.title}</h4>
+                    <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-bold tracking-widest uppercase leading-none">
+                            <Clock size={10} className="text-purple-500" /> {event.date} • 07:00 AM
+                        </div>
+                        <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-bold tracking-widest uppercase leading-none mt-1">
+                            <MapPin size={10} className="text-purple-500" /> {event.location}
+                        </div>
+                    </div>
+                </div>
+             </div>
+
+             <div className="flex items-center justify-between pt-6 border-t border-zinc-800/50">
+                <div className="flex items-center gap-4">
+                    <div className="flex flex-col">
+                        <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none mb-1">Inscrição</p>
+                        <p className="text-sm font-black text-purple-500 italic uppercase leading-none">{event.price}</p>
+                    </div>
+                    <div className="w-[1px] h-6 bg-zinc-800/50" />
+                    <div className="flex flex-col">
+                        <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none mb-1">Vagas</p>
+                        <div className="flex items-center gap-1 leading-none">
+                            <Users size={10} className="text-zinc-500" />
+                            <span className="text-[10px] font-black text-white">{event.participants}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <button className="h-12 w-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-purple-500 hover:bg-purple-600 hover:text-white transition-all shadow-lg">
+                    <ChevronRight size={20} strokeWidth={3} />
+                </button>
+             </div>
+          </motion.div>
+        ))}
+      </section>
     </div>
   );
 };

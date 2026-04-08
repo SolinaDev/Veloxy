@@ -35,7 +35,7 @@ export async function loginComGoogle() {
 export async function loginComMicrosoft() {
   try {
     const provider = new OAuthProvider("microsoft.com");
-    provider.setCustomParameters({ tenant: "common" }); // ou seu tenant ID
+    provider.setCustomParameters({ tenant: "consumers" }); // apenas contas pessoais (Outlook, Hotmail)
     const result = await signInWithPopup(auth, provider);
     return result.user;
   } catch (error) {

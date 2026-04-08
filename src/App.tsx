@@ -13,6 +13,7 @@ import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
 
 // Páginas protegidas
+import Feed from "@/pages/app/Feed";
 import Dashboard from "@/pages/app/Dashboard";
 import RunTracking from "@/pages/app/RunTracking";
 import Challenges from "@/pages/app/Challenges";
@@ -21,6 +22,7 @@ import Events from "@/pages/app/Events";
 import Shop from "@/pages/app/Shop";
 import Profile from "@/pages/app/Profile";
 import NotFound from "@/pages/NotFound";
+import CompleteProfile from "@/pages/auth/CompleteProfile";
 
 const queryClient = new QueryClient();
 
@@ -49,9 +51,13 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
+            {/* Completar perfil (precisa de auth, mas não de perfil completo) */}
+            <Route path="/complete-profile" element={<CompleteProfile />} />
+
             {/* Rotas protegidas */}
             <Route element={<ProtectedLayout />}>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={<Feed />} />
+              <Route path="/stats" element={<Dashboard />} />
               <Route path="/run" element={<RunTracking />} />
               <Route path="/challenges" element={<Challenges />} />
               <Route path="/community" element={<Community />} />
