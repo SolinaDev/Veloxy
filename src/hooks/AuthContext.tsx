@@ -1,40 +1,37 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { auth } from "@/firebase";
 
 type AuthContextType = {
-  user: any;
-  login: (data: any) => void;
-  logout: () => void;
+  user: User | null;
+  loading: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export const AuthProvider = ({ children }: any) => {
-  const [user, setUser] = useState<any>(null);
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
+    // Subscreve para mudanças no estado de autenticação do Firebase
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const login = (data: any) => {
-    setUser(data);
-    localStorage.setItem("user", JSON.stringify(data));
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("user");
-  };
-
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
+    <AuthContext.Provider value={{ user, loading }}>
+        {!loading && children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => {
-  return useContext(AuthContext)!;
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth deve ser usado dentro de um AuthProvider");
+  return context;
 };

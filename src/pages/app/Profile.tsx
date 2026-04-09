@@ -189,7 +189,7 @@ const Profile = () => {
       {/* Header */}
       <header className="px-6 py-4 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur-md z-40">
         <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500">
-          KINETIC PROFILE
+          VELOXY PROFILE
         </h1>
         <div className="flex gap-2">
             <button

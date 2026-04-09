@@ -1,18 +1,21 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import {
-  Play,
-  MapPin,
-  Flame,
-  Timer,
-  TrendingUp,
-  Zap,
-  ChevronRight,
-  BarChart3,
-  Calendar,
-  Activity
+import { 
+  Play, 
+  MapPin, 
+  Flame, 
+  Timer, 
+  TrendingUp, 
+  Zap, 
+  ChevronRight, 
+  BarChart3, 
+  Calendar, 
+  Activity,
+  Loader2
 } from "lucide-react";
-import { auth } from "@/firebase";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/AuthContext";
+import { getUserStats } from "@/service/database";
 
 const weeklyData = [
   { day: "SEG", km: 5.2 },
@@ -28,9 +31,28 @@ const maxKm = Math.max(...weeklyData.map((d) => d.km), 1);
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    const user = auth.currentUser;
+    const { user } = useAuth();
+    const [stats, setStats] = useState({ totalKm: "0.0", runsCount: 0 });
+    const [loading, setLoading] = useState(true);
+
     const displayName = user?.displayName || "Corredor";
     const userInitials = displayName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "U";
+
+    useEffect(() => {
+      const loadStats = async () => {
+        if (!user) return;
+        try {
+          const data = await getUserStats(user.uid);
+          setStats(data);
+        } catch (error) {
+          console.error("Erro ao carregar status:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadStats();
+    }, [user]);
 
   return (
     <div className="min-h-screen bg-black text-white pb-24 safe-top">
@@ -45,7 +67,7 @@ const Dashboard = () => {
         </div>
         
         <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500">
-          KINETIC STATS
+          VELOXY STATS
         </h1>
         
         <button className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center border border-zinc-800 text-zinc-400">
@@ -66,27 +88,6 @@ const Dashboard = () => {
           </h2>
         </motion.div>
 
-        {/* Start Run Button (Restyled) */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => navigate("/run")}
-          className="w-full bg-purple-600 rounded-[2.5rem] p-6 flex items-center justify-between shadow-[0_10px_40px_rgba(147,51,234,0.3)] group relative overflow-hidden"
-        >
-          <div className="relative z-10 flex items-center gap-5">
-            <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform">
-              <Play size={28} className="text-white fill-current ml-1" />
-            </div>
-            <div className="text-left">
-              <h3 className="font-display font-black text-xl italic text-white uppercase leading-none mb-1">Gravar Corrida</h3>
-              <p className="text-purple-200 text-[10px] font-bold tracking-widest uppercase opacity-70">GPS Ativo • Pronto para ir</p>
-            </div>
-          </div>
-          <ChevronRight size={24} className="text-white opacity-40 group-hover:opacity-100 transition-opacity" />
-          
-          {/* Shape background */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-white/10 transition-all" />
-        </motion.button>
       </section>
 
       {/* Weekly Momentum Grid */}
@@ -100,26 +101,32 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-            {[
-                { label: "Distância Total", value: "29.0", unit: "KM", icon: <MapPin size={16} />, color: "purple" },
-                { label: "Tempo de Atividade", value: "2:45", unit: "HR", icon: <Timer size={16} />, color: "zinc" },
-                { label: "Energia Gasta", value: "1,840", unit: "KCAL", icon: <Flame size={16} />, color: "zinc" },
-                { label: "Ritmo Médio", value: "5'42\"", unit: "MIN/KM", icon: <TrendingUp size={16} />, color: "zinc" },
-            ].map((stat, i) => (
-                <motion.div 
-                    key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className="bg-zinc-900/40 border border-zinc-800/50 p-6 rounded-[2.5rem] relative group"
-                >
-                    <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2">{stat.label}</p>
-                    <div className="flex items-baseline gap-1">
-                        <span className="text-2xl font-black font-display text-white">{stat.value}</span>
-                        <span className="text-[9px] font-black text-purple-500 uppercase tracking-tighter italic">{stat.unit}</span>
-                    </div>
-                </motion.div>
-            ))}
+            {loading ? (
+                <div className="col-span-2 flex justify-center py-10">
+                    <Loader2 className="animate-spin text-purple-500" />
+                </div>
+            ) : (
+                [
+                    { label: "Distância Total", value: stats.totalKm, unit: "KM", icon: <MapPin size={16} />, color: "purple" },
+                    { label: "Total de Treinos", value: stats.runsCount.toString(), unit: "CORRIDAS", icon: <Zap size={16} />, color: "zinc" },
+                    { label: "Tempo de Atividade", value: "0:00", unit: "HR", icon: <Timer size={16} />, color: "zinc" },
+                    { label: "Energia Gasta", value: "0", unit: "KCAL", icon: <Flame size={16} />, color: "zinc" },
+                ].map((stat, i) => (
+                    <motion.div 
+                        key={i}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        className="bg-zinc-900/40 border border-zinc-800/50 p-6 rounded-[2.5rem] relative group"
+                    >
+                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2">{stat.label}</p>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-2xl font-black font-display text-white">{stat.value}</span>
+                            <span className="text-[9px] font-black text-purple-500 uppercase tracking-tighter italic">{stat.unit}</span>
+                        </div>
+                    </motion.div>
+                ))
+            )}
         </div>
       </section>
 

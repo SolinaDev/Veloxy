@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -11,13 +11,66 @@ import {
   Zap, 
   TrendingUp,
   Map as MapIcon,
-  Navigation
+  Navigation,
+  Loader2
 } from "lucide-react";
+import { useAuth } from "@/hooks/AuthContext";
+import { saveActivity } from "@/service/database";
+import { toast } from "sonner";
 
 const RunTracking = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Stats simulados
+  const [distance, setDistance] = useState(0);
+  const [seconds, setSeconds] = useState(0);
+
+  // Efeito para simular o progresso da corrida
+  useEffect(() => {
+    let interval: any;
+    if (isRunning && !isPaused) {
+      interval = setInterval(() => {
+        setSeconds(s => s + 1);
+        setDistance(d => d + 0.002); // Simula 2 metros por segundo (~7.2 km/h)
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isRunning, isPaused]);
+
+  const formatTime = (totalSeconds: number) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleFinish = async () => {
+    if (!user) return;
+    
+    setIsSaving(true);
+    try {
+      await saveActivity({
+        userId: user.uid,
+        userName: user.displayName || "Corredor",
+        userAvatar: user.photoURL,
+        distance: Number(distance.toFixed(2)),
+        time: formatTime(seconds),
+        durationSeconds: seconds,
+        pace: "5'47\"", // Mock pace por enquanto
+        type: "RUNNING"
+      });
+      
+      toast.success("Corrida salva com sucesso!");
+      navigate("/");
+    } catch (error) {
+      toast.error("Erro ao salvar corrida");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col safe-top">
@@ -90,7 +143,7 @@ const RunTracking = () => {
               animate={{ scale: 1 }}
               className="text-7xl font-display font-black text-purple-500 italic tracking-tighter"
             >
-              {isRunning ? "3.24" : "0.00"}
+              {distance.toFixed(2)}
             </motion.p>
             <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mt-2 italic">DISTÂNCIA TOTAL (KM)</p>
           </div>
@@ -98,15 +151,15 @@ const RunTracking = () => {
           <div className="grid grid-cols-3 divide-x divide-zinc-800">
             <div className="text-center">
               <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Tempo</p>
-              <p className="font-display font-black text-lg italic">{isRunning ? "18:42" : "00:00"}</p>
+              <p className="font-display font-black text-lg italic">{formatTime(seconds)}</p>
             </div>
             <div className="text-center">
               <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Ritmo</p>
-              <p className="font-display font-black text-lg italic">{isRunning ? "5'47\"" : "--'--\""}</p>
+              <p className="font-display font-black text-lg italic">5'47"</p>
             </div>
             <div className="text-center">
               <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Velocidade</p>
-              <p className="font-display font-black text-lg italic">{isRunning ? "10.4" : "0.0"}</p>
+              <p className="font-display font-black text-lg italic">{(distance > 0 ? (distance / (seconds / 3600)) : 0).toFixed(1)}</p>
             </div>
           </div>
         </motion.div>
@@ -130,13 +183,11 @@ const RunTracking = () => {
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => {
-                  setIsRunning(false);
-                  setIsPaused(false);
-                }}
-                className="w-16 h-16 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-red-500 shadow-xl"
+                onClick={handleFinish}
+                disabled={isSaving}
+                className="w-16 h-16 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-red-500 shadow-xl disabled:opacity-50"
               >
-                <Square size={24} className="fill-current" />
+                {isSaving ? <Loader2 className="animate-spin" /> : <Square size={24} className="fill-current" />}
               </motion.button>
               
               <motion.button

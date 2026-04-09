@@ -28,7 +28,7 @@ const Challenges = () => {
         </div>
         
         <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500">
-          KINETIC CHALLENGES
+          VELOXY CHALLENGES
         </h1>
         
         <button className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center border border-zinc-800 text-zinc-400">
@@ -47,7 +47,7 @@ const Challenges = () => {
             <div className="bg-purple-600/10 p-3 rounded-2xl mb-2 text-purple-500 border border-purple-500/20">
                 <Flame size={24} className="fill-current" />
             </div>
-            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Meus Pontos Kinetic</p>
+            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Meus Pontos Veloxy</p>
             <h2 className="text-5xl font-black font-display italic tracking-tighter text-purple-500">2,450</h2>
             <div className="mt-4 px-4 py-1.5 bg-black/50 border border-zinc-800 rounded-full flex items-center gap-2">
                 <Zap size={10} className="text-orange-400 fill-current" />

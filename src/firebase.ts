@@ -1,7 +1,6 @@
-// Conectando o Firebase para autenticação de usuários e armazenamento de dados
-
 import {initializeApp} from "firebase/app";
 import {getAuth} from "firebase/auth";
+import {getFirestore} from "firebase/firestore";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDyl6iNPKmn7i2MtoOEYKRBhk7e-IoT8Xc",
@@ -11,3 +10,4 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+export const db = getFirestore(app);

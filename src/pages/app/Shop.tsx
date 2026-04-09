@@ -68,7 +68,7 @@ const Shop = () => {
         </div>
         
         <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500">
-          KINETIC SHOP
+          VELOXY SHOP
         </h1>
         
         <button className="relative w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center border border-zinc-800 text-zinc-400 hover:text-white transition-colors">
