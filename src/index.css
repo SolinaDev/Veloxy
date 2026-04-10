@@ -1,3 +1,4 @@
+@import "leaflet/dist/leaflet.css";
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
@@ -73,6 +74,13 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Space Grotesk', sans-serif;
+  }
+
+  /* Esconder o olho nativo dos navegadores (como Edge/IE) para não duplicar com o nosso */
+  input[type="password"]::-ms-reveal,
+  input[type="password"]::-ms-clear,
+  input[type="password"]::-webkit-password-reveal-button {
+    display: none !important;
   }
 }
 

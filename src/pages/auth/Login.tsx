@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Lock, Loader2 } from "lucide-react";
+import { Mail, Lock, Loader2, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/firebase";
@@ -18,6 +18,17 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showSenha, setShowSenha] = useState(false);
+
+  // Carregar e-mail salvo ao carregar a página
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("veloxy_remembered_email");
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleLogin = async () => {
     if (!email || !senha) {
@@ -26,7 +37,19 @@ export default function Login() {
     }
     setLoading(true);
     try {
+      // Configurar persistência com base no "Lembrar de mim"
+      const { setPersistence, browserLocalPersistence, browserSessionPersistence } = await import("firebase/auth");
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+
       await signInWithEmailAndPassword(auth, email, senha);
+      
+      // Salvar ou remover e-mail do localStorage
+      if (rememberMe) {
+        localStorage.setItem("veloxy_remembered_email", email);
+      } else {
+        localStorage.removeItem("veloxy_remembered_email");
+      }
+
       toast.success("Login realizado com sucesso!");
       navigate("/");
     } catch (err: any) {
@@ -124,21 +147,33 @@ export default function Login() {
 
         {/* SENHA */}
         <div className="flex items-center bg-zinc-200 rounded-xl px-3 py-2 shadow-inner focus-within:ring-2 focus-within:ring-purple-500 transition">
-          <Lock size={18} className="text-gray-500 mr-2" />
+          <Lock size={18} className="text-gray-500 mr-2 shrink-0" />
           <input
-            type="password"
+            type={showSenha ? "text" : "password"}
             placeholder="Password"
             className="bg-transparent outline-none text-black w-full text-sm"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
             disabled={loading}
           />
+          <button
+            type="button"
+            onClick={() => setShowSenha(!showSenha)}
+            className="text-gray-500 hover:text-purple-600 transition-colors px-1"
+          >
+            {showSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
         </div>
 
         {/* REMEMBER + FORGOT */}
         <div className="flex justify-between items-center text-xs text-gray-400">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" className="accent-purple-500" />
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input 
+              type="checkbox" 
+              className="accent-purple-500 w-4 h-4"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+            />
             Remember Me
           </label>
 

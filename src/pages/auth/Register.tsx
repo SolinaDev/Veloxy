@@ -88,7 +88,7 @@ export default function Register() {
 
         {/* USERNAME */}
         <div className="flex items-center bg-zinc-200 rounded-full px-4 py-3">
-          <User size={18} className="text-gray-500 mr-2" />
+          <User size={18} className="text-gray-500 mr-2 shrink-0" />
           <input
             type="text"
             placeholder="Username"
@@ -100,7 +100,7 @@ export default function Register() {
 
         {/* EMAIL */}
         <div className="flex items-center bg-zinc-200 rounded-full px-4 py-3">
-          <Mail size={18} className="text-gray-500 mr-2" />
+          <Mail size={18} className="text-gray-500 mr-2 shrink-0" />
           <input
             type="email"
             placeholder="Email"
@@ -124,7 +124,7 @@ export default function Register() {
 
         {/* PASSWORD */}
         <div className="flex items-center bg-zinc-200 rounded-full px-4 py-3">
-          <Lock size={18} className="text-gray-500 mr-2" />
+          <Lock size={18} className="text-gray-500 mr-2 shrink-0" />
           <input
             type={showPassword ? "text" : "password"}
             placeholder="Password"
@@ -132,18 +132,22 @@ export default function Register() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <button onClick={() => setShowPassword(!showPassword)}>
+          <button 
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="text-gray-500 hover:text-purple-600 transition-colors px-1"
+          >
             {showPassword ? (
-              <EyeOff size={18} className="text-gray-500" />
+              <EyeOff size={18} />
             ) : (
-              <Eye size={18} className="text-gray-500" />
+              <Eye size={18} />
             )}
           </button>
         </div>
 
         {/* CONFIRM PASSWORD */}
         <div className="flex items-center bg-zinc-200 rounded-full px-4 py-3">
-          <Lock size={18} className="text-gray-500 mr-2" />
+          <Lock size={18} className="text-gray-500 mr-2 shrink-0" />
           <input
             type={showConfirmPassword ? "text" : "password"}
             placeholder="Confirm Password"
@@ -151,11 +155,15 @@ export default function Register() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
-          <button onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+          <button 
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="text-gray-500 hover:text-purple-600 transition-colors px-1"
+          >
             {showConfirmPassword ? (
-              <EyeOff size={18} className="text-gray-500" />
+              <EyeOff size={18} />
             ) : (
-              <Eye size={18} className="text-gray-500" />
+              <Eye size={18} />
             )}
           </button>
         </div>

@@ -26,6 +26,7 @@ export interface ActivityData {
   calories?: number;
   type: string;
   likes?: string[]; // Array de UIDs de quem curtiu
+  route?: [number, number][]; // Array de de [lat, lng]
   timestamp?: Timestamp;
 }
 
