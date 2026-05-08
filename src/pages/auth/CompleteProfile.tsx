@@ -2,19 +2,32 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { updateProfile } from "firebase/auth";
-import { auth } from "@/firebase";
+import { db } from "@/firebase";
+import { useAuth } from "@/hooks/AuthContext";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { toast } from "sonner";
-import { User, MapPin, Pencil, Loader2, ChevronRight } from "lucide-react";
+import { User, MapPin, Pencil, Loader2, ChevronRight, Camera } from "lucide-react";
 import logo from "@/assets/logo.jpg";
+import { uploadAvatar } from "@/service/storage";
 
 export default function CompleteProfile() {
   const navigate = useNavigate();
-  const user = auth.currentUser;
+  const { user } = useAuth();
 
   const [username, setUsername] = useState(user?.displayName || "");
   const [location, setLocation] = useState("");
   const [bio, setBio] = useState("");
   const [saving, setSaving] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState(user?.photoURL || "");
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setAvatarFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
 
   const handleComplete = async () => {
     if (!username.trim()) {
@@ -25,11 +38,21 @@ export default function CompleteProfile() {
     setSaving(true);
     try {
       if (user) {
+        if (avatarFile) {
+          toast.info("Subindo sua foto...", { duration: 2000 });
+          await uploadAvatar(avatarFile, user.uid);
+        }
         await updateProfile(user, { displayName: username.trim() });
-        localStorage.setItem(`veloxy_location_${user.uid}`, location.trim());
-        localStorage.setItem(`veloxy_bio_${user.uid}`, bio.trim());
-        // Marca que o perfil foi completado
-        localStorage.setItem(`veloxy_profile_complete_${user.uid}`, "true");
+
+        // Salvar dados do perfil no Firestore (não mais em localStorage)
+        const userRef = doc(db, "users", user.uid);
+        await setDoc(userRef, {
+          displayName: username.trim(),
+          location: location.trim(),
+          bio: bio.trim(),
+          onboarded: true,
+          createdAt: serverTimestamp(),
+        }, { merge: true });
       }
       toast.success(`Bem-vindo ao Veloxy, ${username}! 🏃‍♂️`);
       navigate("/");
@@ -41,9 +64,14 @@ export default function CompleteProfile() {
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
     if (user) {
-      localStorage.setItem(`veloxy_profile_complete_${user.uid}`, "true");
+      // Marcar como onboarded no Firestore mesmo pulando
+      const userRef = doc(db, "users", user.uid);
+      await setDoc(userRef, {
+        onboarded: true,
+        createdAt: serverTimestamp(),
+      }, { merge: true });
     }
     navigate("/");
   };
@@ -83,18 +111,22 @@ export default function CompleteProfile() {
       >
         {/* Avatar preview */}
         <div className="flex justify-center mb-2">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center ring-2 ring-purple-500/30 ring-offset-2 ring-offset-black">
-            <span className="text-2xl font-display font-bold text-white">
-              {username
-                ? username
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()
-                : "?"}
-            </span>
-          </div>
+          <label className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center ring-2 ring-purple-500/30 ring-offset-2 ring-offset-black relative cursor-pointer group hover:scale-105 transition-transform overflow-hidden shadow-lg">
+            {previewUrl ? (
+               <img src={previewUrl} alt="Avatar Preview" className="w-full h-full object-cover" />
+            ) : (
+               <span className="text-3xl font-display font-bold text-white z-10">
+                 {username ? username.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() : "?"}
+               </span>
+            )}
+            
+            {/* Overlay */}
+            <div className={`absolute inset-0 bg-black/60 flex items-center justify-center transition-opacity ${previewUrl ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
+               <Camera size={24} className="text-white opacity-90" />
+            </div>
+
+            <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+          </label>
         </div>
 
         {/* Username */}

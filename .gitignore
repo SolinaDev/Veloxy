@@ -23,5 +23,13 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment
+.env.local
+.env
+
+# Build cache
+*.tsbuildinfo
+bun.lock
+
 # VITE
 .vite

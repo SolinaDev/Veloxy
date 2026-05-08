@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -34,6 +34,36 @@ const RunTracking = () => {
   const [path, setPath] = useState<[number, number][]>([]);
   const [currentPos, setCurrentPos] = useState<[number, number] | null>(null);
   const [isSimulating, setIsSimulating] = useState(false);
+  const wakeLockRef = useRef<any>(null); // Instância do Wake Lock
+
+  // Gerenciar Screen Wake Lock para PWA (Não deixar a tela do celular apagar/pausar o app)
+  useEffect(() => {
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+        }
+      } catch (err) {
+        console.error(`Wake Lock error: ${err}`);
+      }
+    };
+
+    const releaseWakeLock = () => {
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().then(() => {
+          wakeLockRef.current = null;
+        });
+      }
+    };
+
+    if (isRunning && !isPaused) {
+      requestWakeLock();
+    } else {
+      releaseWakeLock();
+    }
+
+    return () => releaseWakeLock();
+  }, [isRunning, isPaused]);
 
   // Auxiliar para centralizar o mapa
   const RecenterMap = ({ coords }: { coords: [number, number] }) => {
@@ -75,22 +105,29 @@ const RunTracking = () => {
     if (isRunning && !isPaused && "geolocation" in navigator) {
       watchId = navigator.geolocation.watchPosition(
         (position) => {
-          const { latitude, longitude, accuracy } = position.coords;
+          const { latitude, longitude, accuracy, speed } = position.coords;
           console.log(`GPS Success: Lat ${latitude}, Lng ${longitude}, Acc ${accuracy}m`);
+
+          // Filtro rigoroso: precisão pior que 30m pode criar "saltos" ou teias de aranha
+          if (accuracy > 30) return; 
+
+          // Anti-Cheat: Se a velocidade exceder 30km/h (8.33 m/s), o cara pode estar num carro/bike
+          if (speed && speed > 8.33) {
+            console.warn("Velocidade incompatível com corrida. Trecho ignorado.");
+            return;
+          }
           
           const newPoint: [number, number] = [latitude, longitude];
           setCurrentPos(newPoint);
-
-          // Se a precisão for muito ruim, só mostramos a posição mas não somamos distância
-          if (accuracy > 50) return; 
 
           setPath(prevPath => {
             if (prevPath.length > 0) {
               const lastPoint = prevPath[prevPath.length - 1];
               const d = calculateDistance(lastPoint[0], lastPoint[1], latitude, longitude);
               
-              // Evitar somar micro-movimentos de imprecisão
-              if (d > 0.005) { 
+              // Filtro de Ruído Geográfico:
+              // Limite superior de pulo: mais que 500m (0.5km) entre duas coletas é falha grossa do GPS
+              if (d > 0.005 && d < 0.5) { 
                 setDistance(prev => prev + d);
                 return [...prevPath, newPoint];
               }
@@ -103,7 +140,7 @@ const RunTracking = () => {
           console.error("GPS Error:", error);
           toast.error("Erro ao acessar GPS: " + error.message);
         },
-        { enableHighAccuracy: true, distanceFilter: 2 }
+        { enableHighAccuracy: true }
       );
     }
 

@@ -1,45 +1,86 @@
-import { motion } from "framer-motion";
-import { Calendar, MapPin, Users, ChevronRight, Bell, Tag, Clock } from "lucide-react";
-import { auth } from "@/firebase";
+import { motion, AnimatePresence } from "framer-motion";
+import { Calendar, MapPin, Users, ChevronRight, Bell, Tag, Clock, Loader2, CheckCircle } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { useAuth } from "@/hooks/AuthContext";
+import { 
+  getEvents, 
+  getUserEvents, 
+  joinEvent, 
+  getUserProfile,
+  RunningEvent 
+} from "@/service/database";
+import { toast } from "sonner";
 
-const events = [
-  {
-    id: 1,
-    title: "Maratona de São Paulo 2025",
-    date: "15 JUN",
-    location: "Parque do Ibirapuera",
-    participants: 1250,
-    category: "MARATONA",
-    image: "https://images.unsplash.com/photo-1530541930197-ff16ac917b0e?q=80&w=800&auto=format&fit=crop",
-    price: "R$ 120"
-  },
-  {
-    id: 2,
-    title: "Night Run: Edição Verão",
-    date: "22 MAR",
-    location: "Marginal Pinheiros",
-    participants: 450,
-    category: "10K / 5K",
-    image: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=800&auto=format&fit=crop",
-    price: "R$ 85"
-  },
-  {
-    id: 3,
-    title: "Eco Trail: Serra do Mar",
-    date: "08 ABR",
-    location: "Trilha da Mantiqueira",
-    participants: 120,
-    category: "TRAIL RUN",
-    image: "https://images.unsplash.com/photo-1541625602330-2277a1cd13a1?q=80&w=800&auto=format&fit=crop",
-    price: "GRATUITO"
-  }
-];
-
-const categories = ["Próximos", "Inscrito", "Passados", "Clubes"];
+const categories = ["Próximos", "Inscrito", "Passados"];
 
 const Events = () => {
-    const user = auth.currentUser;
+    const { user } = useAuth();
+    const [events, setEvents] = useState<RunningEvent[]>([]);
+    const [enrolledIds, setEnrolledIds] = useState<string[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState("Próximos");
+    const [userCity, setUserCity] = useState("");
+
     const userInitials = user?.displayName?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "U";
+
+    useEffect(() => {
+        const loadData = async () => {
+            if (!user) return;
+            try {
+                
+                // Pegar cidade do perfil
+                const profile = await getUserProfile(user.uid);
+                const city = profile?.location || "";
+                setUserCity(city);
+                setEnrolledIds((profile as any)?.enrolledEvents || []);
+
+                // Buscar todos os eventos ordenados/filtrados por cidade
+                const allEvents = await getEvents(city);
+                setEvents(allEvents);
+            } catch (error) {
+                console.error("Erro ao carregar eventos:", error);
+                toast.error("Não foi possível carregar os eventos.");
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
+    }, [user]);
+
+    const handleJoin = async (eventId: string) => {
+        if (!user) return;
+        if (enrolledIds.includes(eventId)) {
+            toast.info("Você já está inscrito neste evento!");
+            return;
+        }
+
+        try {
+            await joinEvent(eventId, user.uid);
+            setEnrolledIds(prev => [...prev, eventId]);
+            toast.success("Inscrição realizada com sucesso! 🏃‍♂️");
+        } catch (error) {
+            toast.error("Erro ao realizar inscrição.");
+        }
+    };
+
+    const filteredEvents = useMemo(() => {
+        if (activeTab === "Inscrito") {
+            return events.filter(e => enrolledIds.includes(e.id));
+        }
+        if (activeTab === "Passados") {
+            return events.filter(e => new Date(e.timestamp?.seconds * 1000) < new Date());
+        }
+        return events; // Próximos
+    }, [events, activeTab, enrolledIds]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
+                <Loader2 className="animate-spin text-purple-500" size={40} />
+                <p className="text-[10px] font-black text-zinc-500 tracking-[0.2em] uppercase">Buscando Corridas...</p>
+            </div>
+        );
+    }
 
   return (
     <div className="min-h-screen bg-black text-white pb-24 safe-top">
@@ -65,12 +106,13 @@ const Events = () => {
       {/* Categories Horizontal */}
       <section className="mt-8 px-6">
         <div className="flex gap-3 overflow-x-auto no-scrollbar">
-          {categories.map((c, i) => (
+          {categories.map((c) => (
             <button
               key={c}
+              onClick={() => setActiveTab(c)}
               className={`px-6 py-2 rounded-full text-[10px] font-black tracking-widest transition-all ${
-                i === 0
-                  ? "bg-white text-black"
+                activeTab === c
+                  ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)]"
                   : "bg-zinc-900 text-zinc-500 border border-zinc-800"
               }`}
             >
@@ -110,56 +152,85 @@ const Events = () => {
             <span className="text-[10px] font-black text-zinc-500 tracking-widest">3 DISPONÍVEIS</span>
         </div>
 
-        {events.map((event, i) => (
-          <motion.div
-            key={event.id}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="bg-zinc-900/40 border border-zinc-800/50 rounded-[2.5rem] p-5 flex flex-col gap-6"
-          >
-             <div className="flex items-center gap-5">
-                <div className="w-24 h-24 rounded-[2rem] overflow-hidden border border-zinc-800 relative flex-shrink-0">
-                    <img src={event.image} className="w-full h-full object-cover" alt="event" />
-                    <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md p-1.5 rounded-xl border border-white/10">
-                        <Tag size={12} className="text-purple-500" />
-                    </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                    <h4 className="font-display font-black text-lg italic tracking-tighter uppercase truncate leading-tight mb-1">{event.title}</h4>
-                    <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-bold tracking-widest uppercase leading-none">
-                            <Clock size={10} className="text-purple-500" /> {event.date} • 07:00 AM
-                        </div>
-                        <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-bold tracking-widest uppercase leading-none mt-1">
-                            <MapPin size={10} className="text-purple-500" /> {event.location}
-                        </div>
-                    </div>
-                </div>
-             </div>
+        {!filteredEvents.length ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+                <Calendar size={48} className="text-zinc-800" />
+                <p className="font-black text-zinc-600 uppercase tracking-widest text-xs">
+                    Nenhum evento encontrado nesta categoria
+                </p>
+            </div>
+        ) : filteredEvents.map((event, i) => {
+          const isInscrito = enrolledIds.includes(event.id);
+          const isLocal = userCity && event.city.toLowerCase().includes(userCity.split(",")[0].toLowerCase().trim());
 
-             <div className="flex items-center justify-between pt-6 border-t border-zinc-800/50">
-                <div className="flex items-center gap-4">
-                    <div className="flex flex-col">
-                        <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none mb-1">Inscrição</p>
-                        <p className="text-sm font-black text-purple-500 italic uppercase leading-none">{event.price}</p>
-                    </div>
-                    <div className="w-[1px] h-6 bg-zinc-800/50" />
-                    <div className="flex flex-col">
-                        <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none mb-1">Vagas</p>
-                        <div className="flex items-center gap-1 leading-none">
-                            <Users size={10} className="text-zinc-500" />
-                            <span className="text-[10px] font-black text-white">{event.participants}</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <button className="h-12 w-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-purple-500 hover:bg-purple-600 hover:text-white transition-all shadow-lg">
-                    <ChevronRight size={20} strokeWidth={3} />
-                </button>
-             </div>
-          </motion.div>
-        ))}
+          return (
+            <motion.div
+              key={event.id}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className={`bg-zinc-900/40 border rounded-[2.5rem] p-5 flex flex-col gap-6 transition-all ${
+                isLocal ? "border-purple-500/30 bg-purple-500/5 shadow-[0_0_30px_rgba(147,51,234,0.05)]" : "border-zinc-800/50"
+              }`}
+            >
+               <div className="flex items-center gap-5">
+                  <div className="w-24 h-24 rounded-[2rem] overflow-hidden border border-zinc-800 relative flex-shrink-0">
+                      <img src={event.image} className="w-full h-full object-cover" alt="event" />
+                      <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md p-1.5 rounded-xl border border-white/10">
+                          <Tag size={12} className="text-purple-500" />
+                      </div>
+                      {isLocal && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-purple-600 text-[7px] font-black text-center py-0.5">PERTO DE VOCÊ</div>
+                      )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                      <h4 className="font-display font-black text-lg italic tracking-tighter uppercase truncate leading-tight mb-1">{event.title}</h4>
+                      <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-bold tracking-widest uppercase leading-none">
+                              <Clock size={10} className="text-purple-500" /> {event.date} • 07:00 AM
+                          </div>
+                          <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-bold tracking-widest uppercase leading-none mt-1">
+                              <MapPin size={10} className="text-purple-500" /> {event.location}
+                          </div>
+                      </div>
+                  </div>
+               </div>
+  
+               <div className="flex items-center justify-between pt-6 border-t border-zinc-800/50">
+                  <div className="flex items-center gap-4">
+                      <div className="flex flex-col">
+                          <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none mb-1">Inscrição</p>
+                          <p className="text-sm font-black text-purple-500 italic uppercase leading-none">{event.price}</p>
+                      </div>
+                      <div className="w-[1px] h-6 bg-zinc-800/50" />
+                      <div className="flex flex-col">
+                          <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none mb-1">Inscritos</p>
+                          <div className="flex items-center gap-1 leading-none">
+                              <Users size={10} className="text-zinc-500" />
+                              <span className="text-[10px] font-black text-white">{event.participantsCount}</span>
+                          </div>
+                      </div>
+                  </div>
+                  
+                  <button 
+                    onClick={() => handleJoin(event.id)}
+                    disabled={isInscrito}
+                    className={`h-12 px-6 rounded-full flex items-center justify-center gap-2 transition-all shadow-lg ${
+                        isInscrito 
+                        ? "bg-green-500/20 border border-green-500/30 text-green-500" 
+                        : "bg-purple-600 text-white border border-purple-500 shadow-purple-600/20 hover:scale-105 active:scale-95"
+                    }`}
+                  >
+                        {isInscrito ? (
+                            <><CheckCircle size={16} /> <span className="text-[10px] font-black tracking-widest uppercase">Inscrito</span></>
+                        ) : (
+                            <><span className="text-[10px] font-black tracking-widest uppercase">Inscrever</span> <ChevronRight size={16} strokeWidth={3} /></>
+                        )}
+                  </button>
+               </div>
+            </motion.div>
+          );
+        })}
       </section>
     </div>
   );

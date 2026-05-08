@@ -1,0 +1,58 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ═══ ACTIVITIES ═══
+    match /activities/{activityId} {
+      // Qualquer usuário autenticado pode ler o feed global
+      allow read: if request.auth != null;
+
+      // Só cria se o documento estiver com o userId de quem está enviando
+      // + validação básica de dados (distância válida)
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.userId
+        && request.resource.data.distance is number
+        && request.resource.data.distance >= 0
+        && request.resource.data.distance <= 200;
+
+      // Permite apenas alteração do campo likes (para curtir/descurtir)
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['likes']);
+
+      // Deletar só se o dono for ele mesmo
+      allow delete: if request.auth != null
+        && request.auth.uid == resource.data.userId;
+    }
+
+    // ═══ USERS ═══
+    match /users/{userId} {
+      // Qualquer autenticado pode ler perfis (ranking, feed, etc.)
+      allow read: if request.auth != null;
+
+      // Só gerencia o próprio perfil
+      allow write: if request.auth != null
+        && request.auth.uid == userId;
+    }
+
+    // ═══ PRODUCTS ═══ (somente leitura para usuários)
+    match /products/{productId} {
+      allow read: if request.auth != null;
+      // Escrita bloqueada — dados inseridos via Console / Admin SDK
+      allow write: if false;
+    }
+
+    // ═══ EVENTS ═══
+    match /events/{eventId} {
+      allow read: if request.auth != null;
+
+      // Permite update apenas nos campos de inscrição (participantes)
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['participantsIds', 'participantsCount']);
+
+      // Criação e exclusão bloqueadas — apenas admin
+      allow create, delete: if false;
+    }
+  }
+}

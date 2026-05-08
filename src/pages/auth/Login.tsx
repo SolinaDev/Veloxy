@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock, Loader2, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "@/firebase";
 import { loginComGoogle, loginComMicrosoft, loginComApple } from "@/service/auth";
+import { getUserProfile } from "@/service/database";
 import { toast } from "sonner";
 import logo from "@/assets/logo.jpg";
 
@@ -68,6 +69,20 @@ export default function Login() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast.error("Por favor, digite seu e-mail no campo acima primeiro para redefinir a senha.");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast.success("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erro ao enviar e-mail. Verifique se o e-mail está correto.");
+    }
+  };
+
   const handleSocialLogin = async (provider: "google" | "microsoft" | "apple") => {
     setLoading(true);
     try {
@@ -82,16 +97,18 @@ export default function Login() {
           await loginComApple();
           break;
       }
+      
       toast.success("Login realizado com sucesso!");
 
-      // Verifica se é o primeiro login (perfil não completado)
+      // Verifica se é o primeiro login (perfil não completado) via Firestore
       const loggedUser = auth.currentUser;
-      const profileComplete = localStorage.getItem(
-        `veloxy_profile_complete_${loggedUser?.uid}`
-      );
-
-      if (!profileComplete) {
-        navigate("/complete-profile");
+      if (loggedUser) {
+        const profile = await getUserProfile(loggedUser.uid);
+        if (!profile || !(profile as any).onboarded) {
+          navigate("/complete-profile");
+        } else {
+          navigate("/");
+        }
       } else {
         navigate("/");
       }
@@ -177,7 +194,7 @@ export default function Login() {
             Remember Me
           </label>
 
-          <span className="text-cyan-400 cursor-pointer hover:underline">
+          <span onClick={handleForgotPassword} className="text-cyan-400 cursor-pointer hover:underline">
             Forgot password?
           </span>
         </div>

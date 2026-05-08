@@ -1,24 +1,28 @@
-import { useEffect, useState } from "react";
-import { auth } from "@/firebase";
-import { onAuthStateChanged } from "firebase/auth";
 import { Navigate } from "react-router-dom";
+import { useAuth } from "@/hooks/AuthContext";
+import { Loader2 } from "lucide-react";
 
-function PrivateRoute({ children }: { children: JSX.Element }) {
-  const [user, setUser] = useState<any>(undefined);
+/**
+ * Rota protegida que consome o AuthContext global.
+ * Sem listener próprio — evita duplicação do onAuthStateChanged.
+ */
+function PrivateRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (usuario) => {
-      setUser(usuario);
-    });
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
+        <Loader2 className="animate-spin text-purple-500" size={36} />
+        <p className="text-[10px] font-black text-zinc-500 tracking-[0.2em] uppercase">
+          Carregando...
+        </p>
+      </div>
+    );
+  }
 
-    return () => unsubscribe();
-  }, []);
+  if (!user) return <Navigate to="/login" replace />;
 
-  if (user === undefined) return <p>Carregando...</p>;
-
-  if (!user) return <Navigate to="/login" />;
-
-  return children;
+  return <>{children}</>;
 }
 
 export default PrivateRoute;
