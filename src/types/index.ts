@@ -34,9 +34,15 @@ export interface ActivityData {
   calories?: number;
   type: string;
   likes?: string[];
-  route?: [number, number][];
+  route?: RoutePoint[];
   xpGained?: number;
-  timestamp?: Timestamp;
+  timestamp?: Timestamp | Date | { seconds: number; nanoseconds?: number };
+  createdAtMs?: number;
+}
+
+export interface RoutePoint {
+  lat: number;
+  lng: number;
 }
 
 /** Atividade com ID do Firestore (resultado de uma query) */
@@ -81,6 +87,10 @@ export interface UserStats {
   runsCount: number;
   totalTime: string;
   totalCalories: number;
+  averagePace: string;
+  currentStreak: number;
+  weeklyTotalKm: number;
+  bestActivity: FeedActivity | null;
   lastActivity: FeedActivity | null;
   weeklyData: { day: string; km: number }[];
 }

@@ -6,6 +6,20 @@ import { Award, Zap, Flame, TrendingUp } from "lucide-react";
 import type { FeedActivity } from "@/types";
 import type { Timestamp } from "firebase/firestore";
 
+type TimestampLike = Timestamp | Date | { seconds: number; nanoseconds?: number };
+
+export const toDateSafe = (timestamp: TimestampLike | null | undefined) => {
+  if (!timestamp) return null;
+  if (timestamp instanceof Date) return timestamp;
+  if ("toDate" in timestamp && typeof timestamp.toDate === "function") {
+    return timestamp.toDate();
+  }
+  if ("seconds" in timestamp && typeof timestamp.seconds === "number") {
+    return new Date(timestamp.seconds * 1000);
+  }
+  return null;
+};
+
 export const getActivityBadge = (distance: number): { label: string, icon: React.ReactNode } => {
   if (distance >= 21) return { label: "MEIA MARATONA!", icon: React.createElement(Award, { size: 10 }) };
   if (distance >= 10) return { label: "10K+ KM!",       icon: React.createElement(Flame, { size: 10 }) };
@@ -16,9 +30,9 @@ export const getActivityBadge = (distance: number): { label: string, icon: React
 export const initials = (name: string) =>
   name ? name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) : "??";
 
-export const formatCardDate = (timestamp: Timestamp | null | undefined | any) => {
-  if (!timestamp) return "Agora mesmo";
-  const date = timestamp.toDate ? timestamp.toDate() : new Date();
+export const formatCardDate = (timestamp: TimestampLike | null | undefined, fallbackMs?: number) => {
+  const date = toDateSafe(timestamp) ?? (fallbackMs ? new Date(fallbackMs) : null);
+  if (!date) return "Agora mesmo";
   const relative = formatDistanceToNow(date, { addSuffix: true, locale: ptBR });
   const absolute = format(date, "d MMM · HH:mm", { locale: ptBR });
   return `${relative} · ${absolute}`;

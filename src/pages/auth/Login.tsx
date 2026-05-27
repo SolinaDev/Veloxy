@@ -7,23 +7,27 @@ import {
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
 } from "firebase/auth";
+import { FirebaseError } from "firebase/app";
 
 import { AnimatePresence, motion } from "framer-motion";
 import type { Variants } from "framer-motion";
 
-import { auth } from "@/firebase";
-import { useAuth } from "@/hooks/AuthContext";
+import { auth } from "@/config/firebase";
+import { useAuth } from "@/hooks/useAuth";
 
 import {
-  finalizarLoginGoogleRedirect,
+  finalizarLoginRedirect,
   loginComApple,
+  loginComAppleRedirect,
+  loginComGooglePopup,
   loginComGoogleRedirect,
   loginComMicrosoft,
-} from "@/service/auth";
+  loginComMicrosoftRedirect,
+} from "@/services/auth";
 
 import { toast } from "sonner";
 
-import logo from "@/assets/LogoNova.png";
+import logo from "@/assets/LogoNova-login.png";
 
 import { FcGoogle } from "react-icons/fc";
 import { FaApple, FaMicrosoft } from "react-icons/fa";
@@ -55,43 +59,49 @@ const itemVariants: Variants = {
   },
 };
 
-function getAuthErrorMessage(error: any) {
-  if (error?.code === "auth/popup-closed-by-user") {
+function getAuthErrorCode(error: unknown) {
+  return error instanceof FirebaseError ? error.code : undefined;
+}
+
+function getAuthErrorMessage(error: unknown) {
+  const code = getAuthErrorCode(error);
+
+  if (code === "auth/popup-closed-by-user") {
     return "Login cancelado.";
   }
 
-  if (error?.code === "auth/popup-blocked") {
+  if (code === "auth/popup-blocked") {
     return "Popup bloqueado. O login com Google está usando redirecionamento.";
   }
 
-  if (error?.code === "auth/unauthorized-domain") {
+  if (code === "auth/unauthorized-domain") {
     return "Domínio localhost não autorizado no Firebase.";
   }
 
-  if (error?.code === "auth/operation-not-allowed") {
+  if (code === "auth/operation-not-allowed") {
     return "Esse provedor de login não está ativado no Firebase.";
   }
 
-  if (error?.code === "auth/network-request-failed") {
+  if (code === "auth/network-request-failed") {
     return "Erro de rede. Desative Brave Shields/AdBlock para localhost.";
   }
 
-  if (error?.code === "auth/user-not-found") {
+  if (code === "auth/user-not-found") {
     return "Usuário não encontrado.";
   }
 
   if (
-    error?.code === "auth/wrong-password" ||
-    error?.code === "auth/invalid-credential"
+    code === "auth/wrong-password" ||
+    code === "auth/invalid-credential"
   ) {
     return "Email ou senha incorretos.";
   }
 
-  if (error?.code === "auth/invalid-email") {
+  if (code === "auth/invalid-email") {
     return "Email inválido.";
   }
 
-  return `Erro ao fazer login: ${error?.code || "erro desconhecido"}`;
+  return `Erro ao fazer login: ${code || "erro desconhecido"}`;
 }
 
 export default function Login() {
@@ -104,25 +114,30 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [verificandoRedirect, setVerificandoRedirect] = useState(true);
 
-  useEffect(() => {
-    async function verificarRetornoGoogle() {
-      try {
-        const googleUser = await finalizarLoginGoogleRedirect();
+  const shouldUseRedirectFallback = (error: unknown) => {
+    const code = getAuthErrorCode(error);
+    return code === "auth/popup-blocked" || code === "auth/cancelled-popup-request";
+  };
 
-        if (googleUser) {
-          toast.success("Login com Google realizado!");
+  useEffect(() => {
+    async function verificarRetornoOAuth() {
+      try {
+        const redirectUser = await finalizarLoginRedirect();
+
+        if (redirectUser) {
+          toast.success("Login realizado!");
           navigate("/feed", { replace: true });
           return;
         }
-      } catch (error: any) {
-        console.error("Erro no retorno do Google:", error);
+      } catch (error: unknown) {
+        console.error("Erro no retorno do login social:", error);
         toast.error(getAuthErrorMessage(error));
       } finally {
         setVerificandoRedirect(false);
       }
     }
 
-    verificarRetornoGoogle();
+    verificarRetornoOAuth();
   }, [navigate]);
 
   useEffect(() => {
@@ -147,7 +162,7 @@ export default function Login() {
       toast.success("Login realizado com sucesso!");
 
       navigate("/feed", { replace: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erro completo no login:", error);
       toast.error(getAuthErrorMessage(error));
     } finally {
@@ -159,8 +174,16 @@ export default function Login() {
     try {
       setLoading(true);
 
-      await loginComGoogleRedirect();
-    } catch (error: any) {
+      await loginComGooglePopup();
+
+      toast.success("Login com Google realizado!");
+      navigate("/feed", { replace: true });
+    } catch (error: unknown) {
+      if (shouldUseRedirectFallback(error)) {
+        await loginComGoogleRedirect();
+        return;
+      }
+
       console.error("Erro completo Google:", error);
       toast.error(getAuthErrorMessage(error));
       setLoading(false);
@@ -176,7 +199,12 @@ export default function Login() {
       toast.success("Login com Microsoft realizado!");
 
       navigate("/feed", { replace: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      if (shouldUseRedirectFallback(error)) {
+        await loginComMicrosoftRedirect();
+        return;
+      }
+
       console.error("Erro completo Microsoft:", error);
       toast.error(getAuthErrorMessage(error));
     } finally {
@@ -193,7 +221,12 @@ export default function Login() {
       toast.success("Login com Apple realizado!");
 
       navigate("/feed", { replace: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      if (shouldUseRedirectFallback(error)) {
+        await loginComAppleRedirect();
+        return;
+      }
+
       console.error("Erro completo Apple:", error);
       toast.error(getAuthErrorMessage(error));
     } finally {
@@ -211,7 +244,7 @@ export default function Login() {
       await sendPasswordResetEmail(auth, email);
 
       toast.success("Email de recuperação enviado!");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erro ao recuperar senha:", error);
       toast.error(getAuthErrorMessage(error));
     }

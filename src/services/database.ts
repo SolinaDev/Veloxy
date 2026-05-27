@@ -17,27 +17,99 @@ import {
   setDoc,
   getDoc,
   increment,
+  writeBatch,
 } from "firebase/firestore";
-import { db } from "@/firebase";
+import { db } from "@/config/firebase";
 import { calculateXP, getLevelFromXP } from "@/lib/gamification";
+import { toDateSafe } from "@/lib/feed-utils";
 import type { UserProfile, ActivityData, FeedActivity, Product, RunningEvent, UserStats } from "@/types";
 
 // Re-exportar types para quem já importava direto daqui
 export type { UserProfile, ActivityData, FeedActivity, Product, RunningEvent, UserStats };
 
+function removeUndefinedFields<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map(removeUndefinedFields) as T;
+  }
 
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([, fieldValue]) => fieldValue !== undefined)
+        .map(([key, fieldValue]) => [key, removeUndefinedFields(fieldValue)])
+    ) as T;
+  }
+
+  return value;
+}
+
+function toFirestoreTimestamp(value: FeedActivity["timestamp"]) {
+  if (!value) return null;
+  if (value instanceof Date) return Timestamp.fromDate(value);
+  if ("toDate" in value && typeof value.toDate === "function") return value;
+  if ("seconds" in value && typeof value.seconds === "number") {
+    return Timestamp.fromMillis(value.seconds * 1000);
+  }
+  return null;
+}
+
+function normalizeActivity(docId: string, data: Record<string, unknown>): FeedActivity {
+  return {
+    id: docId,
+    ...data,
+    createdAtMs: typeof data.createdAtMs === "number" ? data.createdAtMs : undefined,
+  } as FeedActivity;
+}
+
+function formatPace(totalSeconds: number, totalKm: number) {
+  if (totalKm <= 0 || totalSeconds <= 0) return "0'00\"";
+  const secondsPerKm = Math.round(totalSeconds / totalKm);
+  const minutes = Math.floor(secondsPerKm / 60);
+  const seconds = secondsPerKm % 60;
+  return `${minutes}'${seconds.toString().padStart(2, "0")}"`;
+}
+
+function dayKeyFromDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function calculateCurrentStreak(activeDays: Set<string>) {
+  if (activeDays.size === 0) return 0;
+
+  const cursor = new Date();
+  let key = dayKeyFromDate(cursor);
+
+  if (!activeDays.has(key)) {
+    cursor.setDate(cursor.getDate() - 1);
+    key = dayKeyFromDate(cursor);
+  }
+
+  let streak = 0;
+  while (activeDays.has(key)) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+    key = dayKeyFromDate(cursor);
+  }
+
+  return streak;
+}
 
 // Salvar uma nova atividade (corrida)
 export const saveActivity = async (data: ActivityData) => {
   try {
     const xpGained = calculateXP(data.distance, data.durationSeconds);
-    
-    const docRef = await addDoc(collection(db, "activities"), {
+    const activityData = removeUndefinedFields({
       ...data,
       xpGained,
       likes: [],
+      createdAtMs: Date.now(),
       timestamp: serverTimestamp()
     });
+    
+    const docRef = await addDoc(collection(db, "activities"), activityData);
 
     // Atualizar o perfil do usuário com o novo XP e KM
     await updateUserXP(data.userId, xpGained, data.distance, data.userName, data.userAvatar);
@@ -125,6 +197,31 @@ export const getGlobalRanking = async (limitCount = 10): Promise<UserProfile[]> 
   }
 };
 
+export const deleteUserActivities = async (userId: string) => {
+  const q = query(collection(db, "activities"), where("userId", "==", userId));
+  const snapshot = await getDocs(q);
+
+  const batch = writeBatch(db);
+  snapshot.docs.forEach((activityDoc) => {
+    batch.delete(activityDoc.ref);
+  });
+
+  batch.set(
+    doc(db, "users", userId),
+    {
+      totalXP: 0,
+      monthlyKm: 0,
+      level: "Iniciante",
+      lastUpdated: serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  await batch.commit();
+
+  return snapshot.size;
+};
+
 // Escutar as N atividades mais recentes em tempo real
 export const subscribeToFeed = (
   callback: (activities: FeedActivity[]) => void,
@@ -137,10 +234,7 @@ export const subscribeToFeed = (
   );
 
   return onSnapshot(q, (snapshot) => {
-    const activities = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const activities = snapshot.docs.map(doc => normalizeActivity(doc.id, doc.data()));
     callback(activities);
   }, (error) => {
     console.error("Erro no listener do feed:", error);
@@ -149,18 +243,21 @@ export const subscribeToFeed = (
 
 // Buscar atividades mais antigas (paginação cursor-based)
 export const loadMoreActivities = async (
-  lastTimestamp: Timestamp,
+  lastTimestamp: FeedActivity["timestamp"],
   limitCount = 10
 ): Promise<FeedActivity[]> => {
   try {
+    const cursor = toFirestoreTimestamp(lastTimestamp);
+    if (!cursor) return [];
+
     const q = query(
       collection(db, "activities"),
       orderBy("timestamp", "desc"),
-      startAfter(lastTimestamp),
+      startAfter(cursor),
       limit(limitCount)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return snapshot.docs.map((d) => normalizeActivity(d.id, d.data()));
   } catch (error) {
     console.error("Erro ao carregar mais atividades:", error);
     return [];
@@ -195,6 +292,8 @@ export const getUserStats = async (userId: string) => {
     let totalSeconds = 0;
     let totalCalories = 0;
     let lastActivity: (ActivityData & { id: string }) | null = null;
+    let bestActivity: FeedActivity | null = null;
+    const activeDays = new Set<string>();
 
     // Montar mapa dos últimos 7 dias (YYYY-MM-DD -> km)
     const weekMap: Record<string, number> = {};
@@ -207,7 +306,9 @@ export const getUserStats = async (userId: string) => {
 
     querySnapshot.forEach((docSnap) => {
       const data = docSnap.data() as ActivityData;
-      totalKm += Number(data.distance || 0);
+      const activity = normalizeActivity(docSnap.id, docSnap.data());
+      const distance = Number(data.distance || 0);
+      totalKm += distance;
       totalSeconds += Number(data.durationSeconds || 0);
       totalCalories += Number(data.calories || 0);
       runsCount += 1;
@@ -217,11 +318,17 @@ export const getUserStats = async (userId: string) => {
         lastActivity = { id: docSnap.id, ...data };
       }
 
+      if (!bestActivity || distance > bestActivity.distance) {
+        bestActivity = activity;
+      }
+
       // Acumular km no dia correto para o gráfico semanal
-      if (data.timestamp) {
-        const dateKey = data.timestamp.toDate().toISOString().slice(0, 10);
+      if (data.timestamp || typeof data.createdAtMs === "number") {
+        const activityDate = toDateSafe(data.timestamp) ?? new Date(data.createdAtMs || 0);
+        const dateKey = dayKeyFromDate(activityDate);
+        activeDays.add(dateKey);
         if (dateKey in weekMap) {
-          weekMap[dateKey] += Number(data.distance || 0);
+          weekMap[dateKey] += distance;
         }
       }
     });
@@ -237,12 +344,17 @@ export const getUserStats = async (userId: string) => {
       const d = new Date(dateStr + "T12:00:00");
       return { day: DAY_LABELS[d.getDay()], km: Number(km.toFixed(2)) };
     });
+    const weeklyTotalKm = weeklyData.reduce((sum, day) => sum + day.km, 0);
 
     return {
       totalKm: totalKm.toFixed(1),
       runsCount,
       totalTime: formattedTime,
       totalCalories: Math.round(totalCalories),
+      averagePace: formatPace(totalSeconds, totalKm),
+      currentStreak: calculateCurrentStreak(activeDays),
+      weeklyTotalKm: Number(weeklyTotalKm.toFixed(2)),
+      bestActivity,
       lastActivity,
       weeklyData,
     };
@@ -253,6 +365,10 @@ export const getUserStats = async (userId: string) => {
       runsCount: 0,
       totalTime: "0m",
       totalCalories: 0,
+      averagePace: "0'00\"",
+      currentStreak: 0,
+      weeklyTotalKm: 0,
+      bestActivity: null,
       lastActivity: null,
       weeklyData: [],
     };
@@ -520,4 +636,3 @@ export const seedEvents = async () => {
     console.error("Erro no seeding de eventos:", error);
   }
 };
-

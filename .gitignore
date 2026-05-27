@@ -28,6 +28,7 @@ dist-ssr
 .env
 
 # Build cache
+.firebase
 *.tsbuildinfo
 bun.lock
 

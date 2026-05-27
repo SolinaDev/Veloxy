@@ -12,9 +12,10 @@ import {
   Trash2,
   CheckCircle,
   TrendingUp,
+  Loader2,
 } from "lucide-react";
-import { useAuth } from "@/hooks/AuthContext";
-import { getUserStats, getProducts, Product } from "@/service/database";
+import { useAuth } from "@/hooks/useAuth";
+import { getUserStats, getProducts, Product } from "@/services/database";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -43,6 +44,7 @@ const CartDrawer = ({
   onQty,
   onRemove,
 }: {
+  cart: CartItem[];
   onClose: () => void;
   onQty: (id: string, delta: number) => void;
   onRemove: (id: string) => void;

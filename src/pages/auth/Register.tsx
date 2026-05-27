@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { User, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth } from "@/firebase";
+import { FirebaseError } from "firebase/app";
+import { auth } from "@/config/firebase";
 import { toast } from "sonner";
-import logo from "@/assets/LogoNova.png";
+import logo from "@/assets/LogoNova-login.png";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -57,13 +58,14 @@ export default function Register() {
 
       toast.success(`Bem-vindo, ${username}! Conta criada com sucesso.`);
       navigate("/");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      if (err.code === "auth/email-already-in-use") {
+      const code = err instanceof FirebaseError ? err.code : undefined;
+      if (code === "auth/email-already-in-use") {
         toast.error("Este email já está em uso");
-      } else if (err.code === "auth/invalid-email") {
+      } else if (code === "auth/invalid-email") {
         toast.error("Email inválido");
-      } else if (err.code === "auth/weak-password") {
+      } else if (code === "auth/weak-password") {
         toast.error("Senha muito fraca. Use pelo menos 6 caracteres");
       } else {
         toast.error("Erro ao criar conta. Tente novamente.");

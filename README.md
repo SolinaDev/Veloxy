@@ -1,164 +1,112 @@
-*Veloxy App*
+# Veloxy
 
-Train smarter. Run further. Stay connected.
+Aplicativo gamificado de corrida que combina tracking de atividades, comunidade, eventos e recompensas ligadas ao desempenho do corredor.
 
-Uma plataforma moderna de corrida que combina tracking de atividades,
-gamificação e um ecossistema de e-commerce inteligente, incentivando usuários a
-melhorarem seu desempenho através de recompensas reais.
+## Visao Geral
 
-## 👁️ *Visão*
+O Veloxy foi criado para transformar treinos em uma experiencia mais social e orientada por dados. A aplicacao permite registrar corridas, acompanhar estatisticas, evoluir em niveis, participar de desafios e acessar beneficios dentro de uma loja integrada.
 
-Transformar a corrida em uma experiência engajadora,social e orientada por dados, 
-conectando pessoas e incentivando hábitos saudáveis através da tecnologia.
+## Funcionalidades
 
-## 🛒 *Produto*
+- Autenticacao com e-mail/senha e provedores sociais
+- Feed de atividades da comunidade
+- Registro de corrida com distancia, tempo, ritmo e calorias
+- Dashboard com resumo de desempenho
+- Sistema de XP, niveis e ranking
+- Eventos de corrida por localidade
+- Marketplace com descontos baseados em performance
+- Perfil do usuario com foto e estatisticas
 
-O Running App vai oferecer uma experiência completa para corredores:
+## Stack
 
-- Monitoramento de corridas em tempo real
-- Insights de desempenho
-- Sistema de gamificação
-- Feed social de atividades
-- E-commerce com descontos baseados no desempenho do corredo
+- React 18
+- Vite
+- TypeScript
+- Tailwind CSS
+- shadcn/ui + Radix UI
+- React Router
+- TanStack Query
+- Firebase Authentication
+- Cloud Firestore
+- Firebase Storage
+- Vitest
 
-## 💡 *Diferencial*
+## Estrutura
 
-O grande diferencial da plataforma é a integração entre atividade física e benefícios reais, portanto 
-quanto mais o usuário corre, maior o seu desempenho e maiores são seus descontos na loja.
-
-Como funciona:
-
-Usuários acumulam:
-- Km percorridos
-- Frequência de treinos
-- Pontos e nível
-
-O sistema converte isso em:
-
-- Descontos progressivos
-- Recompensas exclusivas
-- Benefícios na loja
-
-Exemplo:
-
-- 50km/mês → 5% de desconto
-- 100km/mês → 10% de desconto
-- 200km/mês → 20% + bônus
-
-## *Features*
-
-## 🔒 Autenticação
-- Login com Email/Senha
-- Login social (Google, Microsoft, Apple)
-- Persistência de sessão segura
-
-## 🏃 Tracking de Corridas
-- Registro de distância, tempo e ritmo
-- Estrutura pronta para GPS
-- Histórico de atividades (em evolução)
-
-## 📊 Dashboard Inteligente
-- Estatísticas personalizadas
-- Evolução do desempenho
-- Resumo de atividades
-  
-## 🏆 Gamificação
-- Sistema de pontos
-- Níveis e progressão
-- Conquistas
-
-## 🛜 Social
-- Feed de atividades
-- Compartilhamento de corridas
-
-Marketplace Inteligente
-- Produtos esportivos
-- Sistema de descontos dinâmico
-- Integração com performance do usuário
-
-## 🛠️ *Arquitetura*
-
-Aplicação construída com foco em:
-- Escalabilidade
-- Separação de responsabilidades
-- Experiência do usuário
-- Integração entre módulos (fitness + e-commerce)
-
-## 🔧 *Stack Tecnológica*
-
-Frontend: React + Vite
-
-Estilização: TailwindCSS
-
-Animações: Framer Motion
-
-Roteamento: React Router
-
-Data Fetching: React Query
-
-Backend: Firebase
-- Authentication
-- Firestore
-
-## 🗂️ *Estrutura do Projeto*
-
+```text
 src/
+  assets/       Imagens e arquivos estaticos
+  components/   Componentes reutilizaveis
+  config/       Configuracoes externas, como Firebase
+  hooks/        Contextos e hooks React
+  lib/          Utilitarios e regras de negocio
+  pages/        Telas da aplicacao
+  services/     Operacoes de autenticacao, banco e storage
+  test/         Setup e testes
+  types/        Tipos compartilhados
+```
 
- ├── components/
- 
- ├── hooks/
- 
- ├── lib/
- 
- ├── pages/
- 
- │    ├── auth/
- 
- │    └── app/
- 
- └── App.tsx
+Mais detalhes em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-## 💻 *Setup*
-- git clone https://github.com/seu-usuario/seu-repo.git
-- cd seu-repo
-- npm install
-- npm run dev
+## Como Rodar
 
-## 🗺️ *Roadmap*
+1. Instale as dependencias:
 
-[X] Autenticação completa
+```bash
+npm install
+```
 
-[X] Estrutura base do app
+2. Crie o arquivo `.env.local` com base no `.env.example`.
 
-[X] Interface inicial
+3. Inicie o ambiente de desenvolvimento:
 
-[ ] Tracking real com GPS
+```bash
+npm run dev
+```
 
-[ ] Sistema de pontos
+4. Acesse o endereco exibido no terminal.
 
-[ ] Engine de descontos baseada em performance
+## Scripts
 
-[ ] Dashboard com dados reais
+```bash
+npm run dev          # inicia o app localmente
+npm run build        # gera build de producao
+npm run preview      # previsualiza o build
+npm run lint         # executa analise de codigo
+npm run test         # executa testes
+npm run test:watch   # executa testes em modo observacao
+```
 
-[ ] Feed social
+## Variaveis de Ambiente
 
-[ ] Marketplace funcional
+```text
+VITE_FIREBASE_API_KEY
+VITE_FIREBASE_AUTH_DOMAIN
+VITE_FIREBASE_PROJECT_ID
+VITE_FIREBASE_STORAGE_BUCKET
+VITE_FIREBASE_MESSAGING_SENDER_ID
+VITE_FIREBASE_APP_ID
+```
 
-## 🎯 *Objetivo*
+## Roadmap
 
-Criar uma aplicação que una:
+- [x] Autenticacao
+- [x] Estrutura base do app
+- [x] Feed e dashboard inicial
+- [x] Gamificacao base
+- [ ] Tracking real com GPS
+- [ ] Engine completa de descontos
+- [ ] Marketplace funcional com checkout
+- [ ] Historico avancado de atividades
 
-- Fitness
-- Tecnologia
-- Engajamento
-- Monetização inteligente
+## Equipe
 
-## 👨‍🎓 *Autores*
 - Cauã Morais Lima
-- João Vitor da Silva Santos
+- Joao Vitor da Silva Santos
 - Marcelo Henrique Martins de Andrade
 - Raphael Henrique Paiva Solina
 
-## 🎓 *Orientadores*
+## Orientadores
+
 - Renato de Mattos Onofre
 - Douglas de Cassio Quinzani Gaspar

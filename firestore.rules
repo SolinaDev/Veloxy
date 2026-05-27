@@ -1,58 +1,185 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
 
-    // ═══ ACTIVITIES ═══
-    match /activities/{activityId} {
-      // Qualquer usuário autenticado pode ler o feed global
-      allow read: if request.auth != null;
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
 
-      // Só cria se o documento estiver com o userId de quem está enviando
-      // + validação básica de dados (distância válida)
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.userId
+    function hasOnlyActivityFields() {
+      return request.resource.data.keys().hasOnly([
+        'userId',
+        'userName',
+        'userAvatar',
+        'distance',
+        'time',
+        'durationSeconds',
+        'pace',
+        'calories',
+        'type',
+        'route',
+        'xpGained',
+        'likes',
+        'timestamp',
+        'createdAtMs'
+      ]);
+    }
+
+    function validActivityCreate() {
+      return hasOnlyActivityFields()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.userName is string
+        && request.resource.data.userName.size() > 0
+        && request.resource.data.userName.size() <= 80
+        && (!('userAvatar' in request.resource.data)
+          || request.resource.data.userAvatar == null
+          || request.resource.data.userAvatar is string)
         && request.resource.data.distance is number
         && request.resource.data.distance >= 0
-        && request.resource.data.distance <= 200;
+        && request.resource.data.distance <= 200
+        && request.resource.data.durationSeconds is number
+        && request.resource.data.durationSeconds > 0
+        && request.resource.data.durationSeconds <= 86400
+        && request.resource.data.time is string
+        && request.resource.data.time.size() <= 16
+        && request.resource.data.pace is string
+        && request.resource.data.pace.size() <= 16
+        && request.resource.data.calories is number
+        && request.resource.data.calories >= 0
+        && request.resource.data.calories <= 50000
+        && request.resource.data.type == 'RUNNING'
+        && request.resource.data.likes is list
+        && request.resource.data.likes.size() == 0
+        && (!('route' in request.resource.data)
+          || (request.resource.data.route is list
+            && request.resource.data.route.size() <= 5000))
+        && (!('xpGained' in request.resource.data)
+          || (request.resource.data.xpGained is number
+            && request.resource.data.xpGained >= 0
+            && request.resource.data.xpGained <= 100000))
+        && (!('createdAtMs' in request.resource.data)
+          || request.resource.data.createdAtMs is number);
+    }
 
-      // Permite apenas alteração do campo likes (para curtir/descurtir)
-      allow update: if request.auth != null
+    function validLikeUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+        && request.resource.data.likes is list
+        && resource.data.likes is list
+        && request.resource.data.likes.size() <= 5000
+        && (
+          (
+            !(request.auth.uid in resource.data.likes)
+            && request.auth.uid in request.resource.data.likes
+            && request.resource.data.likes.size() == resource.data.likes.size() + 1
+          )
+          || (
+            request.auth.uid in resource.data.likes
+            && !(request.auth.uid in request.resource.data.likes)
+            && request.resource.data.likes.size() == resource.data.likes.size() - 1
+          )
+        );
+    }
+
+    function hasOnlyUserFields() {
+      return request.resource.data.keys().hasOnly([
+        'displayName',
+        'photoURL',
+        'totalXP',
+        'monthlyKm',
+        'monthlyKmMonth',
+        'level',
+        'bio',
+        'location',
+        'onboarded',
+        'enrolledEvents',
+        'createdAt',
+        'lastUpdated'
+      ]);
+    }
+
+    function optionalString(field, maxSize) {
+      return !(field in request.resource.data)
+        || request.resource.data[field] == null
+        || (request.resource.data[field] is string
+          && request.resource.data[field].size() <= maxSize);
+    }
+
+    function optionalNumber(field, minValue, maxValue) {
+      return !(field in request.resource.data)
+        || (request.resource.data[field] is number
+          && request.resource.data[field] >= minValue
+          && request.resource.data[field] <= maxValue);
+    }
+
+    function validUserWrite(userId) {
+      return isOwner(userId)
+        && hasOnlyUserFields()
+        && optionalString('displayName', 80)
+        && optionalString('photoURL', 1000)
+        && optionalString('monthlyKmMonth', 10)
+        && optionalString('level', 40)
+        && optionalString('bio', 240)
+        && optionalString('location', 120)
+        && optionalNumber('totalXP', 0, 1000000)
+        && optionalNumber('monthlyKm', 0, 5000)
+        && (!('onboarded' in request.resource.data)
+          || request.resource.data.onboarded is bool)
+        && (!('enrolledEvents' in request.resource.data)
+          || (request.resource.data.enrolledEvents is list
+            && request.resource.data.enrolledEvents.size() <= 100));
+    }
+
+    function validEventJoin() {
+      return signedIn()
         && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['likes']);
-
-      // Deletar só se o dono for ele mesmo
-      allow delete: if request.auth != null
-        && request.auth.uid == resource.data.userId;
+          .hasOnly(['participantsIds', 'participantsCount'])
+        && request.resource.data.participantsIds is list
+        && request.resource.data.participantsCount is number
+        && request.resource.data.participantsIds.size() <= 10000
+        && request.auth.uid in request.resource.data.participantsIds
+        && (
+          (
+            !('participantsIds' in resource.data)
+            && request.resource.data.participantsIds.size() == 1
+          )
+          || (
+            resource.data.participantsIds is list
+            && !(request.auth.uid in resource.data.participantsIds)
+            && request.resource.data.participantsIds.size() == resource.data.participantsIds.size() + 1
+          )
+        )
+        && request.resource.data.participantsCount == resource.data.participantsCount + 1;
     }
 
-    // ═══ USERS ═══
+    match /activities/{activityId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && validActivityCreate();
+      allow update: if signedIn() && validLikeUpdate();
+      allow delete: if signedIn() && request.auth.uid == resource.data.userId;
+    }
+
     match /users/{userId} {
-      // Qualquer autenticado pode ler perfis (ranking, feed, etc.)
-      allow read: if request.auth != null;
-
-      // Só gerencia o próprio perfil
-      allow write: if request.auth != null
-        && request.auth.uid == userId;
+      allow read: if signedIn();
+      allow create, update: if validUserWrite(userId);
+      allow delete: if false;
     }
 
-    // ═══ PRODUCTS ═══ (somente leitura para usuários)
     match /products/{productId} {
-      allow read: if request.auth != null;
-      // Escrita bloqueada — dados inseridos via Console / Admin SDK
+      allow read: if signedIn();
       allow write: if false;
     }
 
-    // ═══ EVENTS ═══
     match /events/{eventId} {
-      allow read: if request.auth != null;
-
-      // Permite update apenas nos campos de inscrição (participantes)
-      allow update: if request.auth != null
-        && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['participantsIds', 'participantsCount']);
-
-      // Criação e exclusão bloqueadas — apenas admin
+      allow read: if signedIn();
+      allow update: if validEventJoin();
       allow create, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

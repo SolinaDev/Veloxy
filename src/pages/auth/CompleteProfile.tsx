@@ -2,13 +2,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { updateProfile } from "firebase/auth";
-import { db } from "@/firebase";
-import { useAuth } from "@/hooks/AuthContext";
+import { db } from "@/config/firebase";
+import { useAuth } from "@/hooks/useAuth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { toast } from "sonner";
 import { User, MapPin, Pencil, Loader2, ChevronRight, Camera } from "lucide-react";
-import logo from "@/assets/LogoNova.png";
-import { uploadAvatar } from "@/service/storage";
+import logo from "@/assets/LogoNova-login.png";
+import { uploadAvatar } from "@/services/storage";
 
 export default function CompleteProfile() {
   const navigate = useNavigate();
@@ -120,7 +120,6 @@ export default function CompleteProfile() {
                </span>
             )}
             
-            {/* Overlay */}
             <div className={`absolute inset-0 bg-black/60 flex items-center justify-center transition-opacity ${previewUrl ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
                <Camera size={24} className="text-white opacity-90" />
             </div>

@@ -24,19 +24,21 @@ const BottomNav = () => {
   if (location.pathname === "/run") return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-t border-zinc-800/50 safe-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-[1000] premium-nav safe-bottom">
       <div className="flex items-center justify-around px-2 pt-3 pb-2 max-w-lg mx-auto relative">
         {tabs.map((tab, idx) => {
           if (tab.path === "RECORD") {
             return (
               <div key={idx} className="relative -top-6">
                 <motion.button
-                  whileHover={{ scale: 1.1 }}
+                  initial={{ y: 12, opacity: 0, scale: 0.9 }}
+                  animate={{ y: 0, opacity: 1, scale: 1 }}
+                  whileHover={{ scale: 1.1, rotate: -4 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => navigate("/run")}
-                  className="w-14 h-14 rounded-full bg-purple-600 flex items-center justify-center shadow-[0_0_20px_rgba(147,51,234,0.5)] border-4 border-black text-white"
+                  className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-[0_0_28px_rgba(147,51,234,0.55)] border-4 border-black text-white animate-soft-glow"
                 >
-                  <div className="w-4 h-4 rounded-full bg-white animate-pulse" />
+                  <div className="w-4 h-4 rounded-full bg-white shadow-[0_0_16px_rgba(255,255,255,0.9)] animate-pulse" />
                 </motion.button>
               </div>
             );
@@ -47,13 +49,18 @@ const BottomNav = () => {
             <NavLink
               key={tab.path}
               to={tab.path}
-              className="flex flex-col items-center gap-1 px-4 py-1 relative group"
+              className="flex flex-col items-center gap-1 px-4 py-1 relative group pressable-premium"
             >
-              <tab.icon
-                size={22}
-                className={isActive ? "text-purple-500" : "text-zinc-500 group-hover:text-zinc-300 transition-colors"}
-                strokeWidth={isActive ? 2.5 : 2}
-              />
+              <motion.div
+                animate={isActive ? { y: -2, scale: 1.08 } : { y: 0, scale: 1 }}
+                transition={{ type: "spring", stiffness: 420, damping: 24 }}
+              >
+                <tab.icon
+                  size={22}
+                  className={isActive ? "text-purple-500" : "text-zinc-500 group-hover:text-zinc-300 transition-colors"}
+                  strokeWidth={isActive ? 2.5 : 2}
+                />
+              </motion.div>
               <span
                 className={`text-[9px] font-black tracking-tighter ${
                   isActive ? "text-purple-500" : "text-zinc-500 group-hover:text-zinc-300"

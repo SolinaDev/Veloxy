@@ -1,7 +1,7 @@
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { storage, auth, db } from "@/firebase";
+import { storage, auth, db } from "@/config/firebase";
 
 /**
  * Faz upload do arquivo para o Firebase Storage e atualiza os perfis.
@@ -14,7 +14,7 @@ export async function uploadAvatar(file: File, uid: string): Promise<string> {
 
   // Nome único via Timestamp para quebrar o cache de browser (senão o browser mostra a foto velha)
   const fileExt = file.name.split('.').pop() || 'png';
-  const filePath = `avatars/${uid}_${Date.now()}.${fileExt}`;
+  const filePath = `avatars/${uid}/avatar_${Date.now()}.${fileExt}`;
   
   const storageRef = ref(storage, filePath);
 

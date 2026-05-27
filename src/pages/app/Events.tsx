@@ -1,17 +1,22 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, MapPin, Users, ChevronRight, Bell, Tag, Clock, Loader2, CheckCircle } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
-import { useAuth } from "@/hooks/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   getEvents, 
   getUserEvents, 
   joinEvent, 
   getUserProfile,
   RunningEvent 
-} from "@/service/database";
+} from "@/services/database";
 import { toast } from "sonner";
+import { toDateSafe } from "@/lib/feed-utils";
 
 const categories = ["Próximos", "Inscrito", "Passados"];
+
+const getEventDate = (event: RunningEvent) => {
+    return toDateSafe(event.timestamp) ?? new Date(0);
+};
 
 const Events = () => {
     const { user } = useAuth();
@@ -32,7 +37,7 @@ const Events = () => {
                 const profile = await getUserProfile(user.uid);
                 const city = profile?.location || "";
                 setUserCity(city);
-                setEnrolledIds((profile as any)?.enrolledEvents || []);
+                setEnrolledIds(profile?.enrolledEvents || []);
 
                 // Buscar todos os eventos ordenados/filtrados por cidade
                 const allEvents = await getEvents(city);
@@ -68,7 +73,7 @@ const Events = () => {
             return events.filter(e => enrolledIds.includes(e.id));
         }
         if (activeTab === "Passados") {
-            return events.filter(e => new Date(e.timestamp?.seconds * 1000) < new Date());
+            return events.filter(e => getEventDate(e) < new Date());
         }
         return events; // Próximos
     }, [events, activeTab, enrolledIds]);

@@ -20,12 +20,14 @@ const ActivityCard = ({ item, userUid, idx, onLike }: ActivityCardProps) => {
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: Math.min(idx * 0.08, 0.4) }}
-      className="bg-zinc-900/30 border border-zinc-800/50 rounded-[2.5rem] overflow-hidden"
+      whileHover={{ y: -3 }}
+      transition={{ delay: Math.min(idx * 0.08, 0.4), type: "spring", stiffness: 260, damping: 24 }}
+      className="premium-surface premium-line rounded-[2.5rem] overflow-hidden animate-fade-up"
+      style={{ animationDelay: `${Math.min(idx * 70, 360)}ms` }}
     >
       <div className="flex items-center justify-between px-5 pt-5 pb-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full ring-2 ring-purple-500/50 p-0.5 bg-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0">
+          <div className="w-11 h-11 rounded-full ring-2 ring-purple-500/50 p-0.5 bg-gradient-to-br from-purple-500/30 to-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-[0_0_22px_rgba(147,51,234,0.22)]">
             {item.userAvatar ? (
               <img src={item.userAvatar} alt={item.userName} className="w-full h-full rounded-full object-cover" />
             ) : (
@@ -35,21 +37,26 @@ const ActivityCard = ({ item, userUid, idx, onLike }: ActivityCardProps) => {
           <div>
             <h4 className="font-bold text-sm leading-tight">{item.userName}</h4>
             <p className="text-[10px] text-zinc-500 mt-0.5">
-              {formatCardDate(item.timestamp)} · <span className="text-purple-400">{item.type === "RUNNING" ? "Corrida" : item.type}</span>
+              {formatCardDate(item.timestamp, item.createdAtMs)} · <span className="text-purple-400">{item.type === "RUNNING" ? "Corrida" : item.type}</span>
             </p>
           </div>
         </div>
         {item.userId === userUid && (
-          <span className="text-[8px] font-black text-purple-500/60 uppercase tracking-widest border border-purple-500/20 px-2 py-0.5 rounded-full">
+          <span className="text-[8px] font-black text-purple-400 uppercase tracking-widest border border-purple-500/25 bg-purple-500/10 px-2 py-0.5 rounded-full">
             Você
           </span>
         )}
       </div>
 
-      <div className="relative mx-3 aspect-[16/8] rounded-[1.8rem] overflow-hidden mb-1">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.97 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: Math.min(idx * 0.08 + 0.12, 0.5), duration: 0.35 }}
+        className="relative mx-3 aspect-[16/8] rounded-[1.8rem] overflow-hidden mb-1 border border-white/10 shadow-inner"
+      >
         <RouteSVGPreview route={item.route} uid={item.id} />
         <div className="absolute bottom-3 left-4">
-          <div className="bg-black/60 backdrop-blur-md border border-purple-500/30 px-3 py-1 rounded-full flex items-center gap-1.5">
+          <div className="bg-black/60 backdrop-blur-md border border-purple-500/30 px-3 py-1 rounded-full flex items-center gap-1.5 shimmer-sweep">
             <span className="text-purple-400">{badge.icon}</span>
             <span className="text-[9px] font-black uppercase tracking-widest text-white">{badge.label}</span>
           </div>
@@ -58,9 +65,9 @@ const ActivityCard = ({ item, userUid, idx, onLike }: ActivityCardProps) => {
           <span className="font-display font-black text-white text-lg leading-none">{Number(item.distance).toFixed(2)}</span>
           <span className="text-[9px] font-black text-purple-400 ml-0.5">km</span>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="grid grid-cols-3 divide-x divide-zinc-800 mx-3 my-3 bg-zinc-900/60 py-4 rounded-2xl border border-zinc-800/30">
+      <div className="grid grid-cols-3 divide-x divide-zinc-800 mx-3 my-3 premium-panel py-4 rounded-2xl">
         {[
           { label: "Ritmo", value: item.pace, unit: "/km" },
           { label: "Tempo", value: item.time, unit: "" },
@@ -78,8 +85,12 @@ const ActivityCard = ({ item, userUid, idx, onLike }: ActivityCardProps) => {
 
       <div className="flex items-center justify-between px-5 pb-5 pt-1">
         <div className="flex items-center gap-5">
-          <button onClick={() => onLike(item.id, item.likes)} className="flex items-center gap-1.5 group outline-none active:scale-95 transition-transform">
-            <motion.div whileTap={{ scale: 1.5 }}>
+          <button onClick={() => onLike(item.id, item.likes)} className="flex items-center gap-1.5 group outline-none pressable-premium">
+            <motion.div
+              animate={isLiked ? { scale: [1, 1.2, 1] } : { scale: 1 }}
+              transition={{ duration: 0.28 }}
+              whileTap={{ scale: 1.5 }}
+            >
               <Heart size={20} className={`transition-all duration-200 ${isLiked ? "text-purple-500 fill-current drop-shadow-[0_0_6px_rgba(168,85,247,0.6)]" : "text-zinc-500 group-hover:text-purple-400"}`} />
             </motion.div>
             <span className={`text-xs font-bold tabular-nums ${isLiked ? "text-purple-400" : "text-zinc-500"}`}>
@@ -89,7 +100,7 @@ const ActivityCard = ({ item, userUid, idx, onLike }: ActivityCardProps) => {
         </div>
         <button
           onClick={() => shareActivity(item)}
-          className="w-9 h-9 rounded-2xl bg-zinc-800/60 border border-zinc-700/50 flex items-center justify-center active:scale-95 transition-transform group"
+          className="w-9 h-9 rounded-2xl bg-zinc-800/60 border border-zinc-700/50 flex items-center justify-center active:scale-95 transition-transform group hover:border-purple-500/40 hover:bg-purple-500/10"
         >
           <Share2 size={15} className="text-zinc-500 group-hover:text-purple-400 transition-colors" />
         </button>

@@ -5,9 +5,9 @@ import {
   Loader2, Play, Search, X, Users,
   RotateCw, ChevronDown,
 } from "lucide-react";
-import { subscribeToFeed, toggleLike, getUserStats, loadMoreActivities } from "@/service/database";
+import { subscribeToFeed, toggleLike, getUserStats, loadMoreActivities } from "@/services/database";
 import type { FeedActivity } from "@/types";
-import { useAuth } from "@/hooks/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -15,7 +15,7 @@ import { ptBR } from "date-fns/locale";
 
 // Custom Hooks & Utils
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
-import { initials } from "@/lib/feed-utils";
+import { initials, toDateSafe } from "@/lib/feed-utils";
 import ActivityCard from "@/components/ActivityCard";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -162,23 +162,23 @@ const Feed = () => {
         )}
       </AnimatePresence>
 
-      <div className="sticky top-0 z-40 bg-black/90 backdrop-blur-md border-b border-zinc-900/60">
+      <div className="sticky top-0 z-40 bg-black/90 backdrop-blur-2xl border-b border-zinc-900/60 shadow-[0_16px_34px_rgba(0,0,0,0.28)]">
         <header className="px-6 py-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <button
               onClick={() => navigate("/profile")}
-              className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center active:scale-95 transition-transform"
+              className="w-10 h-10 rounded-full bg-zinc-800 border border-purple-500/30 overflow-hidden flex items-center justify-center active:scale-95 transition-transform shadow-[0_0_22px_rgba(147,51,234,0.18)]"
             >
               {user?.photoURL
                 ? <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
                 : <span className="text-xs font-bold text-purple-500">{initials(displayName)}</span>
               }
             </button>
-            <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500">VELOXY</h1>
+            <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500 drop-shadow-[0_0_18px_rgba(168,85,247,0.35)]">VELOXY</h1>
 
             <button
               onClick={handleBellClick}
-              className="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 flex items-center justify-center relative active:scale-95 transition-transform"
+              className="w-10 h-10 rounded-full premium-panel text-zinc-400 flex items-center justify-center relative active:scale-95 transition-transform"
             >
               <Bell size={20} />
               <AnimatePresence>
@@ -196,7 +196,7 @@ const Feed = () => {
 
           <motion.div
             animate={{ borderColor: query ? "rgba(147,51,234,0.6)" : "rgba(63,63,70,0.8)" }}
-            className="flex items-center gap-3 bg-zinc-900/70 border rounded-2xl px-4 py-3"
+            className="flex items-center gap-3 premium-panel rounded-2xl px-4 py-3"
           >
             <Search size={16} className={`flex-shrink-0 transition-colors duration-200 ${query ? "text-purple-400" : "text-zinc-500"}`} />
             <input
@@ -239,7 +239,7 @@ const Feed = () => {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.06 }}
-                    className="bg-zinc-900/50 border border-zinc-800 p-3 rounded-2xl relative overflow-hidden"
+                    className="premium-panel p-3 rounded-2xl relative overflow-hidden"
                   >
                     <p className="text-[7px] font-bold text-zinc-500 uppercase tracking-tighter mb-0.5">{s.label}</p>
                     <div className="flex items-baseline gap-0.5">
@@ -277,7 +277,7 @@ const Feed = () => {
                       layout
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="flex items-center gap-4 bg-zinc-900/50 border border-zinc-800/60 rounded-2xl px-4 py-3"
+                      className="flex items-center gap-4 premium-panel rounded-2xl px-4 py-3"
                     >
                       <div className="w-11 h-11 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center flex-shrink-0">
                         {athlete.avatar
@@ -315,7 +315,7 @@ const Feed = () => {
                       layout
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="flex items-center gap-4 bg-zinc-900/40 border border-zinc-800/50 rounded-2xl px-4 py-3"
+                      className="flex items-center gap-4 premium-panel rounded-2xl px-4 py-3"
                     >
                       <div className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center flex-shrink-0">
                         {item.userAvatar
@@ -328,9 +328,9 @@ const Feed = () => {
                         <p className="text-[10px] text-zinc-500">
                           {Number(item.distance).toFixed(2)} km · {item.pace}/km · {item.time}
                         </p>
-                        {item.timestamp && (
+                        {toDateSafe(item.timestamp) && (
                           <p className="text-[9px] text-zinc-600 mt-0.5">
-                            {format(item.timestamp.toDate(), "d MMM yyyy · HH:mm", { locale: ptBR })}
+                            {format(toDateSafe(item.timestamp)!, "d MMM yyyy · HH:mm", { locale: ptBR })}
                           </p>
                         )}
                       </div>
@@ -373,7 +373,7 @@ const Feed = () => {
                         onClick={() => setQuery(athlete.name)}
                         className="flex flex-col items-center gap-1.5 min-w-[68px]"
                       >
-                        <div className="w-14 h-14 rounded-[1.2rem] bg-zinc-900 border border-zinc-800 overflow-hidden flex items-center justify-center relative">
+                        <div className="w-14 h-14 rounded-[1.2rem] premium-panel overflow-hidden flex items-center justify-center relative">
                           {athlete.avatar
                             ? <img src={athlete.avatar} alt={athlete.name} className="w-full h-full object-cover" />
                             : <span className="text-sm font-black text-purple-500">{initials(athlete.name)}</span>
@@ -439,7 +439,7 @@ const Feed = () => {
                         whileTap={{ scale: 0.95 }}
                         onClick={handleLoadMore}
                         disabled={loadingMore}
-                        className="flex items-center gap-2 px-6 py-3 bg-zinc-900 border border-zinc-800 rounded-2xl text-xs font-black text-zinc-400 uppercase tracking-widest disabled:opacity-50 transition-opacity"
+                        className="flex items-center gap-2 px-6 py-3 premium-panel rounded-2xl text-xs font-black text-zinc-400 uppercase tracking-widest disabled:opacity-50 transition-opacity"
                       >
                         {loadingMore
                           ? <><Loader2 size={13} className="animate-spin text-purple-500" /> Carregando...</>

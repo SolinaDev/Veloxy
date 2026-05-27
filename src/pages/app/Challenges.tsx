@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
 import { Trophy, Medal, Target, Crown, Flame, ChevronRight, Zap, Users, Loader2 } from "lucide-react";
 import ChallengeCard from "@/components/ChallengeCard";
-import { useAuth } from "@/hooks/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
-import { getGlobalRanking, getUserProfile, UserProfile } from "@/service/database";
+import { getGlobalRanking, getUserProfile, UserProfile } from "@/services/database";
 
 const Challenges = () => {
     const { user } = useAuth();

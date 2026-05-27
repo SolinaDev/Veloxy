@@ -9,19 +9,25 @@ import {
   Activity,
   Play,
   TrendingUp,
-  Award
+  Award,
+  Loader2
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/AuthContext";
-import { getUserStats, ActivityData, getUserProfile, UserProfile } from "@/service/database";
+import { useAuth } from "@/hooks/useAuth";
+import { getUserStats, ActivityData, getUserProfile, UserProfile } from "@/services/database";
 import { getLevelFromXP } from "@/lib/gamification";
+import { toDateSafe } from "@/lib/feed-utils";
 
 type StatsResult = {
   totalKm: string;
   runsCount: number;
   totalTime: string;
   totalCalories: number;
+  averagePace: string;
+  currentStreak: number;
+  weeklyTotalKm: number;
+  bestActivity: (ActivityData & { id: string }) | null;
   lastActivity: (ActivityData & { id: string }) | null;
   weeklyData: { day: string; km: number }[];
 };
@@ -31,6 +37,10 @@ const DEFAULT_STATS: StatsResult = {
   runsCount: 0,
   totalTime: "0m",
   totalCalories: 0,
+  averagePace: "0'00\"",
+  currentStreak: 0,
+  weeklyTotalKm: 0,
+  bestActivity: null,
   lastActivity: null,
   weeklyData: [],
 };
@@ -73,11 +83,14 @@ const Dashboard = () => {
 
   const weeklyData = stats.weeklyData;
   const maxKm = Math.max(...weeklyData.map((d) => d.km), 1);
+  const hasRuns = stats.runsCount > 0;
+  const bestRunDistance = stats.bestActivity ? stats.bestActivity.distance.toFixed(2) : "0.00";
 
   // Formatar data da última atividade
   const formatLastRunDate = (activity: (ActivityData & { id: string }) | null) => {
     if (!activity?.timestamp) return "—";
-    const date = activity.timestamp.toDate();
+    const date = toDateSafe(activity.timestamp);
+    if (!date) return "—";
     const today = new Date();
     const isToday = date.toDateString() === today.toDateString();
     if (isToday) return `HOJE • ${date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
@@ -89,6 +102,15 @@ const Dashboard = () => {
     { label: "Total de Treinos",  value: stats.runsCount.toString(),         unit: "RUNS",    icon: <Zap size={16} />,        color: "zinc"   },
     { label: "Tempo de Atividade",value: stats.totalTime,                   unit: "ATIVO",   icon: <Timer size={16} />,      color: "zinc"   },
     { label: "Energia Gasta",     value: stats.totalCalories.toString(),    unit: "KCAL",    icon: <Flame size={16} />,      color: "zinc"   },
+  ];
+
+  const realStatCards = [
+    { label: "Distancia Total", value: stats.totalKm, unit: "KM", icon: <MapPin size={16} />, color: "purple" },
+    { label: "Km na Semana", value: stats.weeklyTotalKm.toFixed(1), unit: "KM", icon: <TrendingUp size={16} />, color: "purple" },
+    { label: "Ritmo Medio", value: stats.averagePace, unit: "/KM", icon: <Timer size={16} />, color: "zinc" },
+    { label: "Sequencia", value: stats.currentStreak.toString(), unit: stats.currentStreak === 1 ? "DIA" : "DIAS", icon: <Zap size={16} />, color: "zinc" },
+    { label: "Calorias", value: stats.totalCalories.toString(), unit: "KCAL", icon: <Flame size={16} />, color: "zinc" },
+    { label: "Melhor Corrida", value: bestRunDistance, unit: "KM", icon: <Award size={16} />, color: "zinc" },
   ];
 
   return (
@@ -169,7 +191,7 @@ const Dashboard = () => {
               {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-36 rounded-[2.5rem]" />)}
             </>
           ) : (
-            statCards.map((stat, i) => (
+            realStatCards.map((stat, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
@@ -222,7 +244,7 @@ const Dashboard = () => {
             <div className="flex justify-center h-32 items-center">
               <Loader2 className="animate-spin text-purple-500" size={24} />
             </div>
-          ) : weeklyData.length === 0 ? (
+          ) : !hasRuns ? (
             <div className="flex flex-col items-center justify-center h-32 gap-3">
               <TrendingUp size={28} className="text-zinc-700" />
               <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">
@@ -259,6 +281,39 @@ const Dashboard = () => {
           )}
         </div>
       </section>
+
+      {/* Best Run Card */}
+      {stats.bestActivity && (
+        <section className="px-6 mt-10">
+          <div className="rounded-[2.5rem] border border-purple-500/20 bg-purple-500/10 p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-[0.22em] text-purple-300">
+                  Melhor corrida
+                </p>
+                <h3 className="mt-2 font-display text-3xl font-black italic text-white">
+                  {stats.bestActivity.distance.toFixed(2)} km
+                </h3>
+              </div>
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-600 text-white shadow-[0_0_24px_rgba(147,51,234,0.35)]">
+                <Award size={22} />
+              </div>
+            </div>
+            <div className="mt-6 grid grid-cols-3 gap-3">
+              {[
+                { label: "PACE", value: stats.bestActivity.pace },
+                { label: "TEMPO", value: stats.bestActivity.time },
+                { label: "KCAL", value: (stats.bestActivity.calories ?? 0).toString() },
+              ].map((item) => (
+                <div key={item.label} className="rounded-2xl bg-black/25 p-3">
+                  <p className="font-display text-lg font-black italic text-white leading-none">{item.value}</p>
+                  <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.18em] text-purple-200/70">{item.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Last Run Card */}
       <section className="px-6 mt-10 pb-10">
