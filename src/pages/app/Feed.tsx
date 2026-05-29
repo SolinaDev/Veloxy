@@ -17,12 +17,14 @@ import { ptBR } from "date-fns/locale";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { initials, toDateSafe } from "@/lib/feed-utils";
 import ActivityCard from "@/components/ActivityCard";
+import SafeAvatar from "@/components/SafeAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getBestUserPhotoURL } from "@/lib/user-photo";
 
 const FEED_LIMIT = 10;
 const PULL_THRESHOLD = 70;
 
-const Feed = () => {
+const Feed = ({ embedded = false }: { embedded?: boolean }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const searchRef = useRef<HTMLInputElement>(null);
@@ -37,6 +39,7 @@ const Feed = () => {
   const [lastSeenLikes, setLastSeenLikes] = useState(0);
 
   const displayName = user?.displayName || "Corredor";
+  const userPhotoURL = getBestUserPhotoURL(user);
 
   // Merge live + older, deduplicate by id
   const activities = useMemo(() => {
@@ -145,7 +148,7 @@ const Feed = () => {
   const isSearchActive = query.trim().length > 0;
 
   return (
-    <div className="min-h-screen bg-black text-white pb-28 safe-top">
+    <div className={`${embedded ? "min-h-0" : "min-h-screen"} bg-black text-white ${embedded ? "pb-4" : "pb-28 safe-top"}`}>
       <AnimatePresence>
         {(pullDist > 10 || refreshing) && (
           <motion.div
@@ -162,6 +165,7 @@ const Feed = () => {
         )}
       </AnimatePresence>
 
+      {!embedded && (
       <div className="sticky top-0 z-40 bg-black/90 backdrop-blur-2xl border-b border-zinc-900/60 shadow-[0_16px_34px_rgba(0,0,0,0.28)]">
         <header className="px-6 py-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
@@ -169,10 +173,13 @@ const Feed = () => {
               onClick={() => navigate("/profile")}
               className="w-10 h-10 rounded-full bg-zinc-800 border border-purple-500/30 overflow-hidden flex items-center justify-center active:scale-95 transition-transform shadow-[0_0_22px_rgba(147,51,234,0.18)]"
             >
-              {user?.photoURL
-                ? <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
-                : <span className="text-xs font-bold text-purple-500">{initials(displayName)}</span>
-              }
+              <SafeAvatar
+                src={userPhotoURL}
+                name={displayName}
+                alt="Profile"
+                className="h-full w-full rounded-full"
+                fallbackClassName="text-xs font-bold text-purple-500"
+              />
             </button>
             <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500 drop-shadow-[0_0_18px_rgba(168,85,247,0.35)]">VELOXY</h1>
 
@@ -254,6 +261,7 @@ const Feed = () => {
           </AnimatePresence>
         </header>
       </div>
+      )}
 
       <AnimatePresence mode="wait">
         {isSearchActive ? (
@@ -280,10 +288,12 @@ const Feed = () => {
                       className="flex items-center gap-4 premium-panel rounded-2xl px-4 py-3"
                     >
                       <div className="w-11 h-11 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center flex-shrink-0">
-                        {athlete.avatar
-                          ? <img src={athlete.avatar} alt={athlete.name} className="w-full h-full object-cover" />
-                          : <span className="text-xs font-bold text-purple-500">{initials(athlete.name)}</span>
-                        }
+                        <SafeAvatar
+                          src={athlete.avatar}
+                          name={athlete.name}
+                          className="h-full w-full"
+                          fallbackClassName="text-xs font-bold text-purple-500"
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-sm truncate">{athlete.name}</p>
@@ -318,10 +328,12 @@ const Feed = () => {
                       className="flex items-center gap-4 premium-panel rounded-2xl px-4 py-3"
                     >
                       <div className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center flex-shrink-0">
-                        {item.userAvatar
-                          ? <img src={item.userAvatar} alt={item.userName} className="w-full h-full object-cover" />
-                          : <span className="text-[10px] font-bold text-purple-500">{initials(item.userName || "")}</span>
-                        }
+                        <SafeAvatar
+                          src={item.userAvatar}
+                          name={item.userName || "Atleta"}
+                          className="h-full w-full"
+                          fallbackClassName="text-[10px] font-bold text-purple-500"
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-sm truncate">{item.userName}</p>
@@ -374,10 +386,12 @@ const Feed = () => {
                         className="flex flex-col items-center gap-1.5 min-w-[68px]"
                       >
                         <div className="w-14 h-14 rounded-[1.2rem] premium-panel overflow-hidden flex items-center justify-center relative">
-                          {athlete.avatar
-                            ? <img src={athlete.avatar} alt={athlete.name} className="w-full h-full object-cover" />
-                            : <span className="text-sm font-black text-purple-500">{initials(athlete.name)}</span>
-                          }
+                          <SafeAvatar
+                            src={athlete.avatar}
+                            name={athlete.name}
+                            className="h-full w-full"
+                            fallbackClassName="text-sm font-black text-purple-500"
+                          />
                           <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-purple-600 rounded-full text-[7px] font-black text-white px-1.5 py-0.5 whitespace-nowrap">
                             {athlete.totalKm}km
                           </div>

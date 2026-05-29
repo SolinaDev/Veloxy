@@ -14,13 +14,13 @@ const Login = lazy(() => import("@/pages/auth/Login"));
 const Register = lazy(() => import("@/pages/auth/Register"));
 const CompleteProfile = lazy(() => import("@/pages/auth/CompleteProfile"));
 
-const Feed = lazy(() => import("@/pages/app/Feed"));
+const Home = lazy(() => import("@/pages/app/Home"));
+const Social = lazy(() => import("@/pages/app/Social"));
 const Dashboard = lazy(() => import("@/pages/app/Dashboard"));
 const RunTracking = lazy(() => import("@/pages/app/RunTracking"));
 const Challenges = lazy(() => import("@/pages/app/Challenges"));
 const Community = lazy(() => import("@/pages/app/Community"));
 const Events = lazy(() => import("@/pages/app/Events"));
-const Shop = lazy(() => import("@/pages/app/Shop"));
 const Profile = lazy(() => import("@/pages/app/Profile"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
@@ -75,8 +75,10 @@ const App = () => {
                   <Route path="/complete-profile" element={<CompleteProfile />} />
 
                   <Route element={<ProtectedLayout />}>
-                    <Route index element={<Feed />} />
-                    <Route path="feed" element={<Feed />} />
+                    <Route index element={<Home />} />
+                    <Route path="home" element={<Home />} />
+                    <Route path="feed" element={<Social />} />
+                    <Route path="social" element={<Social />} />
 
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="stats" element={<Dashboard />} />
@@ -85,7 +87,7 @@ const App = () => {
                     <Route path="challenges" element={<Challenges />} />
                     <Route path="community" element={<Community />} />
                     <Route path="events" element={<Events />} />
-                    <Route path="shop" element={<Shop />} />
+                    <Route path="shop" element={<Social />} />
                     <Route path="profile" element={<Profile />} />
                   </Route>
 

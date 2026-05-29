@@ -4,6 +4,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import type { User } from "firebase/auth";
 import { auth } from "@/config/firebase";
 import { AuthContext } from "@/hooks/auth-context";
+import { syncGoogleProfilePhoto } from "@/lib/user-photo";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(auth.currentUser);
@@ -13,6 +14,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
+
+      if (firebaseUser) {
+        syncGoogleProfilePhoto(firebaseUser).catch((error) => {
+          console.warn("Nao foi possivel sincronizar foto do Google:", error);
+        });
+      }
     });
 
     return () => unsubscribe();

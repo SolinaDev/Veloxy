@@ -10,6 +10,7 @@ import {
 } from "firebase/auth";
 
 import { auth } from "@/config/firebase";
+import { syncGoogleProfilePhoto } from "@/lib/user-photo";
 
 function createGoogleProvider() {
   const provider = new GoogleAuthProvider();
@@ -62,12 +63,16 @@ export async function loginComGooglePopup() {
   await setPersistence(auth, browserLocalPersistence);
 
   const result = await signInWithPopup(auth, createGoogleProvider());
+  await syncGoogleProfilePhoto(result.user);
 
   return result.user;
 }
 
 export async function finalizarLoginRedirect() {
   const result = await getRedirectResult(auth);
+  if (result?.user) {
+    await syncGoogleProfilePhoto(result.user);
+  }
 
   return result?.user ?? null;
 }

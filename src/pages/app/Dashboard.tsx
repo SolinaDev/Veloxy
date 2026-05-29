@@ -97,12 +97,13 @@ const Dashboard = () => {
     return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }).toUpperCase();
   };
 
-  const statCards = [
+  const legacyStatCards = [
     { label: "Distância Total",   value: stats.totalKm,                     unit: "KM",      icon: <MapPin size={16} />,     color: "purple" },
     { label: "Total de Treinos",  value: stats.runsCount.toString(),         unit: "RUNS",    icon: <Zap size={16} />,        color: "zinc"   },
     { label: "Tempo de Atividade",value: stats.totalTime,                   unit: "ATIVO",   icon: <Timer size={16} />,      color: "zinc"   },
     { label: "Energia Gasta",     value: stats.totalCalories.toString(),    unit: "KCAL",    icon: <Flame size={16} />,      color: "zinc"   },
   ];
+  void legacyStatCards;
 
   const realStatCards = [
     { label: "Distancia Total", value: stats.totalKm, unit: "KM", icon: <MapPin size={16} />, color: "purple" },

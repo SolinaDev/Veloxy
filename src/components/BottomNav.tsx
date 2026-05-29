@@ -1,7 +1,7 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { 
   Activity, 
-  ShoppingBag, 
+  Users, 
   BarChart3, 
   User,
   Plus
@@ -9,8 +9,8 @@ import {
 import { motion } from "framer-motion";
 
 const tabs = [
-  { path: "/", icon: Activity, label: "FEED" },
-  { path: "/shop", icon: ShoppingBag, label: "SHOP" },
+  { path: "/", icon: Activity, label: "INICIO" },
+  { path: "/social", icon: Users, label: "SOCIAL" },
   { path: "RECORD", icon: Plus, label: "" }, // Botão central especial
   { path: "/stats", icon: BarChart3, label: "STATS" },
   { path: "/profile", icon: User, label: "PROFILE" },
@@ -44,7 +44,10 @@ const BottomNav = () => {
             );
           }
 
-          const isActive = location.pathname === tab.path;
+          const isActive =
+            location.pathname === tab.path ||
+            (tab.path === "/" && location.pathname === "/home") ||
+            (tab.path === "/social" && ["/feed", "/shop", "/events", "/community"].includes(location.pathname));
           return (
             <NavLink
               key={tab.path}

@@ -18,7 +18,7 @@ const getEventDate = (event: RunningEvent) => {
     return toDateSafe(event.timestamp) ?? new Date(0);
 };
 
-const Events = () => {
+const Events = ({ embedded = false }: { embedded?: boolean }) => {
     const { user } = useAuth();
     const [events, setEvents] = useState<RunningEvent[]>([]);
     const [enrolledIds, setEnrolledIds] = useState<string[]>([]);
@@ -80,7 +80,7 @@ const Events = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
+            <div className={`${embedded ? "min-h-[280px]" : "min-h-screen"} bg-black flex flex-col items-center justify-center gap-4`}>
                 <Loader2 className="animate-spin text-purple-500" size={40} />
                 <p className="text-[10px] font-black text-zinc-500 tracking-[0.2em] uppercase">Buscando Corridas...</p>
             </div>
@@ -88,9 +88,9 @@ const Events = () => {
     }
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24 safe-top">
+    <div className={`${embedded ? "min-h-0 pb-4" : "min-h-screen pb-24 safe-top"} bg-black text-white`}>
       {/* Header */}
-      <header className="px-6 py-4 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur-md z-40 border-b border-zinc-900/50">
+      {!embedded && <header className="px-6 py-4 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur-md z-40 border-b border-zinc-900/50">
         <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 overflow-hidden">
           {user?.photoURL ? (
             <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
@@ -106,10 +106,10 @@ const Events = () => {
         <button className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center border border-zinc-800 text-zinc-400">
           <Calendar size={18} />
         </button>
-      </header>
+      </header>}
 
       {/* Categories Horizontal */}
-      <section className="mt-8 px-6">
+      <section className={`${embedded ? "mt-2 px-0" : "mt-8 px-6"}`}>
         <div className="flex gap-3 overflow-x-auto no-scrollbar">
           {categories.map((c) => (
             <button
@@ -128,7 +128,7 @@ const Events = () => {
       </section>
 
       {/* Featured Event Banner */}
-      <section className="px-6 mt-10">
+      {events[0] && <section className={`${embedded ? "px-0 mt-6" : "px-6 mt-10"}`}>
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -148,10 +148,10 @@ const Events = () => {
                   </div>
               </div>
           </motion.div>
-      </section>
+      </section>}
 
       {/* All Events List */}
-      <section className="mt-12 px-6 pb-10 space-y-8">
+      <section className={`${embedded ? "mt-8 px-0 pb-2" : "mt-12 px-6 pb-10"} space-y-8`}>
         <div className="flex items-center justify-between mb-2">
             <h3 className="font-display font-black text-sm italic tracking-tighter uppercase">Todas as Corridas</h3>
             <span className="text-[10px] font-black text-zinc-500 tracking-widest">3 DISPONÍVEIS</span>

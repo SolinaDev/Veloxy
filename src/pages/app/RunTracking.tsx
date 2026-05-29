@@ -21,6 +21,7 @@ import "leaflet/dist/leaflet.css";
 import { useAuth } from "@/hooks/useAuth";
 import { saveActivity } from "@/services/database";
 import { toast } from "sonner";
+import { getBestUserPhotoURL } from "@/lib/user-photo";
 
 type ScreenWakeLockSentinel = {
   release: () => Promise<void>;
@@ -305,7 +306,7 @@ const RunTracking = () => {
       await saveActivity({
         userId: user.uid,
         userName: user.displayName || "Corredor",
-        userAvatar: user.photoURL,
+        userAvatar: getBestUserPhotoURL(user),
         distance: Number(distance.toFixed(2)),
         time: formatTime(seconds),
         durationSeconds: seconds,

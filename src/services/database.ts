@@ -282,10 +282,16 @@ export const getUserStats = async (userId: string) => {
   try {
     const q = query(
       collection(db, "activities"),
-      where("userId", "==", userId),
-      orderBy("timestamp", "desc")
+      where("userId", "==", userId)
     );
     const querySnapshot = await getDocs(q);
+    const activities = querySnapshot.docs
+      .map((docSnap) => normalizeActivity(docSnap.id, docSnap.data()))
+      .sort((a, b) => {
+        const dateA = toDateSafe(a.timestamp)?.getTime() ?? a.createdAtMs ?? 0;
+        const dateB = toDateSafe(b.timestamp)?.getTime() ?? b.createdAtMs ?? 0;
+        return dateB - dateA;
+      });
 
     let totalKm = 0;
     let runsCount = 0;
@@ -301,21 +307,19 @@ export const getUserStats = async (userId: string) => {
     for (let i = 6; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(today.getDate() - i);
-      weekMap[d.toISOString().slice(0, 10)] = 0;
+      weekMap[dayKeyFromDate(d)] = 0;
     }
 
-    querySnapshot.forEach((docSnap) => {
-      const data = docSnap.data() as ActivityData;
-      const activity = normalizeActivity(docSnap.id, docSnap.data());
-      const distance = Number(data.distance || 0);
+    activities.forEach((activity) => {
+      const distance = Number(activity.distance || 0);
       totalKm += distance;
-      totalSeconds += Number(data.durationSeconds || 0);
-      totalCalories += Number(data.calories || 0);
+      totalSeconds += Number(activity.durationSeconds || 0);
+      totalCalories += Number(activity.calories || 0);
       runsCount += 1;
 
       // Primeira iteração = mais recente (ordenado desc)
       if (!lastActivity) {
-        lastActivity = { id: docSnap.id, ...data };
+        lastActivity = activity;
       }
 
       if (!bestActivity || distance > bestActivity.distance) {
@@ -323,8 +327,8 @@ export const getUserStats = async (userId: string) => {
       }
 
       // Acumular km no dia correto para o gráfico semanal
-      if (data.timestamp || typeof data.createdAtMs === "number") {
-        const activityDate = toDateSafe(data.timestamp) ?? new Date(data.createdAtMs || 0);
+      if (activity.timestamp || typeof activity.createdAtMs === "number") {
+        const activityDate = toDateSafe(activity.timestamp) ?? new Date(activity.createdAtMs || 0);
         const dateKey = dayKeyFromDate(activityDate);
         activeDays.add(dateKey);
         if (dateKey in weekMap) {
@@ -380,6 +384,27 @@ export const getUserStats = async (userId: string) => {
 /**
  * Busca todos os produtos da loja no Firestore
  */
+export const getUserActivities = async (userId: string, limitCount = 10): Promise<FeedActivity[]> => {
+  try {
+    const q = query(
+      collection(db, "activities"),
+      where("userId", "==", userId)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs
+      .map((d) => normalizeActivity(d.id, d.data()))
+      .sort((a, b) => {
+        const dateA = toDateSafe(a.timestamp)?.getTime() ?? a.createdAtMs ?? 0;
+        const dateB = toDateSafe(b.timestamp)?.getTime() ?? b.createdAtMs ?? 0;
+        return dateB - dateA;
+      })
+      .slice(0, limitCount);
+  } catch (error) {
+    console.error("Erro ao buscar corridas do usuario:", error);
+    return [];
+  }
+};
+
 export const getProducts = async (): Promise<Product[]> => {
   try {
     const q = query(collection(db, "products"), orderBy("category"));

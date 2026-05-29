@@ -2,7 +2,8 @@ import { memo } from "react";
 import { motion } from "framer-motion";
 import { Heart, Share2 } from "lucide-react";
 import { RouteSVGPreview } from "./RouteSVGPreview";
-import { getActivityBadge, initials, formatCardDate, shareActivity } from "@/lib/feed-utils";
+import { getActivityBadge, formatCardDate, shareActivity } from "@/lib/feed-utils";
+import SafeAvatar from "@/components/SafeAvatar";
 import type { FeedActivity } from "@/types";
 
 export interface ActivityCardProps {
@@ -27,13 +28,13 @@ const ActivityCard = ({ item, userUid, idx, onLike }: ActivityCardProps) => {
     >
       <div className="flex items-center justify-between px-5 pt-5 pb-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full ring-2 ring-purple-500/50 p-0.5 bg-gradient-to-br from-purple-500/30 to-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-[0_0_22px_rgba(147,51,234,0.22)]">
-            {item.userAvatar ? (
-              <img src={item.userAvatar} alt={item.userName} className="w-full h-full rounded-full object-cover" />
-            ) : (
-              <span className="text-xs font-bold text-purple-500">{initials(item.userName || "")}</span>
-            )}
-          </div>
+          <SafeAvatar
+            src={item.userAvatar}
+            name={item.userName || "Atleta"}
+            className="w-11 h-11 rounded-full ring-2 ring-purple-500/50 p-0.5 bg-gradient-to-br from-purple-500/30 to-zinc-800 flex-shrink-0 shadow-[0_0_22px_rgba(147,51,234,0.22)]"
+            imageClassName="rounded-full"
+            fallbackClassName="text-xs font-bold text-purple-500"
+          />
           <div>
             <h4 className="font-bold text-sm leading-tight">{item.userName}</h4>
             <p className="text-[10px] text-zinc-500 mt-0.5">
