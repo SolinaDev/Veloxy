@@ -53,6 +53,7 @@ service cloud.firestore {
         && request.resource.data.type == 'RUNNING'
         && request.resource.data.likes is list
         && request.resource.data.likes.size() == 0
+        && request.resource.data.timestamp == request.time
         && (!('route' in request.resource.data)
           || (request.resource.data.route is list
             && request.resource.data.route.size() <= 5000))
@@ -114,7 +115,12 @@ service cloud.firestore {
           && request.resource.data[field] <= maxValue);
     }
 
-    function validUserWrite(userId) {
+    function optionalTimestamp(field) {
+      return !(field in request.resource.data)
+        || request.resource.data[field] is timestamp;
+    }
+
+    function validUserBase(userId) {
       return isOwner(userId)
         && hasOnlyUserFields()
         && optionalString('displayName', 80)
@@ -129,7 +135,108 @@ service cloud.firestore {
           || request.resource.data.onboarded is bool)
         && (!('enrolledEvents' in request.resource.data)
           || (request.resource.data.enrolledEvents is list
-            && request.resource.data.enrolledEvents.size() <= 100));
+            && request.resource.data.enrolledEvents.size() <= 100))
+        && optionalTimestamp('createdAt')
+        && optionalTimestamp('lastUpdated');
+    }
+
+    function validUserCreate(userId) {
+      return validUserBase(userId)
+        && (!('totalXP' in request.resource.data)
+          || request.resource.data.totalXP == 0)
+        && (!('monthlyKm' in request.resource.data)
+          || request.resource.data.monthlyKm == 0)
+        && (!('level' in request.resource.data)
+          || request.resource.data.level == 'Iniciante')
+        && (!('createdAt' in request.resource.data)
+          || request.resource.data.createdAt == request.time)
+        && (!('lastUpdated' in request.resource.data)
+          || request.resource.data.lastUpdated == request.time);
+    }
+
+    function validProfileUpdate(userId) {
+      return validUserBase(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName',
+          'photoURL',
+          'bio',
+          'location',
+          'onboarded',
+          'createdAt',
+          'lastUpdated'
+        ]);
+    }
+
+    function validStatsProgressUpdate(userId) {
+      return validUserBase(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName',
+          'photoURL',
+          'totalXP',
+          'monthlyKm',
+          'monthlyKmMonth',
+          'level',
+          'lastUpdated'
+        ])
+        && (
+          !('totalXP' in resource.data)
+          || request.resource.data.totalXP >= resource.data.totalXP
+        )
+        && (
+          !('totalXP' in resource.data)
+          || request.resource.data.totalXP <= resource.data.totalXP + 100000
+        )
+        && (
+          'totalXP' in resource.data
+          || request.resource.data.totalXP <= 100000
+        )
+        && (
+          !('monthlyKm' in resource.data)
+          || request.resource.data.monthlyKm >= resource.data.monthlyKm
+        )
+        && (
+          !('monthlyKm' in resource.data)
+          || request.resource.data.monthlyKm <= resource.data.monthlyKm + 200
+        )
+        && (
+          'monthlyKm' in resource.data
+          || request.resource.data.monthlyKm <= 200
+        )
+        && (!('lastUpdated' in request.resource.data)
+          || request.resource.data.lastUpdated == request.time);
+    }
+
+    function validMonthlyKmReset(userId) {
+      return validUserBase(userId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['monthlyKm', 'monthlyKmMonth'])
+        && request.resource.data.monthlyKm == 0;
+    }
+
+    function validUserRunReset(userId) {
+      return validUserBase(userId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['totalXP', 'monthlyKm', 'level', 'lastUpdated'])
+        && request.resource.data.totalXP == 0
+        && request.resource.data.monthlyKm == 0
+        && request.resource.data.level == 'Iniciante'
+        && (!('lastUpdated' in request.resource.data)
+          || request.resource.data.lastUpdated == request.time);
+    }
+
+    function validEnrolledEventsUpdate(userId) {
+      return validUserBase(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['enrolledEvents'])
+        && request.resource.data.enrolledEvents is list
+        && request.resource.data.enrolledEvents.size() <= 100;
+    }
+
+    function validUserUpdate(userId) {
+      return validProfileUpdate(userId)
+        || validStatsProgressUpdate(userId)
+        || validMonthlyKmReset(userId)
+        || validUserRunReset(userId)
+        || validEnrolledEventsUpdate(userId);
     }
 
     function validEventJoin() {
@@ -163,7 +270,8 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if signedIn();
-      allow create, update: if validUserWrite(userId);
+      allow create: if validUserCreate(userId);
+      allow update: if validUserUpdate(userId);
       allow delete: if false;
     }
 
