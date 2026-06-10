@@ -53,7 +53,7 @@ service cloud.firestore {
         && request.resource.data.type == 'RUNNING'
         && request.resource.data.likes is list
         && request.resource.data.likes.size() == 0
-        && request.resource.data.timestamp == request.time
+        && request.resource.data.timestamp is timestamp
         && (!('route' in request.resource.data)
           || (request.resource.data.route is list
             && request.resource.data.route.size() <= 5000))
@@ -122,7 +122,6 @@ service cloud.firestore {
 
     function validUserBase(userId) {
       return isOwner(userId)
-        && hasOnlyUserFields()
         && optionalString('displayName', 80)
         && optionalString('photoURL', 1000)
         && optionalString('monthlyKmMonth', 10)
@@ -142,6 +141,7 @@ service cloud.firestore {
 
     function validUserCreate(userId) {
       return validUserBase(userId)
+        && hasOnlyUserFields()
         && (!('totalXP' in request.resource.data)
           || request.resource.data.totalXP == 0)
         && (!('monthlyKm' in request.resource.data)

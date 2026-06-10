@@ -510,11 +510,72 @@ export const seedProducts = async () => {
 /**
  * Busca eventos disponíveis, podendo filtrar por cidade
  */
+const getFallbackEvents = (): RunningEvent[] => {
+  const futureDate = (daysFromNow: number) => {
+    const date = new Date();
+    date.setDate(date.getDate() + daysFromNow);
+    return date;
+  };
+
+  const formatEventDate = (date: Date) => {
+    const months = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+    return `${date.getDate().toString().padStart(2, "0")} ${months[date.getMonth()]}`;
+  };
+
+  const dates = [futureDate(24), futureDate(52), futureDate(87)];
+
+  return [
+    {
+      id: "local-sao-paulo-night-run",
+      title: "Veloxy Night Run",
+      date: formatEventDate(dates[0]),
+      location: "Parque do Ibirapuera",
+      city: "Sao Paulo",
+      participantsCount: 420,
+      participantsIds: [],
+      category: "5K / 10K",
+      image: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=900&auto=format&fit=crop",
+      price: "R$ 89",
+      timestamp: dates[0],
+    },
+    {
+      id: "local-rio-half",
+      title: "Rio City Half",
+      date: formatEventDate(dates[1]),
+      location: "Aterro do Flamengo",
+      city: "Rio de Janeiro",
+      participantsCount: 1280,
+      participantsIds: [],
+      category: "21K",
+      image: "https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=900&auto=format&fit=crop",
+      price: "R$ 140",
+      timestamp: dates[1],
+    },
+    {
+      id: "local-floripa-marathon",
+      title: "Floripa Marathon",
+      date: formatEventDate(dates[2]),
+      location: "Beira Mar Norte",
+      city: "Florianopolis",
+      participantsCount: 860,
+      participantsIds: [],
+      category: "42K",
+      image: "https://images.unsplash.com/photo-1502904550040-7534597429ae?q=80&w=900&auto=format&fit=crop",
+      price: "R$ 160",
+      timestamp: dates[2],
+    },
+  ];
+};
+
 export const getEvents = async (cityFilter?: string): Promise<RunningEvent[]> => {
   try {
     const q = query(collection(db, "events"), orderBy("timestamp", "asc"));
     const snapshot = await getDocs(q);
     let events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RunningEvent));
+
+    if (events.length === 0) {
+      events = getFallbackEvents();
+    }
 
     if (cityFilter) {
       const normalizedCity = cityFilter.toLowerCase().split(",")[0].trim();
@@ -540,6 +601,16 @@ export const getEvents = async (cityFilter?: string): Promise<RunningEvent[]> =>
  */
 export const joinEvent = async (eventId: string, userId: string) => {
   try {
+    const userRef = doc(db, "users", userId);
+
+    if (eventId.startsWith("local-")) {
+      await updateDoc(userRef, {
+        enrolledEvents: arrayUnion(eventId)
+      });
+
+      return true;
+    }
+
     const eventRef = doc(db, "events", eventId);
     await updateDoc(eventRef, {
       participantsIds: arrayUnion(userId),
@@ -547,7 +618,6 @@ export const joinEvent = async (eventId: string, userId: string) => {
     });
 
     // Também registrar no perfil do usuário para busca rápida
-    const userRef = doc(db, "users", userId);
     await updateDoc(userRef, {
       enrolledEvents: arrayUnion(eventId)
     });
@@ -571,10 +641,17 @@ export const getUserEvents = async (userId: string): Promise<RunningEvent[]> => 
     const enrolledIds = userSnap.data().enrolledEvents || [];
     if (enrolledIds.length === 0) return [];
 
+    const localEvents = getFallbackEvents().filter((event) => enrolledIds.includes(event.id));
+    const firestoreEventIds = enrolledIds.filter((eventId: string) => !eventId.startsWith("local-"));
+    if (firestoreEventIds.length === 0) return localEvents;
+
     // Buscar os docs dos ids (em chunks de 10 por limitação do where "in")
-    const q = query(collection(db, "events"), where("__name__", "in", enrolledIds.slice(0, 10)));
+    const q = query(collection(db, "events"), where("__name__", "in", firestoreEventIds.slice(0, 10)));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RunningEvent));
+    return [
+      ...localEvents,
+      ...snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RunningEvent)),
+    ];
   } catch (error) {
     console.error("Erro ao buscar eventos do usuário:", error);
     return [];

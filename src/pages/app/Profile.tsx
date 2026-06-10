@@ -453,6 +453,8 @@ const Profile = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>(getStoredTheme);
   const [loading, setLoading] = useState(true);
+  const [confirmProfileDelete, setConfirmProfileDelete] = useState(false);
+  const [profileDeletingRuns, setProfileDeletingRuns] = useState(false);
   
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [statsData, setStatsData] = useState<UserStats | null>(null);
@@ -516,6 +518,29 @@ const Profile = () => {
       navigate("/login");
     } catch {
       toast.error("Erro ao fazer logout");
+    }
+  };
+
+  const handleDeleteRunsFromProfile = async () => {
+    if (!user) return;
+
+    if (!confirmProfileDelete) {
+      setConfirmProfileDelete(true);
+      toast.warning("Toque novamente para confirmar a exclusão das corridas.");
+      return;
+    }
+
+    setProfileDeletingRuns(true);
+    try {
+      const deletedCount = await deleteUserActivities(user.uid);
+      toast.success(`${deletedCount} corrida${deletedCount === 1 ? "" : "s"} apagada${deletedCount === 1 ? "" : "s"}.`);
+      setConfirmProfileDelete(false);
+      await fetchProfileData();
+    } catch (error) {
+      console.error("Erro ao apagar corridas:", error);
+      toast.error("Não foi possível apagar as corridas.");
+    } finally {
+      setProfileDeletingRuns(false);
     }
   };
 
@@ -680,6 +705,18 @@ const Profile = () => {
 
       {/* Logout Button */}
       <div className="px-6 mt-12 pb-6">
+        <button
+            onClick={handleDeleteRunsFromProfile}
+            disabled={profileDeletingRuns}
+            className={`w-full mb-3 premium-panel py-4 rounded-3xl text-[10px] font-black tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-60 ${
+              confirmProfileDelete
+                ? "text-red-400 border-red-500/40 bg-red-500/10"
+                : "text-zinc-500 hover:text-red-500 hover:border-red-500/30"
+            }`}
+        >
+            {profileDeletingRuns ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+            {confirmProfileDelete ? "CONFIRMAR EXCLUSÃO DAS CORRIDAS" : "APAGAR MINHAS CORRIDAS"}
+        </button>
         <button 
             onClick={handleLogout}
             className="w-full premium-panel py-4 rounded-3xl text-[10px] font-black tracking-widest text-zinc-500 hover:text-red-500 hover:border-red-500/30 transition-all flex items-center justify-center gap-2"
