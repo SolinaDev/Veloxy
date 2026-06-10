@@ -18,6 +18,7 @@ export interface UserProfile {
   location?: string;
   onboarded?: boolean;
   enrolledEvents?: string[];
+  joinedGroupIds?: string[];
   createdAt?: Timestamp;
   lastUpdated?: Timestamp;
 }
@@ -79,6 +80,22 @@ export interface RunningEvent {
   image: string;
   price: string;
   timestamp: Date | Timestamp;
+}
+
+// â•â•â• GROUP (COMUNIDADE) â•â•â•
+export interface RunningGroup {
+  id: string;
+  name: string;
+  city: string;
+  description: string;
+  tag: string;
+  createdBy: string;
+  creatorName: string;
+  memberIds: string[];
+  membersCount: number;
+  weeklyKm: number;
+  createdAt?: Timestamp | Date;
+  updatedAt?: Timestamp | Date;
 }
 
 // ═══ STATS ═══

@@ -19,14 +19,15 @@ import {
   increment,
   writeBatch,
   deleteDoc,
+  documentId,
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { calculateXP, getLevelFromXP } from "@/lib/gamification";
 import { toDateSafe } from "@/lib/feed-utils";
-import type { UserProfile, ActivityData, FeedActivity, Product, RunningEvent, UserStats } from "@/types";
+import type { UserProfile, ActivityData, FeedActivity, Product, RunningEvent, UserStats, RunningGroup } from "@/types";
 
 // Re-exportar types para quem já importava direto daqui
-export type { UserProfile, ActivityData, FeedActivity, Product, RunningEvent, UserStats };
+export type { UserProfile, ActivityData, FeedActivity, Product, RunningEvent, UserStats, RunningGroup };
 
 function removeUndefinedFields<T>(value: T): T {
   if (Array.isArray(value)) {
@@ -470,6 +471,185 @@ export const getProducts = async (): Promise<Product[]> => {
 /**
  * Cadastra produtos iniciais se a coleção estiver vazia (Seeding)
  */
+// Social groups
+const FALLBACK_GROUPS: RunningGroup[] = [
+  {
+    id: "sp-runners",
+    name: "Sao Paulo Runners",
+    city: "Sao Paulo, SP",
+    description: "Treinos urbanos, provas de rua e encontros semanais.",
+    tag: "Urbano",
+    createdBy: "system",
+    creatorName: "Veloxy",
+    memberIds: [],
+    membersCount: 128,
+    weeklyKm: 842,
+  },
+  {
+    id: "5k-iniciantes",
+    name: "5K Iniciantes",
+    city: "Brasil",
+    description: "Comunidade para quem quer criar constancia nos primeiros 5 km.",
+    tag: "Comecando",
+    createdBy: "system",
+    creatorName: "Veloxy",
+    memberIds: [],
+    membersCount: 94,
+    weeklyKm: 318,
+  },
+  {
+    id: "treino-noturno",
+    name: "Treino Noturno",
+    city: "Online",
+    description: "Para quem prefere correr depois do expediente.",
+    tag: "Noite",
+    createdBy: "system",
+    creatorName: "Veloxy",
+    memberIds: [],
+    membersCount: 76,
+    weeklyKm: 454,
+  },
+];
+
+function normalizeGroup(docId: string, data: Record<string, unknown>): RunningGroup {
+  return {
+    id: docId,
+    name: typeof data.name === "string" ? data.name : "Grupo",
+    city: typeof data.city === "string" ? data.city : "Brasil",
+    description: typeof data.description === "string" ? data.description : "",
+    tag: typeof data.tag === "string" ? data.tag : "Run",
+    createdBy: typeof data.createdBy === "string" ? data.createdBy : "",
+    creatorName: typeof data.creatorName === "string" ? data.creatorName : "Veloxy",
+    memberIds: Array.isArray(data.memberIds) ? data.memberIds.filter((id): id is string => typeof id === "string") : [],
+    membersCount: typeof data.membersCount === "number" ? data.membersCount : 0,
+    weeklyKm: typeof data.weeklyKm === "number" ? data.weeklyKm : 0,
+    createdAt: data.createdAt as RunningGroup["createdAt"],
+    updatedAt: data.updatedAt as RunningGroup["updatedAt"],
+  };
+}
+
+export const getGroups = async (): Promise<RunningGroup[]> => {
+  try {
+    const q = query(collection(db, "groups"), orderBy("membersCount", "desc"), limit(50));
+    const snapshot = await getDocs(q);
+    const groups = snapshot.docs.map((groupDoc) => normalizeGroup(groupDoc.id, groupDoc.data()));
+    return groups.length > 0 ? groups : FALLBACK_GROUPS;
+  } catch (error) {
+    console.error("Erro ao buscar grupos:", error);
+    return FALLBACK_GROUPS;
+  }
+};
+
+export const createGroup = async ({
+  name,
+  city,
+  description,
+  tag,
+  userId,
+  userName,
+}: {
+  name: string;
+  city: string;
+  description: string;
+  tag: string;
+  userId: string;
+  userName: string;
+}) => {
+  const groupRef = await addDoc(collection(db, "groups"), removeUndefinedFields({
+    name: name.trim(),
+    city: city.trim() || "Brasil",
+    description: description.trim(),
+    tag: tag.trim() || "Run",
+    createdBy: userId,
+    creatorName: userName,
+    memberIds: [userId],
+    membersCount: 1,
+    weeklyKm: 0,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }));
+
+  await setDoc(doc(db, "users", userId), { joinedGroupIds: arrayUnion(groupRef.id) }, { merge: true });
+  return groupRef.id;
+};
+
+export const joinGroup = async (groupId: string, userId: string) => {
+  if (FALLBACK_GROUPS.some((group) => group.id === groupId)) {
+    await setDoc(doc(db, "users", userId), { joinedGroupIds: arrayUnion(groupId) }, { merge: true });
+    return true;
+  }
+
+  await updateDoc(doc(db, "groups", groupId), {
+    memberIds: arrayUnion(userId),
+    membersCount: increment(1),
+    updatedAt: serverTimestamp(),
+  });
+  await setDoc(doc(db, "users", userId), { joinedGroupIds: arrayUnion(groupId) }, { merge: true });
+  return true;
+};
+
+export const leaveGroup = async (groupId: string, userId: string) => {
+  if (FALLBACK_GROUPS.some((group) => group.id === groupId)) {
+    await setDoc(doc(db, "users", userId), { joinedGroupIds: arrayRemove(groupId) }, { merge: true });
+    return true;
+  }
+
+  await updateDoc(doc(db, "groups", groupId), {
+    memberIds: arrayRemove(userId),
+    membersCount: increment(-1),
+    updatedAt: serverTimestamp(),
+  });
+  await setDoc(doc(db, "users", userId), { joinedGroupIds: arrayRemove(groupId) }, { merge: true });
+  return true;
+};
+
+export const getGroupActivities = async (group: RunningGroup, limitCount = 12): Promise<FeedActivity[]> => {
+  const memberIds = group.memberIds.slice(0, 30);
+  if (memberIds.length === 0) return [];
+
+  try {
+    const chunks: string[][] = [];
+    for (let i = 0; i < memberIds.length; i += 10) chunks.push(memberIds.slice(i, i + 10));
+
+    const snapshots = await Promise.all(
+      chunks.map((chunk) => getDocs(query(collection(db, "activities"), where("userId", "in", chunk))))
+    );
+
+    return snapshots
+      .flatMap((snapshot) => snapshot.docs.map((activityDoc) => normalizeActivity(activityDoc.id, activityDoc.data())))
+      .sort((a, b) => {
+        const dateA = toDateSafe(a.timestamp)?.getTime() ?? a.createdAtMs ?? 0;
+        const dateB = toDateSafe(b.timestamp)?.getTime() ?? b.createdAtMs ?? 0;
+        return dateB - dateA;
+      })
+      .slice(0, limitCount);
+  } catch (error) {
+    console.error("Erro ao buscar feed do grupo:", error);
+    return [];
+  }
+};
+
+export const getGroupLeaderboard = async (group: RunningGroup): Promise<UserProfile[]> => {
+  const memberIds = group.memberIds.slice(0, 30);
+  if (memberIds.length === 0) return [];
+
+  try {
+    const chunks: string[][] = [];
+    for (let i = 0; i < memberIds.length; i += 10) chunks.push(memberIds.slice(i, i + 10));
+
+    const snapshots = await Promise.all(
+      chunks.map((chunk) => getDocs(query(collection(db, "users"), where(documentId(), "in", chunk))))
+    );
+
+    return snapshots
+      .flatMap((snapshot) => snapshot.docs.map((userDoc) => ({ uid: userDoc.id, ...userDoc.data() } as UserProfile)))
+      .sort((a, b) => (b.totalXP || 0) - (a.totalXP || 0));
+  } catch (error) {
+    console.error("Erro ao buscar ranking do grupo:", error);
+    return [];
+  }
+};
+
 export const seedProducts = async () => {
   try {
     const existing = await getDocs(collection(db, "products"));
