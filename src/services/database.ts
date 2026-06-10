@@ -233,40 +233,44 @@ export const deleteUserActivity = async (activityId: string, userId: string) => 
 
   await deleteDoc(activityRef);
 
-  const remainingSnapshot = await getDocs(
-    query(collection(db, "activities"), where("userId", "==", userId))
-  );
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  try {
+    const remainingSnapshot = await getDocs(
+      query(collection(db, "activities"), where("userId", "==", userId))
+    );
+    const currentMonth = new Date().toISOString().slice(0, 7);
 
-  let totalXP = 0;
-  let monthlyKm = 0;
+    let totalXP = 0;
+    let monthlyKm = 0;
 
-  remainingSnapshot.docs.forEach((activityDoc) => {
-    const activity = normalizeActivity(activityDoc.id, activityDoc.data());
-    const distance = Number(activity.distance || 0);
-    const durationSeconds = Number(activity.durationSeconds || 0);
-    const activityXP = Number(activity.xpGained || calculateXP(distance, durationSeconds));
-    const activityDate = toDateSafe(activity.timestamp) ?? new Date(activity.createdAtMs || 0);
+    remainingSnapshot.docs.forEach((activityDoc) => {
+      const activity = normalizeActivity(activityDoc.id, activityDoc.data());
+      const distance = Number(activity.distance || 0);
+      const durationSeconds = Number(activity.durationSeconds || 0);
+      const activityXP = Number(activity.xpGained || calculateXP(distance, durationSeconds));
+      const activityDate = toDateSafe(activity.timestamp) ?? new Date(activity.createdAtMs || 0);
 
-    totalXP += activityXP;
-    if (!Number.isNaN(activityDate.getTime()) && activityDate.toISOString().slice(0, 7) === currentMonth) {
-      monthlyKm += distance;
-    }
-  });
+      totalXP += activityXP;
+      if (!Number.isNaN(activityDate.getTime()) && activityDate.toISOString().slice(0, 7) === currentMonth) {
+        monthlyKm += distance;
+      }
+    });
 
-  const { currentLevel } = getLevelFromXP(totalXP);
+    const { currentLevel } = getLevelFromXP(totalXP);
 
-  await setDoc(
-    doc(db, "users", userId),
-    {
-      totalXP,
-      monthlyKm: Number(monthlyKm.toFixed(2)),
-      monthlyKmMonth: currentMonth,
-      level: currentLevel,
-      lastUpdated: serverTimestamp(),
-    },
-    { merge: true }
-  );
+    await setDoc(
+      doc(db, "users", userId),
+      {
+        totalXP,
+        monthlyKm: Number(monthlyKm.toFixed(2)),
+        monthlyKmMonth: currentMonth,
+        level: currentLevel,
+        lastUpdated: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  } catch (error) {
+    console.warn("Corrida apagada, mas não foi possível recalcular o perfil agora:", error);
+  }
 };
 
 // Escutar as N atividades mais recentes em tempo real

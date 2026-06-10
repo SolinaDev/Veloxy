@@ -90,7 +90,8 @@ export default function Home() {
       await loadHomeData();
     } catch (error) {
       console.error("Erro ao apagar corrida:", error);
-      toast.error("Não foi possível apagar esta corrida.");
+      const message = error instanceof Error ? error.message : "Não foi possível apagar esta corrida.";
+      toast.error(message);
     } finally {
       setDeletingId(null);
     }
