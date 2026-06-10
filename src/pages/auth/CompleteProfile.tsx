@@ -8,7 +8,6 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { toast } from "sonner";
 import { User, MapPin, Pencil, Loader2, ChevronRight, Camera } from "lucide-react";
 import logo from "@/assets/LogoNova-login.png";
-import { uploadAvatar } from "@/services/storage";
 
 export default function CompleteProfile() {
   const navigate = useNavigate();
@@ -18,16 +17,7 @@ export default function CompleteProfile() {
   const [location, setLocation] = useState("");
   const [bio, setBio] = useState("");
   const [saving, setSaving] = useState(false);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState(user?.photoURL || "");
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setAvatarFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
-    }
-  };
+  const [photoURL, setPhotoURL] = useState(user?.photoURL || "");
 
   const handleComplete = async () => {
     if (!username.trim()) {
@@ -38,16 +28,17 @@ export default function CompleteProfile() {
     setSaving(true);
     try {
       if (user) {
-        if (avatarFile) {
-          toast.info("Subindo sua foto...", { duration: 2000 });
-          await uploadAvatar(avatarFile, user.uid);
-        }
-        await updateProfile(user, { displayName: username.trim() });
+        const normalizedPhoto = photoURL.trim();
+        await updateProfile(user, {
+          displayName: username.trim(),
+          photoURL: normalizedPhoto || null,
+        });
 
         // Salvar dados do perfil no Firestore (não mais em localStorage)
         const userRef = doc(db, "users", user.uid);
         await setDoc(userRef, {
           displayName: username.trim(),
+          photoURL: normalizedPhoto || null,
           location: location.trim(),
           bio: bio.trim(),
           onboarded: true,
@@ -111,21 +102,19 @@ export default function CompleteProfile() {
       >
         {/* Avatar preview */}
         <div className="flex justify-center mb-2">
-          <label className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center ring-2 ring-purple-500/30 ring-offset-2 ring-offset-black relative cursor-pointer group hover:scale-105 transition-transform overflow-hidden shadow-lg">
-            {previewUrl ? (
-               <img src={previewUrl} alt="Avatar Preview" className="w-full h-full object-cover" />
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center ring-2 ring-purple-500/30 ring-offset-2 ring-offset-black relative overflow-hidden shadow-lg">
+            {photoURL ? (
+               <img src={photoURL} alt="Avatar Preview" className="w-full h-full object-cover" />
             ) : (
                <span className="text-3xl font-display font-bold text-white z-10">
                  {username ? username.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() : "?"}
                </span>
             )}
             
-            <div className={`absolute inset-0 bg-black/60 flex items-center justify-center transition-opacity ${previewUrl ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
+            <div className={`absolute inset-0 bg-black/60 flex items-center justify-center transition-opacity ${photoURL ? 'opacity-0' : 'opacity-100'}`}>
                <Camera size={24} className="text-white opacity-90" />
             </div>
-
-            <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-          </label>
+          </div>
         </div>
 
         {/* Username */}
@@ -154,6 +143,30 @@ export default function CompleteProfile() {
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             placeholder="Ex: São Paulo, SP"
+            className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition"
+          />
+        </div>
+
+        {/* Bio */}
+        <div>
+          <div className="mb-1.5 flex items-center justify-between">
+            <label className="text-xs text-gray-400 font-medium flex items-center gap-1.5">
+              <Camera size={12} />
+              Foto por URL
+            </label>
+            <button
+              type="button"
+              onClick={() => setPhotoURL(user?.photoURL || "")}
+              className="text-[10px] font-bold text-purple-400"
+            >
+              usar Google
+            </button>
+          </div>
+          <input
+            type="url"
+            value={photoURL}
+            onChange={(e) => setPhotoURL(e.target.value)}
+            placeholder="https://..."
             className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition"
           />
         </div>

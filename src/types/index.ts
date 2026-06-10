@@ -16,6 +16,8 @@ export interface UserProfile {
   monthlyKmMonth?: string;
   bio?: string;
   location?: string;
+  privateProfile?: boolean;
+  weeklyGoalKm?: number;
   onboarded?: boolean;
   enrolledEvents?: string[];
   joinedGroupIds?: string[];

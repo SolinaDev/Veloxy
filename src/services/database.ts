@@ -192,7 +192,9 @@ export const getGlobalRanking = async (limitCount = 10): Promise<UserProfile[]> 
       limit(limitCount)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({ uid: d.id, ...d.data() } as UserProfile));
+    return snapshot.docs
+      .map(d => ({ uid: d.id, ...d.data() } as UserProfile))
+      .filter((profile) => !profile.privateProfile);
   } catch (error) {
     console.error("Erro ao buscar ranking:", error);
     return [];

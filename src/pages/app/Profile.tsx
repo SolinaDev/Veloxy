@@ -19,10 +19,7 @@ import {
   X,
   LogOut,
   Camera,
-  Mail,
-  Save,
   Loader2,
-  TrendingUp,
   Award,
   Zap,
   Moon,
@@ -35,15 +32,11 @@ import {
   Lock,
   Trash2,
 } from "lucide-react";
-import { deleteUserActivities, getUserStats, getUserProfile, UserProfile, UserStats } from "@/services/database";
+import { deleteUserActivities, getUserActivities, getUserStats, getUserProfile, UserProfile, UserStats } from "@/services/database";
+import type { FeedActivity } from "@/types";
 import { getLevelFromXP } from "@/lib/gamification";
-import { uploadAvatar } from "@/services/storage";
-
-const achievements = [
-  { icon: <Medal size={20} />, name: "Primeiro 5K", date: "Jan 2025" },
-  { icon: <Award size={20} />, name: "10K Sub-50", date: "Mar 2025" },
-  { icon: <Trophy size={20} />, name: "Meia Maratona", date: "Jul 2025" },
-];
+import { getGooglePhotoURL } from "@/lib/user-photo";
+import { toDateSafe } from "@/lib/feed-utils";
 
 type Theme = "dark" | "light";
 
@@ -63,6 +56,48 @@ const defaultSettings: SettingsState = {
   autoPause: true,
   units: "km",
 };
+
+function formatRunHistoryDate(activity: FeedActivity) {
+  const date = toDateSafe(activity.timestamp) ?? (
+    typeof activity.createdAtMs === "number" ? new Date(activity.createdAtMs) : null
+  );
+  if (!date) return "Sem data";
+  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "2-digit" });
+}
+
+function getRealAchievements(stats: UserStats | null) {
+  const runsCount = stats?.runsCount || 0;
+  const totalKm = Number(stats?.totalKm || 0);
+  const bestDistance = stats?.bestActivity?.distance || 0;
+  const streak = stats?.currentStreak || 0;
+
+  return [
+    {
+      icon: <Medal size={20} />,
+      name: "Primeira corrida",
+      detail: runsCount > 0 ? "Conquistado" : "Salve sua primeira corrida",
+      unlocked: runsCount > 0,
+    },
+    {
+      icon: <Award size={20} />,
+      name: "5K completo",
+      detail: bestDistance >= 5 ? `${bestDistance.toFixed(1)} km melhor corrida` : `${bestDistance.toFixed(1)}/5 km`,
+      unlocked: bestDistance >= 5,
+    },
+    {
+      icon: <Trophy size={20} />,
+      name: "25 km acumulados",
+      detail: totalKm >= 25 ? `${totalKm.toFixed(1)} km totais` : `${totalKm.toFixed(1)}/25 km`,
+      unlocked: totalKm >= 25,
+    },
+    {
+      icon: <Flame size={20} />,
+      name: "Sequencia 3 dias",
+      detail: streak >= 3 ? `${streak} dias ativos` : `${streak}/3 dias`,
+      unlocked: streak >= 3,
+    },
+  ];
+}
 
 const getStoredTheme = (): Theme => {
   return localStorage.getItem(THEME_STORAGE_KEY) === "light" ? "light" : "dark";
@@ -142,6 +177,8 @@ function SettingsModal({
   onThemeChange,
   user,
   onActivitiesDeleted,
+  privateProfile,
+  onPrivacyChange,
 }: {
   open: boolean;
   onClose: () => void;
@@ -149,6 +186,8 @@ function SettingsModal({
   onThemeChange: (theme: Theme) => void;
   user: User | null;
   onActivitiesDeleted: () => void;
+  privateProfile: boolean;
+  onPrivacyChange: (value: boolean) => Promise<void>;
 }) {
   const [settings, setSettings] = useState<SettingsState>(getStoredSettings);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -160,6 +199,15 @@ function SettingsModal({
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(next));
       return next;
     });
+  };
+
+  useEffect(() => {
+    setSettings((prev) => ({ ...prev, privateProfile }));
+  }, [privateProfile]);
+
+  const updatePrivacy = async (value: boolean) => {
+    updateSetting("privateProfile", value);
+    await onPrivacyChange(value);
   };
 
   const handleDeleteRuns = async () => {
@@ -244,8 +292,8 @@ function SettingsModal({
                 </div>
               </SettingsRow>
 
-              <SettingsRow icon={<Shield size={18} />} title="Perfil privado" description="Oculta seu perfil de buscas públicas futuras.">
-                <ToggleSwitch checked={settings.privateProfile} onChange={(value) => updateSetting("privateProfile", value)} />
+              <SettingsRow icon={<Shield size={18} />} title="Perfil privado" description="Oculta seu perfil dos rankings públicos.">
+                <ToggleSwitch checked={settings.privateProfile} onChange={updatePrivacy} />
               </SettingsRow>
 
               <SettingsRow icon={<Bell size={18} />} title="Lembretes de treino" description="Receber alertas para manter a sequência.">
@@ -332,7 +380,7 @@ function EditProfileModal({
 }: {
   open: boolean;
   onClose: () => void;
-  initialData: { bio: string; location: string };
+  initialData: { bio: string; location: string; photoURL: string; weeklyGoalKm: number };
   onSuccess: () => void;
   user: User | null;
 }) {
@@ -340,6 +388,17 @@ function EditProfileModal({
   const [saving, setSaving] = useState(false);
   const [location, setLocation] = useState(initialData.location);
   const [bio, setBio] = useState(initialData.bio);
+  const [photoURL, setPhotoURL] = useState(initialData.photoURL);
+  const [weeklyGoalKm, setWeeklyGoalKm] = useState(initialData.weeklyGoalKm.toString());
+
+  useEffect(() => {
+    if (!open) return;
+    setDisplayName(user?.displayName || "");
+    setLocation(initialData.location);
+    setBio(initialData.bio);
+    setPhotoURL(initialData.photoURL);
+    setWeeklyGoalKm(initialData.weeklyGoalKm.toString());
+  }, [open, initialData, user]);
 
   const handleSave = async () => {
     if (!displayName.trim()) {
@@ -349,15 +408,22 @@ function EditProfileModal({
     setSaving(true);
     try {
       if (user) {
+        const normalizedPhoto = photoURL.trim();
+        const goalValue = Number(weeklyGoalKm);
         // Atualizar Auth
-        await updateProfile(user, { displayName: displayName.trim() });
+        await updateProfile(user, {
+          displayName: displayName.trim(),
+          photoURL: normalizedPhoto || null,
+        });
         
         // Atualizar Firestore
         const userRef = doc(db, "users", user.uid);
         await setDoc(userRef, {
           displayName: displayName.trim(),
+          photoURL: normalizedPhoto || null,
           bio: bio.trim(),
-          location: location.trim()
+          location: location.trim(),
+          weeklyGoalKm: Number.isFinite(goalValue) ? Math.max(0, Math.min(goalValue, 500)) : 10,
         }, { merge: true });
       }
       toast.success("Perfil atualizado!");
@@ -418,6 +484,37 @@ function EditProfileModal({
                     />
                   </div>
                   <div>
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block">Foto do perfil</label>
+                      <button
+                        type="button"
+                        onClick={() => setPhotoURL(getGooglePhotoURL(user) || "")}
+                        className="text-[9px] font-black uppercase tracking-widest text-purple-400"
+                      >
+                        Usar Google
+                      </button>
+                    </div>
+                    <input
+                      type="url"
+                      placeholder="Cole uma URL de imagem"
+                      value={photoURL}
+                      onChange={(e) => setPhotoURL(e.target.value)}
+                      className="w-full premium-panel rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 block">Meta semanal (km)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="500"
+                      step="0.5"
+                      value={weeklyGoalKm}
+                      onChange={(e) => setWeeklyGoalKm(e.target.value)}
+                      className="w-full premium-panel rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    />
+                  </div>
+                  <div>
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 block">Minha Bio</label>
                     <textarea
                       value={bio}
@@ -458,16 +555,19 @@ const Profile = () => {
   
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [statsData, setStatsData] = useState<UserStats | null>(null);
+  const [runHistory, setRunHistory] = useState<FeedActivity[]>([]);
 
   const fetchProfileData = useCallback(async () => {
     if (!user) return;
     try {
-      const [userStats, userProfile] = await Promise.all([
+      const [userStats, userProfile, history] = await Promise.all([
         getUserStats(user.uid),
-        getUserProfile(user.uid)
+        getUserProfile(user.uid),
+        getUserActivities(user.uid, 20)
       ]);
       setStatsData(userStats);
       setProfile(userProfile);
+      setRunHistory(history);
     } catch (error) {
       console.error("Erro ao carregar perfil:", error);
     } finally {
@@ -510,6 +610,22 @@ const Profile = () => {
   
   // Níveis e Progressão
   const levelInfo = getLevelFromXP(profile?.totalXP || 0);
+  const weeklyGoalKm = profile?.weeklyGoalKm ?? 10;
+  const weeklyKm = statsData?.weeklyTotalKm ?? 0;
+  const weeklyProgress = weeklyGoalKm > 0 ? Math.min((weeklyKm / weeklyGoalKm) * 100, 100) : 0;
+  const realAchievements = getRealAchievements(statsData);
+
+  const handlePrivacyChange = async (value: boolean) => {
+    if (!user) return;
+    try {
+      await setDoc(doc(db, "users", user.uid), { privateProfile: value }, { merge: true });
+      setProfile((prev) => prev ? { ...prev, privateProfile: value } : prev);
+      toast.success(value ? "Perfil privado ativado." : "Perfil público ativado.");
+    } catch (error) {
+      console.error("Erro ao atualizar privacidade:", error);
+      toast.error("Não foi possível atualizar a privacidade.");
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -583,7 +699,11 @@ const Profile = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="relative rounded-[2.4rem] bg-gradient-to-br from-purple-500/30 via-transparent to-zinc-800 p-1 shadow-[0_0_45px_rgba(147,51,234,0.22)] animate-soft-glow"
         >
-            <label className="block w-32 h-32 cursor-pointer relative group overflow-hidden rounded-[2.2rem] premium-panel">
+            <button
+                type="button"
+                onClick={() => setEditOpen(true)}
+                className="block w-32 h-32 cursor-pointer relative group overflow-hidden rounded-[2.2rem] premium-panel"
+            >
                 {profile?.photoURL || user?.photoURL ? (
                     <img src={profile?.photoURL || user?.photoURL || ""} className="w-full h-full object-cover transition-all group-hover:opacity-40 group-hover:blur-[2px]" alt="avatar" />
                 ) : (
@@ -593,9 +713,7 @@ const Profile = () => {
                 <div className="absolute inset-0 hidden group-hover:flex items-center justify-center">
                     <Camera size={32} className="text-white drop-shadow-md" />
                 </div>
-
-                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
-            </label>
+            </button>
             <div className="absolute -bottom-2 left-1/2 bg-purple-600 px-4 py-1 rounded-full text-[10px] font-black tracking-widest border-2 border-black -translate-x-1/2 shadow-[0_0_18px_rgba(147,51,234,0.5)] whitespace-nowrap z-10">
                 LEVEL {levelInfo.currentLevel.toUpperCase()}
             </div>
@@ -648,6 +766,33 @@ const Profile = () => {
             </motion.div>
       </section>
 
+      <section className="px-6 mt-6">
+        <div className="premium-surface premium-line rounded-[2.2rem] p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Meta semanal</p>
+              <h3 className="mt-1 font-display text-2xl font-black italic">
+                {weeklyKm.toFixed(1)} / {weeklyGoalKm.toFixed(1)} km
+              </h3>
+            </div>
+            <Zap size={22} className="text-purple-500" />
+          </div>
+          <div className="h-3 rounded-full bg-zinc-950/80 p-1 border border-zinc-800">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${weeklyProgress}%` }}
+              className="h-full rounded-full bg-purple-500"
+            />
+          </div>
+          <button
+            onClick={() => setEditOpen(true)}
+            className="mt-4 text-[10px] font-black uppercase tracking-widest text-purple-400"
+          >
+            Ajustar meta
+          </button>
+        </div>
+      </section>
+
       {/* Level Progress */}
       <section className="px-6 mt-8">
         <motion.div
@@ -682,25 +827,71 @@ const Profile = () => {
             <button className="text-[10px] font-black text-purple-500 italic">VER TODAS</button>
           </div>
           <div className="flex gap-4 overflow-x-auto no-scrollbar px-6">
-              {achievements.map((a, i) => (
+              {realAchievements.map((a, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 18 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.35, delay: i * 0.08 }}
                   whileHover={{ y: -4, scale: 1.02 }}
-                  className="min-w-[140px] premium-panel p-5 rounded-[2rem] flex flex-col items-center gap-3"
+                  className={`min-w-[150px] premium-panel p-5 rounded-[2rem] flex flex-col items-center gap-3 ${a.unlocked ? "" : "opacity-45"}`}
                 >
                     <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/15 flex items-center justify-center text-purple-500 shadow-[0_0_18px_rgba(147,51,234,0.14)]">
                         {a.icon}
                     </div>
                     <div className="text-center">
                         <p className="text-[10px] font-black leading-tight uppercase">{a.name}</p>
-                        <p className="text-[8px] font-bold text-zinc-600 mt-1">{a.date}</p>
+                        <p className="text-[8px] font-bold text-zinc-600 mt-1">{a.detail}</p>
                     </div>
                 </motion.div>
               ))}
           </div>
+      </section>
+
+      <section className="px-6 mt-10">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-display font-black text-sm italic tracking-tighter">HISTÓRICO</h3>
+          <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
+            {runHistory.length} corridas
+          </span>
+        </div>
+        <div className="space-y-3">
+          {runHistory.length === 0 ? (
+            <div className="rounded-[2rem] premium-panel p-8 text-center">
+              <Calendar size={32} className="mx-auto text-zinc-700" />
+              <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Nenhuma corrida no histórico</p>
+            </div>
+          ) : (
+            runHistory.map((run) => (
+              <div key={run.id} className="premium-panel rounded-[1.5rem] p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-500">{formatRunHistoryDate(run)}</p>
+                    <p className="mt-1 font-display text-lg font-black italic">Corrida</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-display text-2xl font-black italic text-purple-400">{run.distance.toFixed(2)}</p>
+                    <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-600">km</p>
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-3 gap-2 border-t border-zinc-800 pt-3">
+                  <div>
+                    <p className="text-xs font-black">{run.pace}</p>
+                    <p className="text-[8px] uppercase tracking-[0.14em] text-zinc-600">ritmo</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-black">{run.time}</p>
+                    <p className="text-[8px] uppercase tracking-[0.14em] text-zinc-600">tempo</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-black">{run.calories ?? 0}</p>
+                    <p className="text-[8px] uppercase tracking-[0.14em] text-zinc-600">kcal</p>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </section>
 
       {/* Logout Button */}
@@ -731,7 +922,9 @@ const Profile = () => {
         onClose={() => setEditOpen(false)} 
         initialData={{
           bio: profile?.bio || "",
-          location: profile?.location || ""
+          location: profile?.location || "",
+          photoURL: profile?.photoURL || user?.photoURL || "",
+          weeklyGoalKm: profile?.weeklyGoalKm ?? 10,
         }}
         onSuccess={fetchProfileData}
         user={user}
@@ -743,6 +936,8 @@ const Profile = () => {
         onThemeChange={handleThemeChange}
         user={user}
         onActivitiesDeleted={fetchProfileData}
+        privateProfile={Boolean(profile?.privateProfile)}
+        onPrivacyChange={handlePrivacyChange}
       />
     </div>
   );

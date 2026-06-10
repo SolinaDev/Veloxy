@@ -93,6 +93,8 @@ service cloud.firestore {
         'level',
         'bio',
         'location',
+        'privateProfile',
+        'weeklyGoalKm',
         'onboarded',
         'enrolledEvents',
         'joinedGroupIds',
@@ -128,6 +130,9 @@ service cloud.firestore {
         && optionalString('level', 40)
         && optionalString('bio', 240)
         && optionalString('location', 120)
+        && (!('privateProfile' in request.resource.data)
+          || request.resource.data.privateProfile is bool)
+        && optionalNumber('weeklyGoalKm', 0, 500)
         && optionalNumber('totalXP', 0, 1000000)
         && optionalNumber('monthlyKm', 0, 5000)
         && (!('onboarded' in request.resource.data)
@@ -164,6 +169,8 @@ service cloud.firestore {
           'photoURL',
           'bio',
           'location',
+          'privateProfile',
+          'weeklyGoalKm',
           'onboarded',
           'createdAt',
           'lastUpdated'
