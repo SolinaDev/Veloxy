@@ -223,6 +223,25 @@ service cloud.firestore {
           || request.resource.data.lastUpdated == request.time);
     }
 
+    function validStatsRecalculation(userId) {
+      return validUserBase(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'totalXP',
+          'monthlyKm',
+          'monthlyKmMonth',
+          'level',
+          'lastUpdated'
+        ])
+        && request.resource.data.totalXP is number
+        && request.resource.data.totalXP >= 0
+        && request.resource.data.totalXP <= 1000000
+        && request.resource.data.monthlyKm is number
+        && request.resource.data.monthlyKm >= 0
+        && request.resource.data.monthlyKm <= 5000
+        && (!('lastUpdated' in request.resource.data)
+          || request.resource.data.lastUpdated == request.time);
+    }
+
     function validEnrolledEventsUpdate(userId) {
       return validUserBase(userId)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['enrolledEvents'])
@@ -235,6 +254,7 @@ service cloud.firestore {
         || validStatsProgressUpdate(userId)
         || validMonthlyKmReset(userId)
         || validUserRunReset(userId)
+        || validStatsRecalculation(userId)
         || validEnrolledEventsUpdate(userId);
     }
 

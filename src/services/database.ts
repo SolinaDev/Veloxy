@@ -18,6 +18,7 @@ import {
   getDoc,
   increment,
   writeBatch,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { calculateXP, getLevelFromXP } from "@/lib/gamification";
@@ -220,6 +221,52 @@ export const deleteUserActivities = async (userId: string) => {
   await batch.commit();
 
   return snapshot.size;
+};
+
+export const deleteUserActivity = async (activityId: string, userId: string) => {
+  const activityRef = doc(db, "activities", activityId);
+  const activitySnap = await getDoc(activityRef);
+
+  if (!activitySnap.exists() || activitySnap.data().userId !== userId) {
+    throw new Error("Corrida não encontrada para este usuário.");
+  }
+
+  await deleteDoc(activityRef);
+
+  const remainingSnapshot = await getDocs(
+    query(collection(db, "activities"), where("userId", "==", userId))
+  );
+  const currentMonth = new Date().toISOString().slice(0, 7);
+
+  let totalXP = 0;
+  let monthlyKm = 0;
+
+  remainingSnapshot.docs.forEach((activityDoc) => {
+    const activity = normalizeActivity(activityDoc.id, activityDoc.data());
+    const distance = Number(activity.distance || 0);
+    const durationSeconds = Number(activity.durationSeconds || 0);
+    const activityXP = Number(activity.xpGained || calculateXP(distance, durationSeconds));
+    const activityDate = toDateSafe(activity.timestamp) ?? new Date(activity.createdAtMs || 0);
+
+    totalXP += activityXP;
+    if (!Number.isNaN(activityDate.getTime()) && activityDate.toISOString().slice(0, 7) === currentMonth) {
+      monthlyKm += distance;
+    }
+  });
+
+  const { currentLevel } = getLevelFromXP(totalXP);
+
+  await setDoc(
+    doc(db, "users", userId),
+    {
+      totalXP,
+      monthlyKm: Number(monthlyKm.toFixed(2)),
+      monthlyKmMonth: currentMonth,
+      level: currentLevel,
+      lastUpdated: serverTimestamp(),
+    },
+    { merge: true }
+  );
 };
 
 // Escutar as N atividades mais recentes em tempo real
