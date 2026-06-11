@@ -148,7 +148,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
   const isSearchActive = query.trim().length > 0;
 
   return (
-    <div className={`${embedded ? "min-h-0" : "min-h-screen"} bg-black text-white ${embedded ? "pb-4" : "pb-28 safe-top"}`}>
+    <div className={`${embedded ? "min-h-0" : "app-shell"} ${embedded ? "pb-4" : "pb-28 safe-top"}`}>
       <AnimatePresence>
         {(pullDist > 10 || refreshing) && (
           <motion.div
@@ -166,7 +166,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
       </AnimatePresence>
 
       {!embedded && (
-      <div className="sticky top-0 z-40 bg-black/90 backdrop-blur-2xl border-b border-zinc-900/60 shadow-[0_16px_34px_rgba(0,0,0,0.28)]">
+      <div className="app-header sticky top-0 z-40">
         <header className="px-6 py-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <button
@@ -211,7 +211,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar atletas ou atividades..."
-              className="flex-1 bg-transparent text-sm text-white placeholder:text-zinc-600 outline-none"
+              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-zinc-600 outline-none"
             />
             <AnimatePresence>
               {query && (

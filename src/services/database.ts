@@ -767,8 +767,17 @@ const getFallbackEvents = (): RunningEvent[] => {
       participantsCount: 420,
       participantsIds: [],
       category: "5K / 10K",
+      distanceOptions: ["5K", "10K"],
       image: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=900&auto=format&fit=crop",
       price: "R$ 89",
+      officialUrl: "https://www.ticketsports.com.br/",
+      source: "Exemplo Veloxy",
+      sourceUrl: "https://www.ticketsports.com.br/",
+      sourceType: "demo",
+      verified: false,
+      status: "unknown",
+      lat: -23.5874,
+      lng: -46.6576,
       timestamp: dates[0],
     },
     {
@@ -780,8 +789,17 @@ const getFallbackEvents = (): RunningEvent[] => {
       participantsCount: 1280,
       participantsIds: [],
       category: "21K",
+      distanceOptions: ["21K"],
       image: "https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=900&auto=format&fit=crop",
       price: "R$ 140",
+      officialUrl: "https://www.ticketsports.com.br/",
+      source: "Exemplo Veloxy",
+      sourceUrl: "https://www.ticketsports.com.br/",
+      sourceType: "demo",
+      verified: false,
+      status: "unknown",
+      lat: -22.9339,
+      lng: -43.1706,
       timestamp: dates[1],
     },
     {
@@ -793,18 +811,56 @@ const getFallbackEvents = (): RunningEvent[] => {
       participantsCount: 860,
       participantsIds: [],
       category: "42K",
+      distanceOptions: ["42K"],
       image: "https://images.unsplash.com/photo-1502904550040-7534597429ae?q=80&w=900&auto=format&fit=crop",
       price: "R$ 160",
+      officialUrl: "https://www.ticketsports.com.br/",
+      source: "Exemplo Veloxy",
+      sourceUrl: "https://www.ticketsports.com.br/",
+      sourceType: "demo",
+      verified: false,
+      status: "unknown",
+      lat: -27.5904,
+      lng: -48.5480,
       timestamp: dates[2],
     },
   ];
+};
+
+const normalizeEvent = (id: string, data: Partial<RunningEvent>): RunningEvent => {
+  const category = data.category || "Corrida";
+  return {
+    id,
+    title: data.title || "Corrida oficial",
+    date: data.date || "",
+    location: data.location || "Local a confirmar",
+    city: data.city || "Brasil",
+    state: data.state,
+    country: data.country || "BR",
+    lat: typeof data.lat === "number" ? data.lat : undefined,
+    lng: typeof data.lng === "number" ? data.lng : undefined,
+    participantsCount: Number(data.participantsCount || 0),
+    participantsIds: Array.isArray(data.participantsIds) ? data.participantsIds : [],
+    category,
+    distanceOptions: Array.isArray(data.distanceOptions) && data.distanceOptions.length > 0 ? data.distanceOptions : category.split("/").map((item) => item.trim()).filter(Boolean),
+    image: data.image || "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=900&auto=format&fit=crop",
+    price: data.price || "Ver no site oficial",
+    officialUrl: data.officialUrl || data.sourceUrl || "",
+    source: data.source || "Fonte oficial",
+    sourceUrl: data.sourceUrl || data.officialUrl || "",
+    sourceType: data.sourceType || "manual",
+    verified: Boolean(data.verified),
+    status: data.status || "unknown",
+    lastSyncedAt: data.lastSyncedAt,
+    timestamp: data.timestamp || new Date(),
+  };
 };
 
 export const getEvents = async (cityFilter?: string): Promise<RunningEvent[]> => {
   try {
     const q = query(collection(db, "events"), orderBy("timestamp", "asc"));
     const snapshot = await getDocs(q);
-    let events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RunningEvent));
+    let events = snapshot.docs.map(doc => normalizeEvent(doc.id, doc.data() as Partial<RunningEvent>));
 
     if (events.length === 0) {
       events = getFallbackEvents();
@@ -925,8 +981,17 @@ export const seedEvents = async () => {
         city: "São Paulo",
         participantsCount: 1250,
         category: "MARATONA",
+        distanceOptions: ["42K"],
         image: "https://images.unsplash.com/photo-1530541930197-ff16ac917b0e?q=80&w=800&auto=format&fit=crop",
         price: "R$ 120",
+        officialUrl: "https://www.ticketsports.com.br/",
+        source: "Importador Veloxy",
+        sourceUrl: "https://www.ticketsports.com.br/",
+        sourceType: "manual",
+        verified: false,
+        status: "unknown",
+        lat: -23.5874,
+        lng: -46.6576,
         timestamp: d1
       },
       {
@@ -936,8 +1001,17 @@ export const seedEvents = async () => {
         city: "São Paulo",
         participantsCount: 450,
         category: "10K / 5K",
+        distanceOptions: ["10K", "5K"],
         image: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=800&auto=format&fit=crop",
         price: "R$ 85",
+        officialUrl: "https://www.ticketsports.com.br/",
+        source: "Importador Veloxy",
+        sourceUrl: "https://www.ticketsports.com.br/",
+        sourceType: "manual",
+        verified: false,
+        status: "unknown",
+        lat: -23.5954,
+        lng: -46.7018,
         timestamp: d2
       },
       {
@@ -947,8 +1021,17 @@ export const seedEvents = async () => {
         city: "Rio de Janeiro",
         participantsCount: 3000,
         category: "21K",
+        distanceOptions: ["21K"],
         image: "https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=800&auto=format&fit=crop",
         price: "R$ 150",
+        officialUrl: "https://www.ticketsports.com.br/",
+        source: "Importador Veloxy",
+        sourceUrl: "https://www.ticketsports.com.br/",
+        sourceType: "manual",
+        verified: false,
+        status: "unknown",
+        lat: -22.9339,
+        lng: -43.1706,
         timestamp: d3
       },
       {
@@ -958,8 +1041,17 @@ export const seedEvents = async () => {
         city: "Florianópolis",
         participantsCount: 800,
         category: "MARATONA",
+        distanceOptions: ["42K"],
         image: "https://images.unsplash.com/photo-1502904550040-7534597429ae?q=80&w=800&auto=format&fit=crop",
         price: "R$ 110",
+        officialUrl: "https://www.ticketsports.com.br/",
+        source: "Importador Veloxy",
+        sourceUrl: "https://www.ticketsports.com.br/",
+        sourceType: "manual",
+        verified: false,
+        status: "unknown",
+        lat: -27.5904,
+        lng: -48.5480,
         timestamp: d4
       }
     ];

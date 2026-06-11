@@ -76,11 +76,24 @@ export interface RunningEvent {
   date: string;
   location: string;
   city: string;
+  state?: string;
+  country?: string;
+  lat?: number;
+  lng?: number;
   participantsCount: number;
   participantsIds?: string[];
   category: string;
+  distanceOptions?: string[];
   image: string;
   price: string;
+  officialUrl?: string;
+  source?: string;
+  sourceUrl?: string;
+  sourceType?: "official" | "partner" | "manual" | "aggregated" | "demo";
+  verified?: boolean;
+  status?: "open" | "sold_out" | "closed" | "unknown";
+  lastSyncedAt?: Date | Timestamp;
+  distanceKm?: number | null;
   timestamp: Date | Timestamp;
 }
 

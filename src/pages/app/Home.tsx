@@ -108,8 +108,8 @@ export default function Home() {
   ], [stats]);
 
   return (
-    <div className="min-h-screen bg-black text-white pb-28 safe-top">
-      <header className="sticky top-0 z-40 border-b border-zinc-900/60 bg-black/90 px-6 py-4 backdrop-blur-2xl">
+    <div className="app-shell pb-28 safe-top">
+      <header className="app-header sticky top-0 z-40 px-6 py-4">
         <div className="flex items-center justify-between">
           <button
             onClick={() => navigate("/profile")}
@@ -152,7 +152,7 @@ export default function Home() {
               Bora, {firstName}
             </h2>
 
-            <div className="mt-6 rounded-[2.5rem] border border-purple-500/20 bg-gradient-to-br from-purple-500/18 via-zinc-950 to-black p-6 shadow-[0_22px_60px_rgba(0,0,0,0.42)]">
+            <div className="hero-card mt-6 rounded-[2.5rem] p-6">
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-[0.22em] text-purple-300">Distancia total</p>
@@ -161,7 +161,7 @@ export default function Home() {
                     <span className="mb-2 text-xs font-black uppercase text-purple-400">km</span>
                   </div>
                 </div>
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-600 text-white shadow-[0_0_26px_rgba(147,51,234,0.45)]">
+                <div className="hero-icon flex h-14 w-14 items-center justify-center rounded-2xl">
                   <Activity size={24} />
                 </div>
               </div>
@@ -172,7 +172,7 @@ export default function Home() {
                   { label: "Tempo", value: stats.totalTime },
                   { label: "Melhor", value: stats.bestActivity ? `${stats.bestActivity.distance.toFixed(1)}km` : "0km" },
                 ].map((item) => (
-                  <div key={item.label} className="rounded-2xl bg-black/35 p-3">
+                  <div key={item.label} className="rounded-2xl premium-panel p-3">
                     <p className="font-display text-xl font-black italic leading-none">{item.value}</p>
                     <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.18em] text-zinc-500">{item.label}</p>
                   </div>
@@ -242,7 +242,7 @@ export default function Home() {
 
             <div className="mt-4 space-y-3">
               {activities.length === 0 ? (
-                <div className="rounded-[2rem] border border-zinc-800 bg-zinc-950/70 p-8 text-center">
+                <div className="rounded-[2rem] premium-panel p-8 text-center">
                   <Trophy size={34} className="mx-auto text-zinc-700" />
                   <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Nenhuma corrida salva ainda</p>
                   <button

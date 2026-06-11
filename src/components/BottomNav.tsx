@@ -36,9 +36,9 @@ const BottomNav = () => {
                   whileHover={{ scale: 1.1, rotate: -4 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => navigate("/run")}
-                  className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-[0_0_28px_rgba(147,51,234,0.55)] border-4 border-black text-white animate-soft-glow"
+                  className="nav-action w-14 h-14 rounded-full flex items-center justify-center border-4 border-background"
                 >
-                  <div className="w-4 h-4 rounded-full bg-white shadow-[0_0_16px_rgba(255,255,255,0.9)] animate-pulse" />
+                  <div className="w-4 h-4 rounded-full bg-white/95 shadow-[0_0_10px_rgba(255,255,255,0.7)] animate-pulse" />
                 </motion.button>
               </div>
             );
@@ -75,7 +75,7 @@ const BottomNav = () => {
               {isActive && (
                 <motion.div
                   layoutId="activeTabGlow"
-                  className="absolute -bottom-1 w-1 h-1 bg-purple-500 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.8)]"
+                  className="absolute -bottom-1 h-1 w-4 rounded-full bg-purple-500/90"
                 />
               )}
             </NavLink>

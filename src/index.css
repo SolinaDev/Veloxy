@@ -105,9 +105,19 @@
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', sans-serif;
     background-image:
-      linear-gradient(135deg, hsl(270 80% 30% / 0.12), transparent 36%, hsl(190 90% 24% / 0.08)),
+      radial-gradient(circle at 50% -10%, hsl(270 80% 45% / 0.09), transparent 34%),
+      linear-gradient(135deg, hsl(190 90% 24% / 0.045), transparent 42%),
       linear-gradient(180deg, hsl(var(--background)), hsl(var(--background)));
     min-height: 100svh;
+    color-scheme: dark;
+    text-rendering: geometricPrecision;
+  }
+
+  .light body {
+    background-image:
+      radial-gradient(circle at 50% -10%, hsl(270 80% 60% / 0.07), transparent 34%),
+      linear-gradient(180deg, hsl(220 20% 98%), hsl(220 18% 95%));
+    color-scheme: light;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -136,10 +146,10 @@
 
   @keyframes veloxy-soft-glow {
     0%, 100% {
-      box-shadow: 0 0 18px hsl(270 80% 60% / 0.22), var(--shadow-soft);
+      box-shadow: 0 0 12px hsl(270 80% 60% / 0.12), var(--shadow-soft);
     }
     50% {
-      box-shadow: 0 0 34px hsl(270 80% 60% / 0.42), var(--shadow-soft);
+      box-shadow: 0 0 20px hsl(270 80% 60% / 0.2), var(--shadow-soft);
     }
   }
 
@@ -223,15 +233,19 @@
   }
 
   .premium-surface {
-    background: var(--gradient-surface);
-    border: 1px solid hsl(var(--border) / 0.72);
-    box-shadow: var(--shadow-card);
+    background:
+      linear-gradient(180deg, hsl(0 0% 100% / 0.055), transparent 44%),
+      var(--gradient-surface);
+    border: 1px solid hsl(0 0% 100% / 0.09);
+    box-shadow: var(--shadow-card), inset 0 1px 0 hsl(0 0% 100% / 0.045);
   }
 
   .premium-panel {
-    background: linear-gradient(180deg, hsl(0 0% 100% / 0.06), hsl(0 0% 100% / 0.025));
-    border: 1px solid hsl(0 0% 100% / 0.08);
-    box-shadow: var(--shadow-soft);
+    background:
+      linear-gradient(180deg, hsl(0 0% 100% / 0.07), hsl(0 0% 100% / 0.025)),
+      hsl(0 0% 8% / 0.64);
+    border: 1px solid hsl(0 0% 100% / 0.085);
+    box-shadow: var(--shadow-soft), inset 0 1px 0 hsl(0 0% 100% / 0.04);
     backdrop-filter: blur(22px);
     -webkit-backdrop-filter: blur(22px);
   }
@@ -250,11 +264,47 @@
   }
 
   .premium-nav {
-    background: linear-gradient(180deg, hsl(0 0% 7% / 0.86), hsl(0 0% 0% / 0.94));
-    border-top: 1px solid hsl(0 0% 100% / 0.08);
-    box-shadow: 0 -18px 45px hsl(0 0% 0% / 0.5);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    background:
+      linear-gradient(180deg, hsl(0 0% 10% / 0.82), hsl(0 0% 2% / 0.94));
+    border-top: 1px solid hsl(0 0% 100% / 0.075);
+    box-shadow: 0 -14px 36px hsl(0 0% 0% / 0.45), inset 0 1px 0 hsl(0 0% 100% / 0.035);
+    backdrop-filter: blur(26px) saturate(1.15);
+    -webkit-backdrop-filter: blur(26px) saturate(1.15);
+  }
+
+  .app-shell {
+    min-height: 100svh;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  .app-header {
+    background: linear-gradient(180deg, hsl(var(--background) / 0.94), hsl(var(--background) / 0.82));
+    border-bottom: 1px solid hsl(var(--border) / 0.75);
+    box-shadow: 0 14px 30px hsl(0 0% 0% / 0.22);
+    backdrop-filter: blur(24px) saturate(1.12);
+    -webkit-backdrop-filter: blur(24px) saturate(1.12);
+  }
+
+  .hero-card {
+    background:
+      linear-gradient(135deg, hsl(270 80% 55% / 0.16), transparent 36%),
+      linear-gradient(180deg, hsl(0 0% 100% / 0.055), hsl(0 0% 100% / 0.018)),
+      hsl(0 0% 4% / 0.86);
+    border: 1px solid hsl(270 80% 60% / 0.22);
+    box-shadow: 0 22px 58px hsl(0 0% 0% / 0.38), inset 0 1px 0 hsl(0 0% 100% / 0.05);
+  }
+
+  .hero-icon {
+    background: linear-gradient(135deg, hsl(270 82% 56%), hsl(286 78% 46%));
+    color: white;
+    box-shadow: 0 12px 28px hsl(270 80% 45% / 0.28);
+  }
+
+  .nav-action {
+    background: linear-gradient(135deg, hsl(270 82% 56%), hsl(286 78% 46%));
+    color: white;
+    box-shadow: 0 10px 26px hsl(270 80% 45% / 0.26), inset 0 1px 0 hsl(0 0% 100% / 0.16);
   }
 
   .animate-fade-up {
@@ -319,8 +369,10 @@
 
   .light .premium-panel,
   .light .premium-surface {
-    background: linear-gradient(180deg, hsl(0 0% 100% / 0.96), hsl(220 20% 98% / 0.92));
+    background:
+      linear-gradient(180deg, hsl(0 0% 100% / 0.98), hsl(220 20% 97% / 0.94));
     border-color: hsl(220 13% 86% / 0.9);
+    box-shadow: 0 16px 34px hsl(220 30% 40% / 0.11), inset 0 1px 0 hsl(0 0% 100% / 0.8);
   }
 
   .light .premium-line::before {
@@ -328,9 +380,21 @@
   }
 
   .light .premium-nav {
-    background: linear-gradient(180deg, hsl(0 0% 100% / 0.9), hsl(220 20% 98% / 0.96));
+    background: linear-gradient(180deg, hsl(0 0% 100% / 0.88), hsl(220 20% 98% / 0.96));
     border-top-color: hsl(220 13% 86% / 0.9);
     box-shadow: 0 -14px 36px hsl(220 30% 40% / 0.14);
+  }
+
+  .light .app-header {
+    box-shadow: 0 14px 28px hsl(220 30% 40% / 0.08);
+  }
+
+  .light .hero-card {
+    background:
+      linear-gradient(135deg, hsl(270 80% 60% / 0.1), transparent 34%),
+      linear-gradient(180deg, hsl(0 0% 100% / 0.98), hsl(220 20% 97% / 0.94));
+    border-color: hsl(270 80% 60% / 0.18);
+    box-shadow: 0 18px 38px hsl(220 30% 40% / 0.13), inset 0 1px 0 hsl(0 0% 100% / 0.86);
   }
 
   .light .settings-title,

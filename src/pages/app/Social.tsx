@@ -288,8 +288,8 @@ export default function Social() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white pb-28 safe-top">
-      <header className="sticky top-0 z-50 border-b border-zinc-900/60 bg-black/90 px-5 py-4 backdrop-blur-2xl">
+    <div className="app-shell pb-28 safe-top">
+      <header className="app-header sticky top-0 z-50 px-5 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <SafeAvatar src={userPhotoURL} name={displayName} alt="Perfil" className="h-11 w-11 rounded-full border border-purple-500/30 bg-zinc-900" />
@@ -301,7 +301,7 @@ export default function Social() {
 
           <div className="rounded-full border border-purple-500/20 bg-purple-500/10 px-3 py-2 text-right">
             <p className="text-[8px] font-black uppercase tracking-[0.2em] text-purple-300">Ranking</p>
-            <p className="text-xs font-black text-white">{userPosition ? `#${userPosition}` : "--"}</p>
+            <p className="text-xs font-black">{userPosition ? `#${userPosition}` : "--"}</p>
           </div>
         </div>
 
@@ -311,7 +311,7 @@ export default function Social() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`relative flex flex-col items-center gap-1 rounded-2xl px-2 py-3 text-[9px] font-black uppercase transition ${
-                activeTab === tab.id ? "bg-purple-600 text-white shadow-[0_0_20px_rgba(147,51,234,0.28)]" : "premium-panel text-zinc-500"
+                activeTab === tab.id ? "nav-action" : "premium-panel text-zinc-500"
               }`}
             >
               <tab.icon size={16} />
@@ -333,7 +333,7 @@ export default function Social() {
           {activeTab === "feed" && <Feed embedded />}
           {activeTab === "leaderboard" && (
             <section>
-              <div className="mb-5 rounded-[2rem] border border-purple-500/20 bg-purple-500/10 p-5">
+              <div className="hero-card mb-5 rounded-[2rem] p-5">
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-[0.22em] text-purple-300">Leaderboard</p>
@@ -382,7 +382,7 @@ export default function Social() {
                 </div>
                 <button
                   onClick={() => setCreateOpen(true)}
-                  className="flex h-11 w-11 items-center justify-center rounded-2xl bg-purple-600 text-white shadow-[0_0_20px_rgba(147,51,234,0.28)]"
+                  className="hero-icon flex h-11 w-11 items-center justify-center rounded-2xl"
                   aria-label="Criar grupo"
                 >
                   <Plus size={18} />
@@ -429,11 +429,11 @@ export default function Social() {
                         </div>
 
                         <div className="mt-5 grid grid-cols-2 gap-3">
-                          <div className="rounded-2xl bg-black/30 p-3">
+                          <div className="rounded-2xl premium-panel p-3">
                             <p className="font-display text-2xl font-black italic">{selectedGroup.membersCount}</p>
                             <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-600">membros</p>
                           </div>
-                          <div className="rounded-2xl bg-black/30 p-3">
+                          <div className="rounded-2xl premium-panel p-3">
                             <p className="font-display text-2xl font-black italic">{selectedGroup.weeklyKm.toFixed(0)}</p>
                             <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-600">km semanais</p>
                           </div>
@@ -472,7 +472,7 @@ export default function Social() {
                             <p className="py-5 text-center text-xs font-black uppercase tracking-[0.16em] text-zinc-600">Sem corridas recentes neste grupo</p>
                           ) : (
                             groupFeed.map((activity) => (
-                              <div key={activity.id} className="rounded-2xl bg-black/30 p-4">
+                              <div key={activity.id} className="rounded-2xl premium-panel p-4">
                                 <div className="flex items-center justify-between gap-4">
                                   <div className="min-w-0">
                                     <p className="truncate text-sm font-black">{activity.userName}</p>
@@ -516,7 +516,7 @@ function AthleteRow({
   compact?: boolean;
 }) {
   return (
-    <div className={`flex items-center gap-4 rounded-[1.5rem] ${compact ? "p-3 bg-black/30" : "p-4"} ${active ? "border border-purple-500/35 bg-purple-500/10" : "premium-panel"}`}>
+    <div className={`flex items-center gap-4 rounded-[1.5rem] ${compact ? "p-3 premium-panel" : "p-4"} ${active ? "border border-purple-500/35 bg-purple-500/10" : "premium-panel"}`}>
       <div className="w-8 text-center font-display text-xl font-black italic text-purple-400">{index + 1}</div>
       <SafeAvatar src={athlete.photoURL} name={athlete.displayName || "Atleta"} className="h-11 w-11 rounded-2xl bg-zinc-900" />
       <div className="min-w-0 flex-1">
@@ -524,7 +524,7 @@ function AthleteRow({
         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">{athlete.level || "Iniciante"}</p>
       </div>
       <div className="text-right">
-        <p className="font-display text-lg font-black italic text-white">{(athlete.totalXP || 0).toLocaleString("pt-BR")}</p>
+        <p className="font-display text-lg font-black italic">{(athlete.totalXP || 0).toLocaleString("pt-BR")}</p>
         <p className="text-[8px] font-black uppercase tracking-[0.18em] text-purple-400">XP</p>
       </div>
     </div>

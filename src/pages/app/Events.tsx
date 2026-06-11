@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, MapPin, Users, ChevronRight, Bell, Tag, Clock, Loader2, CheckCircle } from "lucide-react";
+import { Calendar, MapPin, Users, ChevronRight, Bell, Tag, Clock, Loader2, CheckCircle, ExternalLink, Navigation } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { 
@@ -12,10 +12,31 @@ import {
 import { toast } from "sonner";
 import { toDateSafe } from "@/lib/feed-utils";
 
-const categories = ["Próximos", "Inscrito", "Passados"];
+const categories = ["Proximos", "Perto", "Inscrito", "Passados"];
+const distanceFilters = ["Todos", "5K", "10K", "21K", "42K"];
+const radiusFilters = [
+    { label: "25 km", value: 25 },
+    { label: "50 km", value: 50 },
+    { label: "100 km", value: 100 },
+    { label: "Todos", value: 0 },
+];
 
 const getEventDate = (event: RunningEvent) => {
     return toDateSafe(event.timestamp) ?? new Date(0);
+};
+
+const toRad = (value: number) => (value * Math.PI) / 180;
+
+const getDistanceKm = (from: { lat: number; lng: number }, event: RunningEvent) => {
+    if (typeof event.lat !== "number" || typeof event.lng !== "number") return null;
+
+    const earthRadiusKm = 6371;
+    const dLat = toRad(event.lat - from.lat);
+    const dLng = toRad(event.lng - from.lng);
+    const lat1 = toRad(from.lat);
+    const lat2 = toRad(event.lat);
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+    return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
 const Events = ({ embedded = false }: { embedded?: boolean }) => {
@@ -23,8 +44,12 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
     const [events, setEvents] = useState<RunningEvent[]>([]);
     const [enrolledIds, setEnrolledIds] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState("Próximos");
+    const [activeTab, setActiveTab] = useState("Proximos");
     const [userCity, setUserCity] = useState("");
+    const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+    const [locationLoading, setLocationLoading] = useState(false);
+    const [selectedDistance, setSelectedDistance] = useState("Todos");
+    const [selectedRadius, setSelectedRadius] = useState(50);
 
     const userInitials = user?.displayName?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "U";
 
@@ -52,35 +77,95 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
         loadData();
     }, [user]);
 
-    const handleJoin = async (eventId: string) => {
+    const requestLocation = () => {
+        if (!navigator.geolocation) {
+            toast.error("Seu navegador nao liberou localizacao.");
+            return;
+        }
+
+        setLocationLoading(true);
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setUserCoords({
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                });
+                setActiveTab("Perto");
+                toast.success("Eventos perto de voce ativados.");
+                setLocationLoading(false);
+            },
+            () => {
+                toast.error("Nao foi possivel acessar sua localizacao.");
+                setLocationLoading(false);
+            },
+            { enableHighAccuracy: true, timeout: 9000, maximumAge: 1000 * 60 * 10 }
+        );
+    };
+
+    const handleJoin = async (event: RunningEvent) => {
         if (!user) return;
+        const officialUrl = event.officialUrl || event.sourceUrl;
+
+        if (officialUrl) {
+            window.open(officialUrl, "_blank", "noopener,noreferrer");
+        }
+
+        const eventId = event.id;
         if (enrolledIds.includes(eventId)) {
-            toast.info("Você já está inscrito neste evento!");
+            toast.info("Evento ja esta salvo no seu perfil.");
             return;
         }
 
         try {
             await joinEvent(eventId, user.uid);
             setEnrolledIds(prev => [...prev, eventId]);
-            toast.success("Inscrição realizada com sucesso! 🏃‍♂️");
+            toast.success(officialUrl ? "Evento salvo. Abrindo site oficial." : "Evento salvo no perfil.");
         } catch (error) {
-            toast.error("Erro ao realizar inscrição.");
+            toast.error("Nao foi possivel salvar este evento.");
         }
     };
 
     const filteredEvents = useMemo(() => {
+        let nextEvents = events.map((event) => ({
+            event,
+            distanceKm: userCoords ? getDistanceKm(userCoords, event) : null,
+        }));
+
         if (activeTab === "Inscrito") {
-            return events.filter(e => enrolledIds.includes(e.id));
+            nextEvents = nextEvents.filter(({ event }) => enrolledIds.includes(event.id));
         }
         if (activeTab === "Passados") {
-            return events.filter(e => getEventDate(e) < new Date());
+            nextEvents = nextEvents.filter(({ event }) => getEventDate(event) < new Date());
+        } else {
+            nextEvents = nextEvents.filter(({ event }) => getEventDate(event) >= new Date());
         }
-        return events; // Próximos
-    }, [events, activeTab, enrolledIds]);
+
+        if (activeTab === "Perto") {
+            nextEvents = nextEvents.filter(({ distanceKm }) => {
+                if (!userCoords) return false;
+                if (selectedRadius === 0) return distanceKm !== null;
+                return distanceKm !== null && distanceKm <= selectedRadius;
+            });
+        }
+
+        if (selectedDistance !== "Todos") {
+            nextEvents = nextEvents.filter(({ event }) => {
+                const options = event.distanceOptions || event.category.split("/").map((item) => item.trim());
+                return options.some((option) => option.toUpperCase().includes(selectedDistance));
+            });
+        }
+
+        return nextEvents
+            .sort((a, b) => {
+                if (activeTab === "Perto") return (a.distanceKm ?? Number.MAX_SAFE_INTEGER) - (b.distanceKm ?? Number.MAX_SAFE_INTEGER);
+                return getEventDate(a.event).getTime() - getEventDate(b.event).getTime();
+            })
+            .map(({ event, distanceKm }) => ({ ...event, distanceKm }));
+    }, [events, activeTab, enrolledIds, selectedDistance, selectedRadius, userCoords]);
 
     if (loading) {
         return (
-            <div className={`${embedded ? "min-h-[280px]" : "min-h-screen"} bg-black flex flex-col items-center justify-center gap-4`}>
+            <div className={`${embedded ? "min-h-[280px]" : "app-shell"} flex flex-col items-center justify-center gap-4`}>
                 <Loader2 className="animate-spin text-purple-500" size={40} />
                 <p className="text-[10px] font-black text-zinc-500 tracking-[0.2em] uppercase">Buscando Corridas...</p>
             </div>
@@ -88,9 +173,9 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
     }
 
   return (
-    <div className={`${embedded ? "min-h-0 pb-4" : "min-h-screen pb-24 safe-top"} bg-black text-white`}>
+    <div className={`${embedded ? "min-h-0 pb-4" : "app-shell pb-24 safe-top"}`}>
       {/* Header */}
-      {!embedded && <header className="px-6 py-4 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur-md z-40 border-b border-zinc-900/50">
+      {!embedded && <header className="app-header px-6 py-4 flex items-center justify-between sticky top-0 z-40">
         <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 overflow-hidden">
           {user?.photoURL ? (
             <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
@@ -114,17 +199,67 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
           {categories.map((c) => (
             <button
               key={c}
-              onClick={() => setActiveTab(c)}
+              onClick={() => {
+                if (c === "Perto" && !userCoords) {
+                  requestLocation();
+                  return;
+                }
+                setActiveTab(c);
+              }}
               className={`px-6 py-2 rounded-full text-[10px] font-black tracking-widest transition-all ${
                 activeTab === c
-                  ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)]"
-                  : "bg-zinc-900 text-zinc-500 border border-zinc-800"
+                  ? "nav-action"
+                  : "premium-panel text-zinc-500"
               }`}
             >
               {c.toUpperCase()}
             </button>
           ))}
         </div>
+
+        <div className="mt-4 grid grid-cols-[1fr_auto] gap-3">
+          <button
+            onClick={requestLocation}
+            disabled={locationLoading}
+            className="premium-panel flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest text-zinc-400 disabled:opacity-60"
+          >
+            {locationLoading ? <Loader2 size={14} className="animate-spin text-purple-500" /> : <Navigation size={14} className="text-purple-500" />}
+            {userCoords ? "Localizacao ativa" : "Usar minha localizacao"}
+          </button>
+          <div className="premium-panel flex min-h-12 items-center justify-center rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest text-purple-400">
+            {filteredEvents.length} eventos
+          </div>
+        </div>
+
+        <div className="mt-3 flex gap-2 overflow-x-auto no-scrollbar">
+          {distanceFilters.map((distance) => (
+            <button
+              key={distance}
+              onClick={() => setSelectedDistance(distance)}
+              className={`rounded-full px-4 py-2 text-[9px] font-black uppercase tracking-widest transition ${
+                selectedDistance === distance ? "bg-purple-600 text-white" : "premium-panel text-zinc-500"
+              }`}
+            >
+              {distance}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === "Perto" && (
+          <div className="mt-3 flex gap-2 overflow-x-auto no-scrollbar">
+            {radiusFilters.map((radius) => (
+              <button
+                key={radius.label}
+                onClick={() => setSelectedRadius(radius.value)}
+                className={`rounded-full px-4 py-2 text-[9px] font-black uppercase tracking-widest transition ${
+                  selectedRadius === radius.value ? "bg-purple-600 text-white" : "premium-panel text-zinc-500"
+                }`}
+              >
+                {radius.label}
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Featured Event Banner */}
@@ -144,7 +279,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
                   <h2 className="font-display font-black text-2xl italic tracking-tighter uppercase mb-2 leading-none">{events[0].title}</h2>
                   <div className="flex items-center gap-4 text-zinc-400 text-[10px] font-bold uppercase tracking-widest">
                       <span className="flex items-center gap-1.5"><Calendar size={12} className="text-purple-500" /> {events[0].date}</span>
-                      <span className="flex items-center gap-1.5"><MapPin size={12} className="text-purple-500" /> SÃO PAULO</span>
+                      <span className="flex items-center gap-1.5"><MapPin size={12} className="text-purple-500" /> {events[0].city}</span>
                   </div>
               </div>
           </motion.div>
@@ -154,7 +289,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
       <section className={`${embedded ? "mt-8 px-0 pb-2" : "mt-12 px-6 pb-10"} space-y-8`}>
         <div className="flex items-center justify-between mb-2">
             <h3 className="font-display font-black text-sm italic tracking-tighter uppercase">Todas as Corridas</h3>
-            <span className="text-[10px] font-black text-zinc-500 tracking-widest">3 DISPONÍVEIS</span>
+            <span className="text-[10px] font-black text-zinc-500 tracking-widest">{filteredEvents.length} DISPONIVEIS</span>
         </div>
 
         {!filteredEvents.length ? (
@@ -167,6 +302,8 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
         ) : filteredEvents.map((event, i) => {
           const isInscrito = enrolledIds.includes(event.id);
           const isLocal = userCity && event.city.toLowerCase().includes(userCity.split(",")[0].toLowerCase().trim());
+          const distanceKm = event.distanceKm;
+          const hasOfficialUrl = Boolean(event.officialUrl || event.sourceUrl);
 
           return (
             <motion.div
@@ -184,8 +321,10 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
                       <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md p-1.5 rounded-xl border border-white/10">
                           <Tag size={12} className="text-purple-500" />
                       </div>
-                      {isLocal && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-purple-600 text-[7px] font-black text-center py-0.5">PERTO DE VOCÊ</div>
+                      {(isLocal || typeof distanceKm === "number") && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-purple-600 text-[7px] font-black text-center py-0.5">
+                          {typeof distanceKm === "number" ? `${distanceKm.toFixed(0)} KM` : "PERTO DE VOCE"}
+                        </div>
                       )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -196,6 +335,10 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
                           </div>
                           <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-bold tracking-widest uppercase leading-none mt-1">
                               <MapPin size={10} className="text-purple-500" /> {event.location}
+                          </div>
+                          <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-bold tracking-widest uppercase leading-none mt-1">
+                              <ExternalLink size={10} className="text-purple-500" /> {event.source || "Fonte oficial"}
+                              {event.verified ? " · verificado" : ""}
                           </div>
                       </div>
                   </div>
@@ -209,7 +352,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
                       </div>
                       <div className="w-[1px] h-6 bg-zinc-800/50" />
                       <div className="flex flex-col">
-                          <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none mb-1">Inscritos</p>
+                          <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none mb-1">Salvos</p>
                           <div className="flex items-center gap-1 leading-none">
                               <Users size={10} className="text-zinc-500" />
                               <span className="text-[10px] font-black text-white">{event.participantsCount}</span>
@@ -218,8 +361,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
                   </div>
                   
                   <button 
-                    onClick={() => handleJoin(event.id)}
-                    disabled={isInscrito}
+                    onClick={() => handleJoin(event)}
                     className={`h-12 px-6 rounded-full flex items-center justify-center gap-2 transition-all shadow-lg ${
                         isInscrito 
                         ? "bg-green-500/20 border border-green-500/30 text-green-500" 
@@ -227,9 +369,9 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
                     }`}
                   >
                         {isInscrito ? (
-                            <><CheckCircle size={16} /> <span className="text-[10px] font-black tracking-widest uppercase">Inscrito</span></>
+                            <><CheckCircle size={16} /> <span className="text-[10px] font-black tracking-widest uppercase">{hasOfficialUrl ? "Abrir site" : "Salvo"}</span></>
                         ) : (
-                            <><span className="text-[10px] font-black tracking-widest uppercase">Inscrever</span> <ChevronRight size={16} strokeWidth={3} /></>
+                            <><span className="text-[10px] font-black tracking-widest uppercase">{hasOfficialUrl ? "Site oficial" : "Salvar"}</span> <ChevronRight size={16} strokeWidth={3} /></>
                         )}
                   </button>
                </div>

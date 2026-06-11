@@ -662,7 +662,7 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
+      <div className="app-shell flex flex-col items-center justify-center gap-4">
         <Loader2 className="animate-spin text-purple-500" size={40} />
         <p className="text-[10px] font-black text-zinc-500 tracking-[0.2em] uppercase">Carregando Perfil...</p>
       </div>
@@ -670,10 +670,10 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24 safe-top">
+    <div className="app-shell pb-24 safe-top">
       {/* Header */}
-      <header className="px-6 py-4 flex items-center justify-between sticky top-0 bg-black/90 backdrop-blur-2xl border-b border-zinc-900/60 shadow-[0_16px_34px_rgba(0,0,0,0.28)] z-40">
-        <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500 drop-shadow-[0_0_18px_rgba(168,85,247,0.35)]">
+      <header className="app-header px-6 py-4 flex items-center justify-between sticky top-0 z-40">
+        <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500">
           VELOXY PROFILE
         </h1>
         <div className="flex gap-2">
@@ -697,7 +697,7 @@ const Profile = () => {
         <motion.div 
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="relative rounded-[2.4rem] bg-gradient-to-br from-purple-500/30 via-transparent to-zinc-800 p-1 shadow-[0_0_45px_rgba(147,51,234,0.22)] animate-soft-glow"
+            className="relative rounded-[2.4rem] border border-purple-500/20 bg-purple-500/10 p-1 shadow-card"
         >
             <button
                 type="button"
@@ -714,7 +714,7 @@ const Profile = () => {
                     <Camera size={32} className="text-white drop-shadow-md" />
                 </div>
             </button>
-            <div className="absolute -bottom-2 left-1/2 bg-purple-600 px-4 py-1 rounded-full text-[10px] font-black tracking-widest border-2 border-black -translate-x-1/2 shadow-[0_0_18px_rgba(147,51,234,0.5)] whitespace-nowrap z-10">
+            <div className="absolute -bottom-2 left-1/2 bg-purple-600 px-4 py-1 rounded-full text-[10px] font-black tracking-widest border-2 border-background -translate-x-1/2 shadow-card whitespace-nowrap z-10 text-white">
                 LEVEL {levelInfo.currentLevel.toUpperCase()}
             </div>
         </motion.div>
@@ -723,7 +723,7 @@ const Profile = () => {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12, duration: 0.35 }}
-          className="mt-8 font-display font-black text-3xl italic tracking-tighter uppercase drop-shadow-[0_0_18px_rgba(168,85,247,0.22)]"
+          className="mt-8 font-display font-black text-3xl italic tracking-tighter uppercase"
         >
           {displayName}
         </motion.h2>

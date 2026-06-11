@@ -115,9 +115,9 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24 safe-top">
+    <div className="app-shell pb-24 safe-top">
       {/* Header */}
-      <header className="px-6 py-4 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur-md z-40">
+      <header className="app-header px-6 py-4 flex items-center justify-between sticky top-0 z-40">
         <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 overflow-hidden">
           {user?.photoURL ? (
             <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
@@ -133,7 +133,7 @@ const Dashboard = () => {
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={() => navigate("/run")}
-          className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center shadow-[0_0_20px_rgba(147,51,234,0.4)]"
+          className="hero-icon w-10 h-10 rounded-full flex items-center justify-center"
         >
           <Play size={16} className="text-white fill-current ml-0.5" />
         </motion.button>
