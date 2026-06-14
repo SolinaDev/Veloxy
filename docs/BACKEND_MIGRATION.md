@@ -63,7 +63,12 @@ Enquanto `REQUIRE_AUTH=false`, a API fica em modo local/desenvolvimento.
 
 ## PostgreSQL
 
-O banco final da migracao sera PostgreSQL. O schema inicial esta em `server/sql/001_init_postgres.sql` e ja cobre:
+O backend agora possui dois modos de banco:
+
+- `DATABASE_PROVIDER=sqlite`: modo local rapido, usando `server/data/veloxy.db`.
+- `DATABASE_PROVIDER=postgres`: modo final da migracao, usando `DATABASE_URL`.
+
+O schema inicial esta em `server/sql/001_init_postgres.sql` e cobre:
 
 - usuarios
 - corridas
@@ -73,4 +78,4 @@ O banco final da migracao sera PostgreSQL. O schema inicial esta em `server/sql/
 - eventos
 - participantes de eventos
 
-SQLite fica apenas como modo local rapido enquanto a API e as telas ainda estao sendo migradas.
+Para testar PostgreSQL localmente, crie o banco `veloxy`, configure o `.env` do servidor e rode `npm run dev` dentro de `server/`.

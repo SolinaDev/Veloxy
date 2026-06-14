@@ -33,12 +33,17 @@ Com isso, o backend valida o token do Firebase Auth enviado pelo app e impede ac
 
 ## Banco
 
-Nesta fase usamos SQLite nativo do Node em `server/data/veloxy.db`. Isso evita depender de servicos externos enquanto a migracao ainda esta nascendo. Quando a API estabilizar, podemos trocar para PostgreSQL mantendo as mesmas rotas.
+Por padrao usamos SQLite nativo do Node em `server/data/veloxy.db`. Isso evita depender de servicos externos durante testes rapidos.
 
-O PostgreSQL ja esta definido como destino da migracao. O schema inicial fica em:
+Para rodar com PostgreSQL, crie o banco `veloxy` e ajuste o `.env`:
+
+```env
+DATABASE_PROVIDER=postgres
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/veloxy"
+```
+
+A API cria/atualiza o schema inicial ao subir. O SQL fica em:
 
 ```text
 server/sql/001_init_postgres.sql
 ```
-
-Quando o Postgres local estiver pronto, crie o banco `veloxy` e rode esse SQL. Depois usamos `DATABASE_URL` para trocar a API para PostgreSQL.

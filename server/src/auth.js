@@ -23,7 +23,12 @@ function getBearerToken(request) {
 }
 
 function getRequestedUserId(request) {
-  return request.params?.userId ?? request.body?.userId ?? request.query?.userId;
+  return (
+    request.params?.userId ??
+    request.body?.userId ??
+    request.body?.createdBy ??
+    request.query?.userId
+  );
 }
 
 export async function verifyFirebaseUser(request, reply) {

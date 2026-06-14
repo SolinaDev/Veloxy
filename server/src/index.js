@@ -75,20 +75,23 @@ function formatPace(totalSeconds, totalKm) {
 
 function runToResponse(run) {
   const createdAtMs = run.created_at_ms || new Date(run.created_at).getTime();
+  const route = typeof run.route_json === "string"
+    ? JSON.parse(run.route_json || "[]")
+    : run.route_json ?? [];
 
   return {
     id: run.id,
     userId: run.user_id,
     userName: run.user_name,
     userAvatar: run.user_avatar,
-    distance: run.distance,
+    distance: Number(run.distance),
     time: run.time,
-    durationSeconds: run.duration_seconds,
+    durationSeconds: Number(run.duration_seconds),
     pace: run.pace,
-    calories: run.calories,
+    calories: Number(run.calories),
     type: run.type,
     likes: [],
-    route: JSON.parse(run.route_json || "[]"),
+    route,
     timestamp: {
       seconds: Math.floor(createdAtMs / 1000),
       nanoseconds: 0,
@@ -99,19 +102,19 @@ function runToResponse(run) {
   };
 }
 
-function groupToResponse(group) {
-  const members = db
-    .prepare("SELECT user_id FROM group_members WHERE group_id = ?")
-    .all(group.id)
+async function groupToResponse(group) {
+  const members = (await db.all("SELECT user_id FROM group_members WHERE group_id = ?", [
+    group.id,
+  ]))
     .map((member) => member.user_id);
-  const weeklyKmRow = db.prepare(`
+  const weeklyKmRow = await db.get(`
     SELECT COALESCE(SUM(r.distance), 0) AS weekly_km
     FROM runs r
     WHERE r.user_id IN (
       SELECT user_id FROM group_members WHERE group_id = ?
     )
     AND r.created_at_ms >= ?
-  `).get(group.id, Date.now() - 7 * 24 * 60 * 60 * 1000);
+  `, [group.id, Date.now() - 7 * 24 * 60 * 60 * 1000]);
 
   return {
     id: group.id,
@@ -129,10 +132,11 @@ function groupToResponse(group) {
   };
 }
 
-function eventToResponse(event) {
-  const participants = db
-    .prepare("SELECT user_id FROM event_participants WHERE event_id = ?")
-    .all(event.id)
+async function eventToResponse(event) {
+  const participants = (await db.all(
+    "SELECT user_id FROM event_participants WHERE event_id = ?",
+    [event.id],
+  ))
     .map((participant) => participant.user_id);
 
   return {
@@ -173,7 +177,7 @@ function buildWeeklyData(runs) {
     const key = dayKeyFromDate(date);
     const km = runs
       .filter((run) => dayKeyFromDate(new Date(run.created_at_ms || run.created_at)) === key)
-      .reduce((sum, run) => sum + run.distance, 0);
+      .reduce((sum, run) => sum + Number(run.distance), 0);
 
     return {
       day: formatter.format(date).replace(".", "").toUpperCase(),
@@ -215,15 +219,15 @@ function formatTotalTime(totalSeconds) {
   return `${minutes}m`;
 }
 
-function ensureUser(data) {
-  db.prepare(`
+async function ensureUser(data) {
+  await db.run(`
     INSERT INTO users (id, display_name, photo_url)
     VALUES (?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       display_name = excluded.display_name,
       photo_url = excluded.photo_url,
       updated_at = CURRENT_TIMESTAMP
-  `).run(data.userId, data.userName, data.userAvatar ?? null);
+  `, [data.userId, data.userName, data.userAvatar ?? null]);
 }
 
 function userToResponse(user) {
@@ -235,12 +239,12 @@ function userToResponse(user) {
     photoURL: user.photo_url,
     bio: user.bio ?? "",
     location: user.location ?? "",
-    weeklyGoalKm: user.weekly_goal_km,
+    weeklyGoalKm: Number(user.weekly_goal_km),
     privateProfile: Boolean(user.private_profile),
-    totalXP: user.total_xp,
-    totalKm: user.total_km,
+    totalXP: Number(user.total_xp),
+    totalKm: Number(user.total_km),
     level: "Iniciante",
-    monthlyKm: user.total_km,
+    monthlyKm: Number(user.total_km),
     createdAt: user.created_at,
     lastUpdated: user.updated_at,
   };
@@ -259,7 +263,7 @@ app.get("/health", async () => ({
 
 app.get("/users/:userId", async (request, reply) => {
   const { userId } = request.params;
-  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(userId);
+  const user = await db.get("SELECT * FROM users WHERE id = ?", [userId]);
 
   if (!user) {
     return reply.code(404).send({
@@ -282,7 +286,7 @@ app.patch("/users/:userId", async (request, reply) => {
   }
 
   const data = parsed.data;
-  const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(userId);
+  const currentUser = await db.get("SELECT * FROM users WHERE id = ?", [userId]);
   const displayName = data.displayName ?? currentUser?.display_name ?? "Corredor";
   const email = data.email ?? currentUser?.email ?? null;
   const photoURL = data.photoURL ?? currentUser?.photo_url ?? null;
@@ -292,7 +296,7 @@ app.patch("/users/:userId", async (request, reply) => {
   const privateProfile =
     data.privateProfile ?? Boolean(currentUser?.private_profile ?? false);
 
-  db.prepare(`
+  await db.run(`
     INSERT INTO users (
       id,
       email,
@@ -313,7 +317,7 @@ app.patch("/users/:userId", async (request, reply) => {
       weekly_goal_km = excluded.weekly_goal_km,
       private_profile = excluded.private_profile,
       updated_at = CURRENT_TIMESTAMP
-  `).run(
+  `, [
     userId,
     email,
     displayName,
@@ -321,10 +325,10 @@ app.patch("/users/:userId", async (request, reply) => {
     bio,
     location,
     weeklyGoalKm,
-    privateProfile ? 1 : 0,
-  );
+    privateProfile,
+  ]);
 
-  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(userId);
+  const user = await db.get("SELECT * FROM users WHERE id = ?", [userId]);
   return userToResponse(user);
 });
 
@@ -339,11 +343,11 @@ app.post("/runs", async (request, reply) => {
   }
 
   const data = parsed.data;
-  ensureUser(data);
+  await ensureUser(data);
 
   const runId = randomUUID();
 
-  db.prepare(`
+  await db.run(`
     INSERT INTO runs (
       id,
       user_id,
@@ -359,7 +363,7 @@ app.post("/runs", async (request, reply) => {
       route_json
     )
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
+  `, [
     runId,
     data.userId,
     data.userName,
@@ -372,15 +376,15 @@ app.post("/runs", async (request, reply) => {
     data.type,
     Date.now(),
     JSON.stringify(data.route),
-  );
+  ]);
 
-  db.prepare(`
+  await db.run(`
     UPDATE users
     SET total_km = total_km + ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-  `).run(data.distance, data.userId);
+  `, [data.distance, data.userId]);
 
-  const run = db.prepare("SELECT * FROM runs WHERE id = ?").get(runId);
+  const run = await db.get("SELECT * FROM runs WHERE id = ?", [runId]);
 
   return reply.code(201).send(runToResponse(run));
 });
@@ -389,37 +393,38 @@ app.get("/users/:userId/runs", async (request) => {
   const { userId } = request.params;
   const limit = Math.min(Number(request.query?.limit ?? 20), 100);
 
-  const runs = db.prepare(`
+  const runs = await db.all(`
     SELECT *
     FROM runs
     WHERE user_id = ?
     ORDER BY created_at DESC
     LIMIT ?
-  `).all(userId, limit);
+  `, [userId, limit]);
 
   return runs.map(runToResponse);
 });
 
 app.get("/feed", async (request) => {
   const limit = Math.min(Number(request.query?.limit ?? 20), 100);
-  const runs = db.prepare(`
+  const runs = await db.all(`
     SELECT *
     FROM runs
     ORDER BY created_at_ms DESC
     LIMIT ?
-  `).all(limit);
+  `, [limit]);
 
-  return runs.map((run) => {
-    const likes = db
-      .prepare("SELECT user_id FROM activity_likes WHERE activity_id = ?")
-      .all(run.id)
+  return Promise.all(runs.map(async (run) => {
+    const likes = (await db.all(
+      "SELECT user_id FROM activity_likes WHERE activity_id = ?",
+      [run.id],
+    ))
       .map((like) => like.user_id);
 
     return {
       ...runToResponse(run),
       likes,
     };
-  });
+  }));
 });
 
 app.post("/runs/:runId/likes", async (request, reply) => {
@@ -434,20 +439,21 @@ app.post("/runs/:runId/likes", async (request, reply) => {
   }
 
   if (liked) {
-    db.prepare(`
-      INSERT OR IGNORE INTO activity_likes (activity_id, user_id)
+    await db.run(`
+      INSERT INTO activity_likes (activity_id, user_id)
       VALUES (?, ?)
-    `).run(runId, userId);
+      ON CONFLICT(activity_id, user_id) DO NOTHING
+    `, [runId, userId]);
   } else {
-    db.prepare(`
+    await db.run(`
       DELETE FROM activity_likes
       WHERE activity_id = ? AND user_id = ?
-    `).run(runId, userId);
+    `, [runId, userId]);
   }
 
-  const likes = db
-    .prepare("SELECT user_id FROM activity_likes WHERE activity_id = ?")
-    .all(runId)
+  const likes = (await db.all("SELECT user_id FROM activity_likes WHERE activity_id = ?", [
+    runId,
+  ]))
     .map((like) => like.user_id);
 
   return {
@@ -465,11 +471,11 @@ app.delete("/runs/:runId", async (request, reply) => {
     });
   }
 
-  const run = db.prepare(`
+  const run = await db.get(`
     SELECT *
     FROM runs
     WHERE id = ? AND user_id = ?
-  `).get(runId, userId);
+  `, [runId, userId]);
 
   if (!run) {
     return reply.code(404).send({
@@ -477,13 +483,14 @@ app.delete("/runs/:runId", async (request, reply) => {
     });
   }
 
-  db.prepare("DELETE FROM runs WHERE id = ?").run(run.id);
+  await db.run("DELETE FROM runs WHERE id = ?", [run.id]);
 
-  db.prepare(`
+  await db.run(`
     UPDATE users
-    SET total_km = MAX(total_km - ?, 0), updated_at = CURRENT_TIMESTAMP
+    SET total_km = CASE WHEN total_km - ? > 0 THEN total_km - ? ELSE 0 END,
+        updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-  `).run(run.distance, userId);
+  `, [run.distance, run.distance, userId]);
 
   return {
     ok: true,
@@ -492,13 +499,13 @@ app.delete("/runs/:runId", async (request, reply) => {
 
 app.delete("/users/:userId/runs", async (request) => {
   const { userId } = request.params;
-  const result = db.prepare("DELETE FROM runs WHERE user_id = ?").run(userId);
+  const result = await db.run("DELETE FROM runs WHERE user_id = ?", [userId]);
 
-  db.prepare(`
+  await db.run(`
     UPDATE users
     SET total_km = 0, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-  `).run(userId);
+  `, [userId]);
 
   return {
     ok: true,
@@ -508,13 +515,13 @@ app.delete("/users/:userId/runs", async (request) => {
 
 app.get("/users/:userId/stats", async (request) => {
   const { userId } = request.params;
-  const runs = db.prepare("SELECT * FROM runs WHERE user_id = ?").all(userId);
+  const runs = await db.all("SELECT * FROM runs WHERE user_id = ?", [userId]);
 
-  const totalDistance = runs.reduce((sum, run) => sum + run.distance, 0);
-  const totalDuration = runs.reduce((sum, run) => sum + run.duration_seconds, 0);
-  const calories = runs.reduce((sum, run) => sum + run.calories, 0);
+  const totalDistance = runs.reduce((sum, run) => sum + Number(run.distance), 0);
+  const totalDuration = runs.reduce((sum, run) => sum + Number(run.duration_seconds), 0);
+  const calories = runs.reduce((sum, run) => sum + Number(run.calories), 0);
   const bestRun = runs.reduce((best, run) => {
-    if (!best || run.distance > best.distance) return run;
+    if (!best || Number(run.distance) > Number(best.distance)) return run;
     return best;
   }, null);
 
@@ -538,29 +545,29 @@ app.get("/users/:userId/stats", async (request) => {
 });
 
 app.get("/groups", async () => {
-  const groups = db.prepare(`
+  const groups = await db.all(`
     SELECT *
     FROM groups
     ORDER BY created_at DESC
     LIMIT 50
-  `).all();
+  `);
 
-  return groups.map(groupToResponse);
+  return Promise.all(groups.map(groupToResponse));
 });
 
 app.get("/leaderboard", async (request) => {
   const limit = Math.min(Number(request.query?.limit ?? 100), 500);
-  const users = db.prepare(`
+  const users = await db.all(`
     SELECT
       u.*,
       COALESCE(SUM(r.distance), 0) AS leaderboard_km
     FROM users u
     LEFT JOIN runs r ON r.user_id = u.id
-    WHERE u.private_profile = 0
+    WHERE u.private_profile = false
     GROUP BY u.id
     ORDER BY leaderboard_km DESC
     LIMIT ?
-  `).all(limit);
+  `, [limit]);
 
   return users.map((user) => ({
     ...userToResponse(user),
@@ -581,10 +588,10 @@ app.post("/groups", async (request, reply) => {
   const data = parsed.data;
   const groupId = randomUUID();
 
-  db.prepare(`
+  await db.run(`
     INSERT INTO groups (id, name, city, description, tag, created_by, creator_name)
     VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(
+  `, [
     groupId,
     data.name,
     data.city,
@@ -592,14 +599,15 @@ app.post("/groups", async (request, reply) => {
     data.tag,
     data.createdBy,
     data.creatorName,
-  );
+  ]);
 
-  db.prepare(`
-    INSERT OR IGNORE INTO group_members (group_id, user_id)
+  await db.run(`
+    INSERT INTO group_members (group_id, user_id)
     VALUES (?, ?)
-  `).run(groupId, data.createdBy);
+    ON CONFLICT(group_id, user_id) DO NOTHING
+  `, [groupId, data.createdBy]);
 
-  return groupToResponse(db.prepare("SELECT * FROM groups WHERE id = ?").get(groupId));
+  return groupToResponse(await db.get("SELECT * FROM groups WHERE id = ?", [groupId]));
 });
 
 app.post("/groups/:groupId/members", async (request, reply) => {
@@ -612,21 +620,22 @@ app.post("/groups/:groupId/members", async (request, reply) => {
     });
   }
 
-  db.prepare(`
-    INSERT OR IGNORE INTO group_members (group_id, user_id)
+  await db.run(`
+    INSERT INTO group_members (group_id, user_id)
     VALUES (?, ?)
-  `).run(groupId, userId);
+    ON CONFLICT(group_id, user_id) DO NOTHING
+  `, [groupId, userId]);
 
-  return groupToResponse(db.prepare("SELECT * FROM groups WHERE id = ?").get(groupId));
+  return groupToResponse(await db.get("SELECT * FROM groups WHERE id = ?", [groupId]));
 });
 
 app.delete("/groups/:groupId/members/:userId", async (request) => {
   const { groupId, userId } = request.params;
 
-  db.prepare(`
+  await db.run(`
     DELETE FROM group_members
     WHERE group_id = ? AND user_id = ?
-  `).run(groupId, userId);
+  `, [groupId, userId]);
 
   return {
     ok: true,
@@ -636,7 +645,7 @@ app.delete("/groups/:groupId/members/:userId", async (request) => {
 app.get("/groups/:groupId/feed", async (request) => {
   const { groupId } = request.params;
   const limit = Math.min(Number(request.query?.limit ?? 20), 100);
-  const runs = db.prepare(`
+  const runs = await db.all(`
     SELECT *
     FROM runs
     WHERE user_id IN (
@@ -644,7 +653,7 @@ app.get("/groups/:groupId/feed", async (request) => {
     )
     ORDER BY created_at_ms DESC
     LIMIT ?
-  `).all(groupId, limit);
+  `, [groupId, limit]);
 
   return runs.map(runToResponse);
 });
@@ -652,7 +661,7 @@ app.get("/groups/:groupId/feed", async (request) => {
 app.get("/groups/:groupId/leaderboard", async (request) => {
   const { groupId } = request.params;
 
-  const users = db.prepare(`
+  const users = await db.all(`
     SELECT
       u.*,
       COALESCE(SUM(r.distance), 0) AS leaderboard_km
@@ -663,7 +672,7 @@ app.get("/groups/:groupId/leaderboard", async (request) => {
     GROUP BY u.id
     ORDER BY leaderboard_km DESC
     LIMIT 100
-  `).all(groupId);
+  `, [groupId]);
 
   return users.map((user) => ({
     ...userToResponse(user),
@@ -674,19 +683,19 @@ app.get("/groups/:groupId/leaderboard", async (request) => {
 app.get("/events", async (request) => {
   const city = request.query?.city?.toString().trim().toLowerCase();
   const events = city
-    ? db.prepare(`
+    ? await db.all(`
         SELECT *
         FROM events
         WHERE lower(city) = ?
         ORDER BY timestamp ASC
-      `).all(city)
-    : db.prepare(`
+      `, [city])
+    : await db.all(`
         SELECT *
         FROM events
         ORDER BY timestamp ASC
-      `).all();
+      `);
 
-  return events.map(eventToResponse);
+  return Promise.all(events.map(eventToResponse));
 });
 
 app.post("/events", async (request, reply) => {
@@ -702,13 +711,13 @@ app.post("/events", async (request, reply) => {
   const data = parsed.data;
   const eventId = randomUUID();
 
-  db.prepare(`
+  await db.run(`
     INSERT INTO events (
       id, title, city, state, location, category, date, timestamp,
       image, price, official_url, source, status
     )
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
+  `, [
     eventId,
     data.title,
     data.city,
@@ -722,9 +731,9 @@ app.post("/events", async (request, reply) => {
     data.officialUrl ?? null,
     data.source ?? null,
     data.status,
-  );
+  ]);
 
-  return eventToResponse(db.prepare("SELECT * FROM events WHERE id = ?").get(eventId));
+  return eventToResponse(await db.get("SELECT * FROM events WHERE id = ?", [eventId]));
 });
 
 app.post("/events/:eventId/participants", async (request, reply) => {
@@ -737,12 +746,13 @@ app.post("/events/:eventId/participants", async (request, reply) => {
     });
   }
 
-  db.prepare(`
-    INSERT OR IGNORE INTO event_participants (event_id, user_id)
+  await db.run(`
+    INSERT INTO event_participants (event_id, user_id)
     VALUES (?, ?)
-  `).run(eventId, userId);
+    ON CONFLICT(event_id, user_id) DO NOTHING
+  `, [eventId, userId]);
 
-  return eventToResponse(db.prepare("SELECT * FROM events WHERE id = ?").get(eventId));
+  return eventToResponse(await db.get("SELECT * FROM events WHERE id = ?", [eventId]));
 });
 
 const close = async () => {

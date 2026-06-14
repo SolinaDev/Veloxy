@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS groups (
   description TEXT NOT NULL,
   tag TEXT NOT NULL,
   created_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  creator_name TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
