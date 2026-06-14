@@ -5,15 +5,18 @@
   "description": "Aplicativo gamificado de corrida com tracking, comunidade e recompensas.",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0 --port 5173 --strictPort",
-    "build": "vite build",
+    "dev": "vite --configLoader native --host 0.0.0.0 --port 5173 --strictPort",
+    "build": "vite build --configLoader native",
     "build:dev": "vite build --configLoader native --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:apk": "npm run build && npx cap sync android && cd android && gradlew.bat assembleDebug",
     "test": "vitest run --configLoader native",
     "test:watch": "vitest --configLoader native"
   },
   "dependencies": {
+    "@capacitor-firebase/authentication": "^8.3.0",
     "@capacitor/android": "^8.4.0",
     "@capacitor/cli": "^8.4.0",
     "@capacitor/core": "^8.4.0",

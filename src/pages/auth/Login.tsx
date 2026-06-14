@@ -56,11 +56,37 @@ const itemVariants: Variants = {
 };
 
 function getAuthErrorCode(error: unknown) {
-  return error instanceof FirebaseError ? error.code : undefined;
+  if (error instanceof FirebaseError) {
+    return error.code;
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof error.code === "string"
+  ) {
+    return error.code;
+  }
+
+  return undefined;
 }
 
 function getAuthErrorMessage(error: unknown) {
   const code = getAuthErrorCode(error);
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" &&
+          error !== null &&
+          "message" in error &&
+          typeof error.message === "string"
+        ? error.message
+        : "";
+
+  if (message.includes("Google nao retornou credenciais")) {
+    return "Google não retornou credenciais. Verifique o SHA-1/SHA-256 e o google-services.json do Android.";
+  }
 
   if (code === "auth/popup-closed-by-user") {
     return "Login cancelado.";
@@ -97,7 +123,15 @@ function getAuthErrorMessage(error: unknown) {
     return "Email inválido.";
   }
 
-  return `Erro ao fazer login: ${code || "erro desconhecido"}`;
+  if (code) {
+    return `Erro ao fazer login: ${code}`;
+  }
+
+  if (message) {
+    return `Erro ao fazer login: ${message}`;
+  }
+
+  return "Erro ao fazer login. Tente novamente.";
 }
 
 export default function Login() {

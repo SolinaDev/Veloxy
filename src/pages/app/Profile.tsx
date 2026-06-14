@@ -31,6 +31,7 @@ import {
   HelpCircle,
   Lock,
   Trash2,
+  BarChart3,
 } from "lucide-react";
 import { deleteUserActivities, getUserActivities, getUserStats, getUserProfile, UserProfile, UserStats } from "@/services/database";
 import type { FeedActivity } from "@/types";
@@ -764,6 +765,26 @@ const Profile = () => {
                     <span className="text-xs font-bold text-orange-500 italic uppercase">XP</span>
                 </div>
             </motion.div>
+      </section>
+
+      <section className="px-6 mt-6">
+        <button
+          onClick={() => navigate("/stats")}
+          className="premium-surface premium-line w-full rounded-[2.2rem] p-5 text-left transition active:scale-[0.98]"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Status completo</p>
+              <h3 className="mt-1 font-display text-2xl font-black italic">Informacoes da corrida</h3>
+              <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                Ritmo medio, melhor corrida, sequencia, calorias e progresso semanal.
+              </p>
+            </div>
+            <div className="hero-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl">
+              <BarChart3 size={22} />
+            </div>
+          </div>
+        </button>
       </section>
 
       <section className="px-6 mt-6">

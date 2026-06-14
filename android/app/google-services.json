@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "346020739559",
+    "project_id": "veloxy-20b42",
+    "storage_bucket": "veloxy-20b42.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:346020739559:android:6393c7a80182942124e542",
+        "android_client_info": {
+          "package_name": "br.com.runnex.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "346020739559-kah4fm8v2t63gvu55p7ns7h1n1l2mda6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "br.com.runnex.app",
+            "certificate_hash": "5f3c7b33f8324a4ee42066c61415b9c15404b179"
+          }
+        },
+        {
+          "client_id": "346020739559-altrasilro67h6puhj2i3jl50n880ser.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAU2taVdTwTObtp9RX8H9dEbu6jB7VMnxw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "346020739559-altrasilro67h6puhj2i3jl50n880ser.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

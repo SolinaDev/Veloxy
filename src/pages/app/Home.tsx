@@ -7,7 +7,6 @@ import {
   Flame,
   Loader2,
   MapPin,
-  Rss,
   Timer,
   Trophy,
   Trash2,
@@ -129,13 +128,7 @@ export default function Home() {
               INICIO
             </h1>
           </div>
-          <button
-            onClick={() => navigate("/social")}
-            className="h-11 w-11 rounded-full premium-panel flex items-center justify-center text-purple-500"
-            aria-label="Abrir feed geral"
-          >
-            <Rss size={20} />
-          </button>
+          <div className="h-11 w-11" aria-hidden="true" />
         </div>
       </header>
 
@@ -231,13 +224,7 @@ export default function Home() {
           <section className="mt-8 px-6">
             <div className="flex items-center justify-between">
               <h3 className="font-display text-lg font-black italic uppercase">Corridas recentes</h3>
-              <button
-                onClick={() => navigate("/social")}
-                className="flex items-center gap-2 rounded-full border border-purple-500/25 bg-purple-500/10 px-3 py-2 text-[10px] font-black uppercase text-purple-400"
-              >
-                <Rss size={12} />
-                Feed geral
-              </button>
+              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Somente suas</span>
             </div>
 
             <div className="mt-4 space-y-3">

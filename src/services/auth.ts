@@ -4,8 +4,11 @@ import {
   OAuthProvider,
   setPersistence,
   signInWithEmailAndPassword,
+  signInWithCredential,
   signInWithPopup,
 } from "firebase/auth";
+import { Capacitor } from "@capacitor/core";
+import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
 
 import { auth } from "@/config/firebase";
 import { syncGoogleProfilePhoto } from "@/lib/user-photo";
@@ -53,6 +56,26 @@ export async function login(email: string, senha: string) {
 
 export async function loginComGooglePopup() {
   await setPersistence(auth, browserLocalPersistence);
+
+  if (Capacitor.isNativePlatform()) {
+    const result = await FirebaseAuthentication.signInWithGoogle({
+      useCredentialManager: false,
+    });
+    const credentialData = result.credential;
+
+    if (!credentialData?.idToken && !credentialData?.accessToken) {
+      throw new Error("Google nao retornou credenciais para o app.");
+    }
+
+    const credential = GoogleAuthProvider.credential(
+      credentialData.idToken,
+      credentialData.accessToken,
+    );
+    const webResult = await signInWithCredential(auth, credential);
+    await syncGoogleProfilePhoto(webResult.user);
+
+    return webResult.user;
+  }
 
   const result = await signInWithPopup(auth, createGoogleProvider());
   await syncGoogleProfilePhoto(result.user);

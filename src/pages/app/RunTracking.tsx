@@ -13,9 +13,11 @@ import {
   TrendingUp,
   Map as MapIcon,
   Navigation,
-  Loader2
+  Loader2,
+  Music,
+  X,
+  ExternalLink
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { MapContainer, TileLayer, Polyline, useMap, Circle } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { useAuth } from "@/hooks/useAuth";
@@ -111,6 +113,8 @@ const RunTracking = () => {
   const [currentPos, setCurrentPos] = useState<[number, number] | null>(null);
   const [isSimulating, setIsSimulating] = useState(false);
   const [trackingStatus, setTrackingStatus] = useState("Pronto para iniciar");
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
+  const [isMusicOpen, setIsMusicOpen] = useState(false);
   const wakeLockRef = useRef<ScreenWakeLockSentinel | null>(null);
   const simulatedPointRef = useRef(0);
 
@@ -167,6 +171,40 @@ const RunTracking = () => {
   };
 
   // Cronômetro real
+  // Busca sinal antes do usuário iniciar a gravação.
+  useEffect(() => {
+    if (isRunning || isSimulating) return undefined;
+
+    if (!("geolocation" in navigator)) {
+      setTrackingStatus("GPS indisponivel");
+      return undefined;
+    }
+
+    if (!window.isSecureContext) {
+      setTrackingStatus("GPS exige HTTPS");
+      return undefined;
+    }
+
+    setTrackingStatus("Buscando sinal GPS");
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        setGpsAccuracy(accuracy);
+        setCurrentPos([latitude, longitude]);
+        setTrackingStatus(accuracy <= 50 ? "GPS pronto" : "Sinal GPS fraco");
+      },
+      (error) => {
+        console.error("GPS preflight error:", error);
+        setTrackingStatus(getGpsErrorMessage(error));
+      },
+      { enableHighAccuracy: true, maximumAge: 1000 * 10, timeout: 12000 }
+    );
+
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, [isRunning, isSimulating]);
+
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
     if (isRunning && !isPaused) {
@@ -288,12 +326,13 @@ const RunTracking = () => {
   };
 
   const handleStart = () => {
+    const startPoint = !isSimulating ? currentPos : null;
     setDistance(0);
     setSeconds(0);
-    setPath([]);
-    setCurrentPos(null);
+    setPath(startPoint ? [startPoint] : []);
+    setCurrentPos(startPoint);
     simulatedPointRef.current = 0;
-    setTrackingStatus(isSimulating ? "Preparando simulacao" : "Buscando sinal GPS");
+    setTrackingStatus(isSimulating ? "Preparando simulacao" : startPoint ? "GPS pronto" : "Buscando sinal GPS");
     setIsPaused(false);
     setIsRunning(true);
   };
@@ -390,14 +429,14 @@ const RunTracking = () => {
           )}
           
           {/* Fallback Overlay se não houver GPS ou ainda não carregou a primeira posição */}
-          {!currentPos && isRunning && (
+          {!currentPos && !isSimulating && (
             <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/60 backdrop-blur-md z-[1000] pointer-events-none">
               <div className="text-center">
                 <div className="w-20 h-20 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20 mb-4 animate-float animate-soft-glow">
                     <Navigation size={32} className="text-purple-500" />
                 </div>
                 <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">
-                  {isSimulating ? "PREPARANDO SIMULACAO..." : "BUSCANDO SINAL GPS..."}
+                  {isRunning ? "BUSCANDO SINAL GPS..." : "AGUARDANDO SINAL GPS..."}
                 </p>
               </div>
             </div>
@@ -406,13 +445,13 @@ const RunTracking = () => {
 
         <div className="absolute bottom-5 left-6 right-6 z-[1002] flex items-center justify-between rounded-3xl premium-panel px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className={`h-2.5 w-2.5 rounded-full ${isPaused ? "bg-yellow-400" : isRunning ? "bg-green-400 animate-status-pulse" : "bg-zinc-600"}`} />
+            <span className={`h-2.5 w-2.5 rounded-full ${isPaused ? "bg-yellow-400" : currentPos ? "bg-green-400 animate-status-pulse" : isRunning ? "bg-purple-400 animate-status-pulse" : "bg-zinc-600"}`} />
             <span className="text-[9px] font-black uppercase tracking-widest text-zinc-300">
               {isPaused ? "Pausado" : trackingStatus}
             </span>
           </div>
           <span className="text-[9px] font-black uppercase tracking-widest text-purple-400">
-            {path.length} pontos
+            {gpsAccuracy ? `${gpsAccuracy.toFixed(0)}m` : `${path.length} pontos`}
           </span>
         </div>
 
@@ -491,16 +530,29 @@ const RunTracking = () => {
       <footer className="px-6 pb-12 safe-bottom">
         <div className="flex items-center justify-center gap-8">
           {!isRunning ? (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.82, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={handleStart}
-              className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-[0_14px_44px_rgba(147,51,234,0.48)] border-4 border-black group animate-soft-glow"
-            >
-              <Play size={40} className="text-white fill-current ml-2 group-hover:scale-110 transition-transform" />
-            </motion.button>
+            <>
+              <motion.button
+                initial={{ opacity: 0, scale: 0.82, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setIsMusicOpen(true)}
+                className="w-16 h-16 rounded-3xl premium-panel flex items-center justify-center text-purple-500 active:scale-95 transition-transform"
+                aria-label="Abrir musica"
+              >
+                <Music size={24} />
+              </motion.button>
+              <motion.button
+                initial={{ opacity: 0, scale: 0.82, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={handleStart}
+                className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-[0_14px_44px_rgba(147,51,234,0.48)] border-4 border-black group animate-soft-glow"
+              >
+                <Play size={40} className="text-white fill-current ml-2 group-hover:scale-110 transition-transform" />
+              </motion.button>
+              <div className="w-16 h-16" aria-hidden="true" />
+            </>
           ) : (
             <>
               <motion.button
@@ -535,19 +587,72 @@ const RunTracking = () => {
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: "spring", stiffness: 360, damping: 22, delay: 0.12 }}
                 whileTap={{ scale: 0.9 }}
+                onClick={() => setIsMusicOpen(true)}
                 className="w-16 h-16 rounded-3xl premium-panel flex items-center justify-center text-purple-500 active:scale-95 transition-transform"
               >
-                <TabIcon icon={MapIcon} size={24} />
+                <Music size={24} />
               </motion.button>
             </>
           )}
         </div>
       </footer>
+
+      <AnimatePresence>
+        {isMusicOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[1200] bg-black/75 backdrop-blur-md"
+              onClick={() => setIsMusicOpen(false)}
+            />
+            <div className="fixed inset-0 z-[1210] flex items-end justify-center p-4 pointer-events-none sm:items-center">
+              <motion.div
+                initial={{ opacity: 0, y: 28, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 28, scale: 0.96 }}
+                className="premium-surface pointer-events-auto w-full max-w-md rounded-[2rem] p-5"
+              >
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.24em] text-zinc-500">Treino</p>
+                    <h2 className="font-display text-2xl font-black italic text-purple-500">Musica</h2>
+                  </div>
+                  <button
+                    onClick={() => setIsMusicOpen(false)}
+                    className="premium-panel flex h-10 w-10 items-center justify-center rounded-full text-zinc-400"
+                    aria-label="Fechar musica"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <p className="mb-4 text-sm leading-relaxed text-zinc-400">
+                  Abra sua playlist antes ou durante a corrida. O Veloxy continua acompanhando o treino quando você voltar para o app.
+                </p>
+                <div className="grid gap-3">
+                  {[
+                    { label: "Spotify", url: "https://open.spotify.com/search/running%20playlist" },
+                    { label: "YouTube Music", url: "https://music.youtube.com/search?q=running+playlist" },
+                    { label: "Deezer", url: "https://www.deezer.com/search/running%20playlist" },
+                  ].map((item) => (
+                    <button
+                      key={item.label}
+                      onClick={() => window.open(item.url, "_blank", "noopener,noreferrer")}
+                      className="premium-panel flex items-center justify-between rounded-2xl px-4 py-4 text-left text-sm font-black"
+                    >
+                      {item.label}
+                      <ExternalLink size={16} className="text-purple-500" />
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
-
-// Helper component for lucide icons in custom buttons
-const TabIcon = ({ icon: Icon, size }: { icon: LucideIcon, size: number }) => <Icon size={size} />;
 
 export default RunTracking;
