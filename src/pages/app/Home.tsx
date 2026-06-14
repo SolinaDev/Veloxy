@@ -13,8 +13,12 @@ import {
   Zap,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { deleteUserActivity, getUserActivities, getUserStats } from "@/services/database";
 import type { FeedActivity, UserStats } from "@/types";
+import {
+  deleteMigratedUserActivity,
+  getMigratedUserActivities,
+  getMigratedUserStats,
+} from "@/services/migration-data";
 import { toDateSafe } from "@/lib/feed-utils";
 import SafeAvatar from "@/components/SafeAvatar";
 import { getBestUserPhotoURL } from "@/lib/user-photo";
@@ -58,8 +62,8 @@ export default function Home() {
     if (!user) return;
     try {
       const [statsData, runs] = await Promise.all([
-        getUserStats(user.uid),
-        getUserActivities(user.uid, 8),
+        getMigratedUserStats(user.uid),
+        getMigratedUserActivities(user.uid, 8),
       ]);
       setStats(statsData);
       setActivities(runs);
@@ -83,7 +87,7 @@ export default function Home() {
 
     setDeletingId(run.id);
     try {
-      await deleteUserActivity(run.id, user.uid);
+      await deleteMigratedUserActivity(run.id, user.uid);
       setConfirmDeleteId(null);
       toast.success("Corrida apagada.");
       await loadHomeData();

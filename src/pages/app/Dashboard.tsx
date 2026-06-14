@@ -15,7 +15,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { getUserStats, ActivityData, getUserProfile, UserProfile } from "@/services/database";
+import { ActivityData, getUserProfile, UserProfile } from "@/services/database";
+import { getMigratedUserStats } from "@/services/migration-data";
 import { getLevelFromXP } from "@/lib/gamification";
 import { toDateSafe } from "@/lib/feed-utils";
 
@@ -65,7 +66,7 @@ const Dashboard = () => {
       if (!user) return;
       try {
         const [statsData, profileData] = await Promise.all([
-          getUserStats(user.uid),
+          getMigratedUserStats(user.uid),
           getUserProfile(user.uid)
         ]);
         setStats(statsData as StatsResult);

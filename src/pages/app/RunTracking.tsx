@@ -22,6 +22,8 @@ import { MapContainer, TileLayer, Polyline, useMap, Circle } from "react-leaflet
 import "leaflet/dist/leaflet.css";
 import { useAuth } from "@/hooks/useAuth";
 import { saveActivity } from "@/services/database";
+import { isOwnApiEnabled } from "@/services/api/client";
+import { saveRunToApi } from "@/services/api/runs";
 import { toast } from "sonner";
 import { getBestUserPhotoURL } from "@/lib/user-photo";
 
@@ -342,7 +344,7 @@ const RunTracking = () => {
     
     setIsSaving(true);
     try {
-      await saveActivity({
+      const activityData = {
         userId: user.uid,
         userName: user.displayName || "Corredor",
         userAvatar: getBestUserPhotoURL(user),
@@ -353,8 +355,19 @@ const RunTracking = () => {
         calories: Number(getCalories()),
         route: path.map(([lat, lng]) => ({ lat, lng })),
         type: "RUNNING"
-      });
-      
+      };
+
+      await saveActivity(activityData);
+
+      if (isOwnApiEnabled) {
+        try {
+          await saveRunToApi(activityData);
+        } catch (apiError) {
+          console.warn("Corrida salva no Firebase, mas falhou na API propria:", apiError);
+          toast.warning("Salvou no Firebase, mas a API própria não respondeu.");
+        }
+      }
+       
       toast.success("Corrida salva com sucesso!");
       navigate("/");
     } catch (error) {
