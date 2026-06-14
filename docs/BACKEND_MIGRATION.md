@@ -49,3 +49,28 @@ VITE_API_URL=http://localhost:3333
 Com isso, a corrida continua salvando no Firebase e tambem tenta salvar na API propria. Se a API local estiver desligada, o Firebase continua funcionando.
 
 As telas de Inicio e Stats tambem passam a ler da API propria quando `VITE_USE_OWN_API=true`. Se a API cair, elas voltam automaticamente para o Firebase.
+
+## Seguranca da API
+
+O cliente ja envia o token do Firebase Auth no header `Authorization`. No backend, a validacao fica controlada por:
+
+```env
+REQUIRE_AUTH=true
+GOOGLE_APPLICATION_CREDENTIALS="C:/caminho/para/service-account.json"
+```
+
+Enquanto `REQUIRE_AUTH=false`, a API fica em modo local/desenvolvimento.
+
+## PostgreSQL
+
+O banco final da migracao sera PostgreSQL. O schema inicial esta em `server/sql/001_init_postgres.sql` e ja cobre:
+
+- usuarios
+- corridas
+- curtidas
+- grupos
+- membros de grupos
+- eventos
+- participantes de eventos
+
+SQLite fica apenas como modo local rapido enquanto a API e as telas ainda estao sendo migradas.

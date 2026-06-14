@@ -5,7 +5,13 @@ import {
   Loader2, Play, Search, X, Users,
   RotateCw, ChevronDown,
 } from "lucide-react";
-import { subscribeToFeed, toggleLike, getUserStats, loadMoreActivities } from "@/services/database";
+import { subscribeToFeed, loadMoreActivities } from "@/services/database";
+import { isOwnApiEnabled } from "@/services/api/client";
+import {
+  getMigratedFeed,
+  getMigratedUserStats,
+  toggleMigratedLike,
+} from "@/services/migration-data";
 import type { FeedActivity } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -61,12 +67,25 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
     if (!user) return;
     const stored = parseInt(localStorage.getItem(`veloxy_lastlikes_${user.uid}`) || "0");
     setLastSeenLikes(stored);
-    getUserStats(user.uid).then((s) =>
+    getMigratedUserStats(user.uid).then((s) =>
       setStats({ totalKm: s.totalKm, runsCount: s.runsCount, totalTime: s.totalTime })
     );
   }, [user]);
 
   useEffect(() => {
+    if (isOwnApiEnabled) {
+      getMigratedFeed(FEED_LIMIT)
+        .then((data) => {
+          setLiveActivities(data);
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.error(error);
+          setLoading(false);
+        });
+      return;
+    }
+
     const unsub = subscribeToFeed((data) => {
       setLiveActivities(data);
       setLoading(false);
@@ -91,9 +110,16 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
     if (!lastItem?.timestamp) return;
     setLoadingMore(true);
     try {
-      const more = await loadMoreActivities(lastItem.timestamp, FEED_LIMIT);
+      const more = isOwnApiEnabled
+        ? await getMigratedFeed(activities.length + FEED_LIMIT)
+        : await loadMoreActivities(lastItem.timestamp, FEED_LIMIT);
       if (more.length < FEED_LIMIT) setHasMore(false);
-      setMoreActivities((prev) => [...prev, ...more]);
+      if (isOwnApiEnabled) {
+        setLiveActivities(more);
+        setHasMore(more.length > activities.length);
+      } else {
+        setMoreActivities((prev) => [...prev, ...more]);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -105,9 +131,13 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
     setMoreActivities([]);
     setHasMore(true);
     if (user) {
-      await getUserStats(user.uid).then((s) =>
+      await getMigratedUserStats(user.uid).then((s) =>
         setStats({ totalKm: s.totalKm, runsCount: s.runsCount, totalTime: s.totalTime })
       );
+    }
+    if (isOwnApiEnabled) {
+      const data = await getMigratedFeed(FEED_LIMIT);
+      setLiveActivities(data);
     }
     toast.success("Feed atualizado!");
   }, [user]);
@@ -117,7 +147,21 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
   const handleLike = useCallback(async (activityId: string, likes: string[] = []) => {
     if (!user) return;
     const isLiked = likes.includes(user.uid);
-    try { await toggleLike(activityId, user.uid, isLiked); }
+    try {
+      await toggleMigratedLike(activityId, user.uid, isLiked);
+      setLiveActivities((prev) =>
+        prev.map((activity) => {
+          if (activity.id !== activityId) return activity;
+          const likes = activity.likes || [];
+          return {
+            ...activity,
+            likes: isLiked
+              ? likes.filter((like) => like !== user.uid)
+              : [...likes, user.uid],
+          };
+        }),
+      );
+    }
     catch (e) { console.error(e); }
   }, [user]);
 

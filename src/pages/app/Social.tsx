@@ -15,15 +15,15 @@ import {
 import Feed from "@/pages/app/Feed";
 import Events from "@/pages/app/Events";
 import {
-  createGroup,
-  getGlobalRanking,
-  getGroupActivities,
-  getGroupLeaderboard,
-  getGroups,
-  getUserProfile,
-  joinGroup,
-  leaveGroup,
-} from "@/services/database";
+  createMigratedGroup,
+  getMigratedGlobalRanking,
+  getMigratedGroupFeed,
+  getMigratedGroupLeaderboard,
+  getMigratedGroups,
+  getMigratedUserProfile,
+  joinMigratedGroup,
+  leaveMigratedGroup,
+} from "@/services/migration-data";
 import type { FeedActivity, RunningGroup, UserProfile } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
 import SafeAvatar from "@/components/SafeAvatar";
@@ -172,8 +172,8 @@ export default function Social() {
     setGroupsLoading(true);
     try {
       const [profile, groupList] = await Promise.all([
-        getUserProfile(user.uid),
-        getGroups(),
+        getMigratedUserProfile(user.uid),
+        getMigratedGroups(),
       ]);
       const joined = profile?.joinedGroupIds || [];
       setJoinedGroups(joined);
@@ -195,7 +195,7 @@ export default function Social() {
     const loadRanking = async () => {
       setRankingLoading(true);
       try {
-        const data = await getGlobalRanking(rankingLimit);
+        const data = await getMigratedGlobalRanking(rankingLimit);
         if (!cancelled) setRanking(data);
       } finally {
         if (!cancelled) setRankingLoading(false);
@@ -216,8 +216,8 @@ export default function Social() {
       setGroupDetailsLoading(true);
       try {
         const [feed, leaderboard] = await Promise.all([
-          getGroupActivities(selectedGroup),
-          getGroupLeaderboard(selectedGroup),
+          getMigratedGroupFeed(selectedGroup),
+          getMigratedGroupLeaderboard(selectedGroup),
         ]);
         if (!cancelled) {
           setGroupFeed(feed);
@@ -246,11 +246,11 @@ export default function Social() {
 
     try {
       if (joined) {
-        await leaveGroup(group.id, user.uid);
+        await leaveMigratedGroup(group.id, user.uid);
         setJoinedGroups((prev) => prev.filter((id) => id !== group.id));
         toast.success("Voce saiu do grupo.");
       } else {
-        await joinGroup(group.id, user.uid);
+        await joinMigratedGroup(group.id, user.uid);
         setJoinedGroups((prev) => [...prev, group.id]);
         toast.success("Voce entrou no grupo.");
       }
@@ -270,13 +270,13 @@ export default function Social() {
 
     setCreatingGroup(true);
     try {
-      const groupId = await createGroup({
+      const group = await createMigratedGroup({
         ...form,
-        userId: user.uid,
-        userName: displayName,
+        createdBy: user.uid,
+        creatorName: displayName,
       });
       setCreateOpen(false);
-      setSelectedGroupId(groupId);
+      setSelectedGroupId(typeof group === "string" ? group : group.id);
       toast.success("Comunidade criada.");
       await loadGroups();
     } catch (error) {

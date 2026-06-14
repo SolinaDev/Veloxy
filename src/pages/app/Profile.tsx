@@ -33,7 +33,14 @@ import {
   Trash2,
   BarChart3,
 } from "lucide-react";
-import { deleteUserActivities, getUserActivities, getUserStats, getUserProfile, UserProfile, UserStats } from "@/services/database";
+import { UserProfile, UserStats } from "@/services/database";
+import {
+  deleteMigratedUserActivities,
+  getMigratedUserActivities,
+  getMigratedUserProfile,
+  getMigratedUserStats,
+  updateMigratedUserProfile,
+} from "@/services/migration-data";
 import type { FeedActivity } from "@/types";
 import { getLevelFromXP } from "@/lib/gamification";
 import { getGooglePhotoURL } from "@/lib/user-photo";
@@ -222,7 +229,7 @@ function SettingsModal({
 
     setDeletingRuns(true);
     try {
-      const deletedCount = await deleteUserActivities(user.uid);
+      const deletedCount = await deleteMigratedUserActivities(user.uid);
       toast.success(`${deletedCount} corrida${deletedCount === 1 ? "" : "s"} apagada${deletedCount === 1 ? "" : "s"}.`);
       setConfirmDelete(false);
       onActivitiesDeleted();
@@ -426,6 +433,15 @@ function EditProfileModal({
           location: location.trim(),
           weeklyGoalKm: Number.isFinite(goalValue) ? Math.max(0, Math.min(goalValue, 500)) : 10,
         }, { merge: true });
+
+        await updateMigratedUserProfile(user.uid, {
+          displayName: displayName.trim(),
+          email: user.email,
+          photoURL: normalizedPhoto || null,
+          bio: bio.trim(),
+          location: location.trim(),
+          weeklyGoalKm: Number.isFinite(goalValue) ? Math.max(0, Math.min(goalValue, 500)) : 10,
+        });
       }
       toast.success("Perfil atualizado!");
       onSuccess();
@@ -562,9 +578,9 @@ const Profile = () => {
     if (!user) return;
     try {
       const [userStats, userProfile, history] = await Promise.all([
-        getUserStats(user.uid),
-        getUserProfile(user.uid),
-        getUserActivities(user.uid, 20)
+        getMigratedUserStats(user.uid),
+        getMigratedUserProfile(user.uid),
+        getMigratedUserActivities(user.uid, 20)
       ]);
       setStatsData(userStats);
       setProfile(userProfile);
@@ -620,6 +636,14 @@ const Profile = () => {
     if (!user) return;
     try {
       await setDoc(doc(db, "users", user.uid), { privateProfile: value }, { merge: true });
+      await updateMigratedUserProfile(user.uid, {
+        displayName,
+        photoURL: profile?.photoURL ?? getGooglePhotoURL(user),
+        bio: profile?.bio ?? "",
+        location: profile?.location ?? "",
+        weeklyGoalKm,
+        privateProfile: value,
+      });
       setProfile((prev) => prev ? { ...prev, privateProfile: value } : prev);
       toast.success(value ? "Perfil privado ativado." : "Perfil público ativado.");
     } catch (error) {
@@ -649,7 +673,7 @@ const Profile = () => {
 
     setProfileDeletingRuns(true);
     try {
-      const deletedCount = await deleteUserActivities(user.uid);
+      const deletedCount = await deleteMigratedUserActivities(user.uid);
       toast.success(`${deletedCount} corrida${deletedCount === 1 ? "" : "s"} apagada${deletedCount === 1 ? "" : "s"}.`);
       setConfirmProfileDelete(false);
       await fetchProfileData();
@@ -965,3 +989,4 @@ const Profile = () => {
 };
 
 export default Profile;
+

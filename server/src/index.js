@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { closeDatabase, db } from "./database.js";
+import { verifyFirebaseUser } from "./auth.js";
 
 const app = Fastify({
   logger: true,
@@ -28,6 +29,40 @@ const runSchema = z.object({
       timestamp: z.number().optional(),
     }),
   ).default([]),
+});
+
+const profileSchema = z.object({
+  displayName: z.string().min(1).optional(),
+  email: z.string().email().nullable().optional(),
+  photoURL: z.string().nullable().optional(),
+  bio: z.string().max(280).nullable().optional(),
+  location: z.string().max(80).nullable().optional(),
+  weeklyGoalKm: z.number().min(0).max(500).optional(),
+  privateProfile: z.boolean().optional(),
+});
+
+const groupSchema = z.object({
+  name: z.string().min(2),
+  city: z.string().min(2),
+  description: z.string().min(2),
+  tag: z.string().min(1),
+  createdBy: z.string().min(1),
+  creatorName: z.string().min(1),
+});
+
+const eventSchema = z.object({
+  title: z.string().min(2),
+  city: z.string().min(2),
+  state: z.string().optional(),
+  location: z.string().min(2),
+  category: z.string().min(1),
+  date: z.string().min(1),
+  timestamp: z.string().min(1),
+  image: z.string().optional(),
+  price: z.string().optional(),
+  officialUrl: z.string().optional(),
+  source: z.string().optional(),
+  status: z.string().default("unknown"),
 });
 
 function formatPace(totalSeconds, totalKm) {
@@ -61,6 +96,61 @@ function runToResponse(run) {
     createdAtMs,
     createdAt: run.created_at,
     updatedAt: run.updated_at,
+  };
+}
+
+function groupToResponse(group) {
+  const members = db
+    .prepare("SELECT user_id FROM group_members WHERE group_id = ?")
+    .all(group.id)
+    .map((member) => member.user_id);
+  const weeklyKmRow = db.prepare(`
+    SELECT COALESCE(SUM(r.distance), 0) AS weekly_km
+    FROM runs r
+    WHERE r.user_id IN (
+      SELECT user_id FROM group_members WHERE group_id = ?
+    )
+    AND r.created_at_ms >= ?
+  `).get(group.id, Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  return {
+    id: group.id,
+    name: group.name,
+    city: group.city,
+    description: group.description,
+    tag: group.tag,
+    createdBy: group.created_by,
+    creatorName: group.creator_name,
+    memberIds: members,
+    membersCount: members.length,
+    weeklyKm: Number(weeklyKmRow?.weekly_km ?? 0),
+    createdAt: group.created_at,
+    updatedAt: group.updated_at,
+  };
+}
+
+function eventToResponse(event) {
+  const participants = db
+    .prepare("SELECT user_id FROM event_participants WHERE event_id = ?")
+    .all(event.id)
+    .map((participant) => participant.user_id);
+
+  return {
+    id: event.id,
+    title: event.title,
+    date: event.date,
+    location: event.location,
+    city: event.city,
+    state: event.state,
+    participantsCount: participants.length,
+    participantsIds: participants,
+    category: event.category,
+    image: event.image ?? "",
+    price: event.price ?? "",
+    officialUrl: event.official_url,
+    source: event.source,
+    status: event.status,
+    timestamp: event.timestamp,
   };
 }
 
@@ -136,14 +226,107 @@ function ensureUser(data) {
   `).run(data.userId, data.userName, data.userAvatar ?? null);
 }
 
+function userToResponse(user) {
+  if (!user) return null;
+
+  return {
+    uid: user.id,
+    displayName: user.display_name,
+    photoURL: user.photo_url,
+    bio: user.bio ?? "",
+    location: user.location ?? "",
+    weeklyGoalKm: user.weekly_goal_km,
+    privateProfile: Boolean(user.private_profile),
+    totalXP: user.total_xp,
+    totalKm: user.total_km,
+    level: "Iniciante",
+    monthlyKm: user.total_km,
+    createdAt: user.created_at,
+    lastUpdated: user.updated_at,
+  };
+}
+
 await app.register(cors, {
   origin: [appOrigin, "http://localhost:4173"],
 });
+
+app.addHook("preHandler", verifyFirebaseUser);
 
 app.get("/health", async () => ({
   ok: true,
   service: "veloxy-api",
 }));
+
+app.get("/users/:userId", async (request, reply) => {
+  const { userId } = request.params;
+  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(userId);
+
+  if (!user) {
+    return reply.code(404).send({
+      error: "user_not_found",
+    });
+  }
+
+  return userToResponse(user);
+});
+
+app.patch("/users/:userId", async (request, reply) => {
+  const { userId } = request.params;
+  const parsed = profileSchema.safeParse(request.body);
+
+  if (!parsed.success) {
+    return reply.code(400).send({
+      error: "invalid_profile",
+      issues: parsed.error.flatten(),
+    });
+  }
+
+  const data = parsed.data;
+  const currentUser = db.prepare("SELECT * FROM users WHERE id = ?").get(userId);
+  const displayName = data.displayName ?? currentUser?.display_name ?? "Corredor";
+  const email = data.email ?? currentUser?.email ?? null;
+  const photoURL = data.photoURL ?? currentUser?.photo_url ?? null;
+  const bio = data.bio ?? currentUser?.bio ?? null;
+  const location = data.location ?? currentUser?.location ?? null;
+  const weeklyGoalKm = data.weeklyGoalKm ?? currentUser?.weekly_goal_km ?? 10;
+  const privateProfile =
+    data.privateProfile ?? Boolean(currentUser?.private_profile ?? false);
+
+  db.prepare(`
+    INSERT INTO users (
+      id,
+      email,
+      display_name,
+      photo_url,
+      bio,
+      location,
+      weekly_goal_km,
+      private_profile
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      email = excluded.email,
+      display_name = excluded.display_name,
+      photo_url = excluded.photo_url,
+      bio = excluded.bio,
+      location = excluded.location,
+      weekly_goal_km = excluded.weekly_goal_km,
+      private_profile = excluded.private_profile,
+      updated_at = CURRENT_TIMESTAMP
+  `).run(
+    userId,
+    email,
+    displayName,
+    photoURL,
+    bio,
+    location,
+    weeklyGoalKm,
+    privateProfile ? 1 : 0,
+  );
+
+  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(userId);
+  return userToResponse(user);
+});
 
 app.post("/runs", async (request, reply) => {
   const parsed = runSchema.safeParse(request.body);
@@ -217,6 +400,61 @@ app.get("/users/:userId/runs", async (request) => {
   return runs.map(runToResponse);
 });
 
+app.get("/feed", async (request) => {
+  const limit = Math.min(Number(request.query?.limit ?? 20), 100);
+  const runs = db.prepare(`
+    SELECT *
+    FROM runs
+    ORDER BY created_at_ms DESC
+    LIMIT ?
+  `).all(limit);
+
+  return runs.map((run) => {
+    const likes = db
+      .prepare("SELECT user_id FROM activity_likes WHERE activity_id = ?")
+      .all(run.id)
+      .map((like) => like.user_id);
+
+    return {
+      ...runToResponse(run),
+      likes,
+    };
+  });
+});
+
+app.post("/runs/:runId/likes", async (request, reply) => {
+  const { runId } = request.params;
+  const userId = request.body?.userId;
+  const liked = Boolean(request.body?.liked);
+
+  if (!userId) {
+    return reply.code(400).send({
+      error: "missing_user",
+    });
+  }
+
+  if (liked) {
+    db.prepare(`
+      INSERT OR IGNORE INTO activity_likes (activity_id, user_id)
+      VALUES (?, ?)
+    `).run(runId, userId);
+  } else {
+    db.prepare(`
+      DELETE FROM activity_likes
+      WHERE activity_id = ? AND user_id = ?
+    `).run(runId, userId);
+  }
+
+  const likes = db
+    .prepare("SELECT user_id FROM activity_likes WHERE activity_id = ?")
+    .all(runId)
+    .map((like) => like.user_id);
+
+  return {
+    likes,
+  };
+});
+
 app.delete("/runs/:runId", async (request, reply) => {
   const { runId } = request.params;
   const userId = request.query?.userId;
@@ -252,6 +490,22 @@ app.delete("/runs/:runId", async (request, reply) => {
   };
 });
 
+app.delete("/users/:userId/runs", async (request) => {
+  const { userId } = request.params;
+  const result = db.prepare("DELETE FROM runs WHERE user_id = ?").run(userId);
+
+  db.prepare(`
+    UPDATE users
+    SET total_km = 0, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(userId);
+
+  return {
+    ok: true,
+    deletedCount: result.changes,
+  };
+});
+
 app.get("/users/:userId/stats", async (request) => {
   const { userId } = request.params;
   const runs = db.prepare("SELECT * FROM runs WHERE user_id = ?").all(userId);
@@ -281,6 +535,214 @@ app.get("/users/:userId/stats", async (request) => {
     lastActivity: lastActivity ? runToResponse(lastActivity) : null,
     weeklyData,
   };
+});
+
+app.get("/groups", async () => {
+  const groups = db.prepare(`
+    SELECT *
+    FROM groups
+    ORDER BY created_at DESC
+    LIMIT 50
+  `).all();
+
+  return groups.map(groupToResponse);
+});
+
+app.get("/leaderboard", async (request) => {
+  const limit = Math.min(Number(request.query?.limit ?? 100), 500);
+  const users = db.prepare(`
+    SELECT
+      u.*,
+      COALESCE(SUM(r.distance), 0) AS leaderboard_km
+    FROM users u
+    LEFT JOIN runs r ON r.user_id = u.id
+    WHERE u.private_profile = 0
+    GROUP BY u.id
+    ORDER BY leaderboard_km DESC
+    LIMIT ?
+  `).all(limit);
+
+  return users.map((user) => ({
+    ...userToResponse(user),
+    monthlyKm: Number(user.leaderboard_km ?? 0),
+  }));
+});
+
+app.post("/groups", async (request, reply) => {
+  const parsed = groupSchema.safeParse(request.body);
+
+  if (!parsed.success) {
+    return reply.code(400).send({
+      error: "invalid_group",
+      issues: parsed.error.flatten(),
+    });
+  }
+
+  const data = parsed.data;
+  const groupId = randomUUID();
+
+  db.prepare(`
+    INSERT INTO groups (id, name, city, description, tag, created_by, creator_name)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    groupId,
+    data.name,
+    data.city,
+    data.description,
+    data.tag,
+    data.createdBy,
+    data.creatorName,
+  );
+
+  db.prepare(`
+    INSERT OR IGNORE INTO group_members (group_id, user_id)
+    VALUES (?, ?)
+  `).run(groupId, data.createdBy);
+
+  return groupToResponse(db.prepare("SELECT * FROM groups WHERE id = ?").get(groupId));
+});
+
+app.post("/groups/:groupId/members", async (request, reply) => {
+  const { groupId } = request.params;
+  const userId = request.body?.userId;
+
+  if (!userId) {
+    return reply.code(400).send({
+      error: "missing_user",
+    });
+  }
+
+  db.prepare(`
+    INSERT OR IGNORE INTO group_members (group_id, user_id)
+    VALUES (?, ?)
+  `).run(groupId, userId);
+
+  return groupToResponse(db.prepare("SELECT * FROM groups WHERE id = ?").get(groupId));
+});
+
+app.delete("/groups/:groupId/members/:userId", async (request) => {
+  const { groupId, userId } = request.params;
+
+  db.prepare(`
+    DELETE FROM group_members
+    WHERE group_id = ? AND user_id = ?
+  `).run(groupId, userId);
+
+  return {
+    ok: true,
+  };
+});
+
+app.get("/groups/:groupId/feed", async (request) => {
+  const { groupId } = request.params;
+  const limit = Math.min(Number(request.query?.limit ?? 20), 100);
+  const runs = db.prepare(`
+    SELECT *
+    FROM runs
+    WHERE user_id IN (
+      SELECT user_id FROM group_members WHERE group_id = ?
+    )
+    ORDER BY created_at_ms DESC
+    LIMIT ?
+  `).all(groupId, limit);
+
+  return runs.map(runToResponse);
+});
+
+app.get("/groups/:groupId/leaderboard", async (request) => {
+  const { groupId } = request.params;
+
+  const users = db.prepare(`
+    SELECT
+      u.*,
+      COALESCE(SUM(r.distance), 0) AS leaderboard_km
+    FROM users u
+    JOIN group_members gm ON gm.user_id = u.id
+    LEFT JOIN runs r ON r.user_id = u.id
+    WHERE gm.group_id = ?
+    GROUP BY u.id
+    ORDER BY leaderboard_km DESC
+    LIMIT 100
+  `).all(groupId);
+
+  return users.map((user) => ({
+    ...userToResponse(user),
+    monthlyKm: Number(user.leaderboard_km ?? 0),
+  }));
+});
+
+app.get("/events", async (request) => {
+  const city = request.query?.city?.toString().trim().toLowerCase();
+  const events = city
+    ? db.prepare(`
+        SELECT *
+        FROM events
+        WHERE lower(city) = ?
+        ORDER BY timestamp ASC
+      `).all(city)
+    : db.prepare(`
+        SELECT *
+        FROM events
+        ORDER BY timestamp ASC
+      `).all();
+
+  return events.map(eventToResponse);
+});
+
+app.post("/events", async (request, reply) => {
+  const parsed = eventSchema.safeParse(request.body);
+
+  if (!parsed.success) {
+    return reply.code(400).send({
+      error: "invalid_event",
+      issues: parsed.error.flatten(),
+    });
+  }
+
+  const data = parsed.data;
+  const eventId = randomUUID();
+
+  db.prepare(`
+    INSERT INTO events (
+      id, title, city, state, location, category, date, timestamp,
+      image, price, official_url, source, status
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    eventId,
+    data.title,
+    data.city,
+    data.state ?? null,
+    data.location,
+    data.category,
+    data.date,
+    data.timestamp,
+    data.image ?? "",
+    data.price ?? "",
+    data.officialUrl ?? null,
+    data.source ?? null,
+    data.status,
+  );
+
+  return eventToResponse(db.prepare("SELECT * FROM events WHERE id = ?").get(eventId));
+});
+
+app.post("/events/:eventId/participants", async (request, reply) => {
+  const { eventId } = request.params;
+  const userId = request.body?.userId;
+
+  if (!userId) {
+    return reply.code(400).send({
+      error: "missing_user",
+    });
+  }
+
+  db.prepare(`
+    INSERT OR IGNORE INTO event_participants (event_id, user_id)
+    VALUES (?, ?)
+  `).run(eventId, userId);
+
+  return eventToResponse(db.prepare("SELECT * FROM events WHERE id = ?").get(eventId));
 });
 
 const close = async () => {

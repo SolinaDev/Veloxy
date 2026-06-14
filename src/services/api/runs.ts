@@ -31,6 +31,15 @@ export function deleteRunFromApi(runId: string, userId: string) {
   );
 }
 
+export function deleteUserRunsFromApi(userId: string) {
+  return apiRequest<{ ok: boolean; deletedCount: number }>(
+    `/users/${encodeURIComponent(userId)}/runs`,
+    {
+      method: "DELETE",
+    },
+  );
+}
+
 export function getUserStatsFromApi(userId: string) {
   return apiRequest<UserStats>(
     `/users/${encodeURIComponent(userId)}/stats`,

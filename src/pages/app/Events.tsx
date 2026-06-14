@@ -3,12 +3,15 @@ import { Calendar, MapPin, Users, ChevronRight, Bell, Tag, Clock, Loader2, Check
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { 
-  getEvents, 
   getUserEvents, 
-  joinEvent, 
   getUserProfile,
   RunningEvent 
 } from "@/services/database";
+import {
+  getMigratedEvents,
+  getMigratedUserProfile,
+  joinMigratedEvent,
+} from "@/services/migration-data";
 import { toast } from "sonner";
 import { toDateSafe } from "@/lib/feed-utils";
 
@@ -59,13 +62,13 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
             try {
                 
                 // Pegar cidade do perfil
-                const profile = await getUserProfile(user.uid);
+                const profile = await getMigratedUserProfile(user.uid) ?? await getUserProfile(user.uid);
                 const city = profile?.location || "";
                 setUserCity(city);
                 setEnrolledIds(profile?.enrolledEvents || []);
 
                 // Buscar todos os eventos ordenados/filtrados por cidade
-                const allEvents = await getEvents(city);
+                const allEvents = await getMigratedEvents(city);
                 setEvents(allEvents);
             } catch (error) {
                 console.error("Erro ao carregar eventos:", error);
@@ -117,7 +120,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
         }
 
         try {
-            await joinEvent(eventId, user.uid);
+            await joinMigratedEvent(eventId, user.uid);
             setEnrolledIds(prev => [...prev, eventId]);
             toast.success(officialUrl ? "Evento salvo. Abrindo site oficial." : "Evento salvo no perfil.");
         } catch (error) {

@@ -1,3 +1,5 @@
+import { auth } from "@/config/firebase";
+
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3333";
 export const isOwnApiEnabled = import.meta.env.VITE_USE_OWN_API === "true";
 
@@ -10,10 +12,12 @@ export async function apiRequest<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
+  const token = await auth.currentUser?.getIdToken();
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: options.method ?? "GET",
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
