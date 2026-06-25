@@ -5,8 +5,8 @@
   "type": "module",
   "description": "Backend proprio do Veloxy para migrar dados do Firebase em etapas.",
   "scripts": {
-    "dev": "node --watch src/index.js",
-    "start": "node src/index.js"
+    "dev": "node --env-file=.env --watch src/index.js",
+    "start": "node --env-file=.env src/index.js"
   },
   "dependencies": {
     "@fastify/cors": "^11.1.0",

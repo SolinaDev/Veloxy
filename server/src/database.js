@@ -1,7 +1,6 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DatabaseSync } from "node:sqlite";
 import pg from "pg";
 
 const { Pool } = pg;
@@ -39,7 +38,8 @@ function normalizeRows(rows) {
   });
 }
 
-function createSqliteClient() {
+async function createSqliteClient() {
+  const { DatabaseSync } = await import("node:sqlite");
   const databasePath = resolve(process.env.DATABASE_PATH ?? "./data/veloxy.db");
   mkdirSync(dirname(databasePath), {
     recursive: true,
@@ -236,7 +236,9 @@ async function createPostgresClient() {
   };
 }
 
-export const db = usePostgres ? await createPostgresClient() : createSqliteClient();
+export const db = usePostgres
+  ? await createPostgresClient()
+  : await createSqliteClient();
 
 export async function closeDatabase() {
   await db.close();
