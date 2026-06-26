@@ -1,5 +1,6 @@
 import {
   browserLocalPersistence,
+  browserPopupRedirectResolver,
   GoogleAuthProvider,
   OAuthProvider,
   setPersistence,
@@ -77,7 +78,11 @@ export async function loginComGooglePopup() {
     return webResult.user;
   }
 
-  const result = await signInWithPopup(auth, createGoogleProvider());
+  const result = await signInWithPopup(
+    auth,
+    createGoogleProvider(),
+    browserPopupRedirectResolver,
+  );
   await syncGoogleProfilePhoto(result.user);
 
   return result.user;
@@ -86,7 +91,11 @@ export async function loginComGooglePopup() {
 export async function loginComMicrosoft() {
   await setPersistence(auth, browserLocalPersistence);
 
-  const result = await signInWithPopup(auth, createMicrosoftProvider());
+  const result = await signInWithPopup(
+    auth,
+    createMicrosoftProvider(),
+    browserPopupRedirectResolver,
+  );
 
   return result.user;
 }
@@ -94,7 +103,11 @@ export async function loginComMicrosoft() {
 export async function loginComApple() {
   await setPersistence(auth, browserLocalPersistence);
 
-  const result = await signInWithPopup(auth, createAppleProvider());
+  const result = await signInWithPopup(
+    auth,
+    createAppleProvider(),
+    browserPopupRedirectResolver,
+  );
 
   return result.user;
 }
