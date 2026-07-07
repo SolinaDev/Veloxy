@@ -1,6 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { FirebaseError } from "firebase/app";
+import { Capacitor, registerPlugin } from "@capacitor/core";
+import type {
+  BackgroundGeolocationPlugin,
+  CallbackError,
+  Location as BackgroundLocation,
+} from "@capacitor-community/background-geolocation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ArrowLeft, 
@@ -24,6 +30,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { saveActivity } from "@/services/database";
 import { toast } from "sonner";
 import { getBestUserPhotoURL } from "@/lib/user-photo";
+
+const BackgroundGeolocation =
+  registerPlugin<BackgroundGeolocationPlugin>("BackgroundGeolocation");
 
 type ScreenWakeLockSentinel = {
   release: () => Promise<void>;
@@ -98,6 +107,18 @@ const getGpsErrorMessage = (error: GeolocationPositionError) => {
   return `Erro ao acessar GPS: ${error.message}`;
 };
 
+const getBackgroundGpsErrorMessage = (error: CallbackError) => {
+  if (error.code === "NOT_AUTHORIZED") {
+    return "Permissao de GPS negada. Libere a localizacao nas configuracoes do app.";
+  }
+
+  if (error.message) {
+    return `Erro no GPS em segundo plano: ${error.message}`;
+  }
+
+  return "Erro no GPS em segundo plano.";
+};
+
 const RunTracking = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -117,6 +138,7 @@ const RunTracking = () => {
   const [isMusicOpen, setIsMusicOpen] = useState(false);
   const wakeLockRef = useRef<ScreenWakeLockSentinel | null>(null);
   const simulatedPointRef = useRef(0);
+  const isNativeAndroid = Capacitor.getPlatform() === "android";
 
   // Gerenciar Screen Wake Lock para PWA (Não deixar a tela do celular apagar/pausar o app)
   useEffect(() => {
@@ -158,7 +180,7 @@ const RunTracking = () => {
   };
 
   // Função para calcular distância entre dois pontos (Haversine)
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371; // Raio da Terra em km
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -168,7 +190,49 @@ const RunTracking = () => {
       Math.sin(dLon/2) * Math.sin(dLon/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return R * c;
-  };
+  }, []);
+
+  const applyGpsPoint = useCallback((
+    latitude: number,
+    longitude: number,
+    accuracy: number,
+    speed: number | null,
+    source: "web" | "background",
+  ) => {
+    setGpsAccuracy(accuracy);
+
+    if (accuracy > 50) {
+      setTrackingStatus("Sinal GPS fraco");
+      if (source === "web") {
+        toast.warning("Sinal de GPS fraco. Aguardando uma posicao melhor.");
+      }
+      return;
+    }
+
+    if (speed && speed > 8.33) {
+      console.warn("Velocidade incompatÃ­vel com corrida. Trecho ignorado.");
+      setTrackingStatus("Trecho ignorado por velocidade alta");
+      return;
+    }
+
+    const newPoint: [number, number] = [latitude, longitude];
+    setCurrentPos(newPoint);
+    setTrackingStatus(source === "background" ? "GPS em segundo plano ativo" : "GPS conectado");
+
+    setPath(prevPath => {
+      if (prevPath.length > 0) {
+        const lastPoint = prevPath[prevPath.length - 1];
+        const d = calculateDistance(lastPoint[0], lastPoint[1], latitude, longitude);
+
+        if (d > 0.005 && d < 0.5) {
+          setDistance(prev => prev + d);
+          return [...prevPath, newPoint];
+        }
+        return prevPath;
+      }
+      return [newPoint];
+    });
+  }, [calculateDistance]);
 
   // Cronômetro real
   // Busca sinal antes do usuário iniciar a gravação.
@@ -218,6 +282,8 @@ const RunTracking = () => {
   // Rastreamento GPS real
   useEffect(() => {
     let watchId: number | undefined;
+
+    if (isNativeAndroid) return undefined;
 
     if (isRunning && !isPaused && !isSimulating && "geolocation" in navigator) {
       if (!window.isSecureContext) {
@@ -280,7 +346,69 @@ const RunTracking = () => {
     return () => {
       if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
     };
-  }, [isRunning, isPaused, isSimulating]);
+  }, [calculateDistance, isNativeAndroid, isRunning, isPaused, isSimulating]);
+
+  // Rastreamento GPS nativo no Android. Mantem a corrida ativa com notificacao fixa.
+  useEffect(() => {
+    let watcherId: string | null = null;
+    let cancelled = false;
+
+    if (!isNativeAndroid || !isRunning || isPaused || isSimulating) {
+      return undefined;
+    }
+
+    setTrackingStatus("Ativando GPS em segundo plano");
+
+    BackgroundGeolocation.addWatcher(
+      {
+        backgroundTitle: "Runnex gravando corrida",
+        backgroundMessage: "Sua corrida continua sendo registrada enquanto o app esta em segundo plano.",
+        requestPermissions: true,
+        stale: false,
+        distanceFilter: 5,
+      },
+      (location?: BackgroundLocation, error?: CallbackError) => {
+        if (error) {
+          console.error("Background GPS Error:", error);
+          setTrackingStatus("Erro no GPS em segundo plano");
+          toast.error(getBackgroundGpsErrorMessage(error), { duration: 8000 });
+          return;
+        }
+
+        if (!location) return;
+
+        applyGpsPoint(
+          location.latitude,
+          location.longitude,
+          location.accuracy,
+          location.speed,
+          "background",
+        );
+      },
+    ).then((id) => {
+      if (cancelled) {
+        BackgroundGeolocation.removeWatcher({ id }).catch((error) => {
+          console.warn("Nao foi possivel remover watcher nativo:", error);
+        });
+        return;
+      }
+
+      watcherId = id;
+    }).catch((error: CallbackError) => {
+      console.error("Erro ao iniciar GPS em segundo plano:", error);
+      setTrackingStatus("Erro no GPS em segundo plano");
+      toast.error(getBackgroundGpsErrorMessage(error), { duration: 8000 });
+    });
+
+    return () => {
+      cancelled = true;
+      if (watcherId) {
+        BackgroundGeolocation.removeWatcher({ id: watcherId }).catch((error) => {
+          console.warn("Nao foi possivel remover watcher nativo:", error);
+        });
+      }
+    };
+  }, [applyGpsPoint, isNativeAndroid, isRunning, isPaused, isSimulating]);
 
   // Formatar Ritmo (Pace) - Minutos por km
   const getPace = () => {
@@ -314,7 +442,7 @@ const RunTracking = () => {
       }, 1400);
     }
     return () => clearInterval(interval);
-  }, [isSimulating, isRunning, isPaused]);
+  }, [calculateDistance, isSimulating, isRunning, isPaused]);
 
   // Calorias estimadas (Média de 60kcal por km)
   const getCalories = () => (distance * 60).toFixed(0);

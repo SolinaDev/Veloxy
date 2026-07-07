@@ -5,6 +5,9 @@ const config: CapacitorConfig = {
   appId: 'br.com.runnex.app',
   appName: 'Runnex',
   webDir: 'dist',
+  android: {
+    useLegacyBridge: true,
+  },
   plugins: {
     FirebaseAuthentication: {
       skipNativeAuth: true,
