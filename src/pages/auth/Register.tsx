@@ -1,12 +1,91 @@
 import { useState } from "react";
+import type { FormEvent } from "react";
+
 import { useNavigate } from "react-router-dom";
-import { User, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
-import { motion } from "framer-motion";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+
+import {
+  User,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Loader2,
+  ArrowLeft,
+} from "lucide-react";
+
+import { AnimatePresence, motion } from "framer-motion";
+import type { Variants } from "framer-motion";
+
+import {
+  createUserWithEmailAndPassword,
+  updateProfile,
+} from "firebase/auth";
+
 import { FirebaseError } from "firebase/app";
+
 import { auth } from "@/config/firebase";
 import { toast } from "sonner";
+
 import logo from "@/assets/LogoNova-login.png";
+
+const containerVariants: Variants = {
+  hidden: {
+    opacity: 0,
+  },
+
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.07,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: {
+    opacity: 0,
+    y: 18,
+  },
+
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.35,
+    },
+  },
+};
+
+function getRegisterErrorMessage(error: unknown) {
+  const code = error instanceof FirebaseError ? error.code : undefined;
+
+  if (code === "auth/email-already-in-use") {
+    return "Este email já está sendo utilizado.";
+  }
+
+  if (code === "auth/invalid-email") {
+    return "Digite um email válido.";
+  }
+
+  if (code === "auth/weak-password") {
+    return "A senha deve possuir pelo menos 6 caracteres.";
+  }
+
+  if (code === "auth/network-request-failed") {
+    return "Erro de rede. Verifique sua conexão.";
+  }
+
+  if (code === "auth/operation-not-allowed") {
+    return "O cadastro por email e senha não está ativado no Firebase.";
+  }
+
+  if (code) {
+    return `Erro ao criar conta: ${code}`;
+  }
+
+  return "Erro ao criar conta. Tente novamente.";
+}
 
 export default function Register() {
   const navigate = useNavigate();
@@ -14,180 +93,500 @@ export default function Register() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [confirmEmail, setConfirmEmail] = useState("");
+
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleRegister = async () => {
-    if (!username.trim()) {
-      toast.error("Preencha o nome de usuário");
+  const [loading, setLoading] = useState(false);
+
+  async function handleRegister(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    const usernameTrimmed = username.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedConfirmEmail = confirmEmail.trim().toLowerCase();
+
+    if (
+      !usernameTrimmed ||
+      !normalizedEmail ||
+      !normalizedConfirmEmail ||
+      !password ||
+      !confirmPassword
+    ) {
+      toast.error("Preencha todos os campos.");
       return;
     }
 
-    if (!email || !password) {
-      toast.error("Preencha todos os campos");
+    if (usernameTrimmed.length < 3) {
+      toast.error("O nome de usuário deve ter pelo menos 3 caracteres.");
       return;
     }
 
-    if (email !== confirmEmail) {
-      toast.error("Emails não coincidem");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      toast.error("Senhas não coincidem");
+    if (normalizedEmail !== normalizedConfirmEmail) {
+      toast.error("Os emails não coincidem.");
       return;
     }
 
     if (password.length < 6) {
-      toast.error("A senha deve ter pelo menos 6 caracteres");
+      toast.error("A senha deve ter pelo menos 6 caracteres.");
       return;
     }
 
-    setLoading(true);
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    if (password !== confirmPassword) {
+      toast.error("As senhas não coincidem.");
+      return;
+    }
 
-      // 🔥 Salva o username como displayName no perfil do Firebase Auth
+    try {
+      setLoading(true);
+
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        normalizedEmail,
+        password,
+      );
+
       await updateProfile(userCredential.user, {
-        displayName: username.trim(),
+        displayName: usernameTrimmed,
       });
 
-      toast.success(`Bem-vindo, ${username}! Conta criada com sucesso.`);
-      navigate("/");
-    } catch (err: unknown) {
-      console.error(err);
-      const code = err instanceof FirebaseError ? err.code : undefined;
-      if (code === "auth/email-already-in-use") {
-        toast.error("Este email já está em uso");
-      } else if (code === "auth/invalid-email") {
-        toast.error("Email inválido");
-      } else if (code === "auth/weak-password") {
-        toast.error("Senha muito fraca. Use pelo menos 6 caracteres");
-      } else {
-        toast.error("Erro ao criar conta. Tente novamente.");
-      }
+      toast.success(
+        `Bem-vindo, ${usernameTrimmed}! Sua conta foi criada com sucesso.`,
+      );
+
+      navigate("/feed", {
+        replace: true,
+      });
+    } catch (error: unknown) {
+      console.error("Erro completo ao criar conta:", error);
+      toast.error(getRegisterErrorMessage(error));
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-6 text-white">
+    <div className="min-h-[100svh] bg-black px-4 py-6 relative overflow-y-auto">
+      {/* Fundo animado */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{
+            x: [0, 50, 0],
+            y: [0, 30, 0],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute top-10 left-10 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl"
+        />
 
-      {/* LOGO */}
-      <div className="mb-10">
-        <div>
-          <img src={logo} alt="Logo" className="w-50 h-48" />
-        </div>
+        <motion.div
+          animate={{
+            x: [0, -40, 0],
+            y: [0, 40, 0],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute bottom-10 right-10 w-80 h-80 bg-pink-500/20 rounded-full blur-3xl"
+        />
       </div>
 
-      {/* FORM */}
-      <div className="w-full max-w-sm flex flex-col gap-4">
-
-        {/* USERNAME */}
-        <div className="flex items-center bg-zinc-200 rounded-full px-4 py-3">
-          <User size={18} className="text-gray-500 mr-2 shrink-0" />
-          <input
-            type="text"
-            placeholder="Username"
-            className="bg-transparent outline-none text-black w-full text-sm"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-        </div>
-
-        {/* EMAIL */}
-        <div className="flex items-center bg-zinc-200 rounded-full px-4 py-3">
-          <Mail size={18} className="text-gray-500 mr-2 shrink-0" />
-          <input
-            type="email"
-            placeholder="Email"
-            className="bg-transparent outline-none text-black w-full text-sm"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-
-        {/* CONFIRM EMAIL */}
-        <div className="flex items-center bg-zinc-200 rounded-full px-4 py-3">
-          <Mail size={18} className="text-gray-500 mr-2" />
-          <input
-            type="email"
-            placeholder="Confirm Email"
-            className="bg-transparent outline-none text-black w-full text-sm"
-            value={confirmEmail}
-            onChange={(e) => setConfirmEmail(e.target.value)}
-          />
-        </div>
-
-        {/* PASSWORD */}
-        <div className="flex items-center bg-zinc-200 rounded-full px-4 py-3">
-          <Lock size={18} className="text-gray-500 mr-2 shrink-0" />
-          <input
-            type={showPassword ? "text" : "password"}
-            placeholder="Password"
-            className="bg-transparent outline-none text-black w-full text-sm"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <button 
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="text-gray-500 hover:text-purple-600 transition-colors px-1"
-          >
-            {showPassword ? (
-              <EyeOff size={18} />
-            ) : (
-              <Eye size={18} />
-            )}
-          </button>
-        </div>
-
-        {/* CONFIRM PASSWORD */}
-        <div className="flex items-center bg-zinc-200 rounded-full px-4 py-3">
-          <Lock size={18} className="text-gray-500 mr-2 shrink-0" />
-          <input
-            type={showConfirmPassword ? "text" : "password"}
-            placeholder="Confirm Password"
-            className="bg-transparent outline-none text-black w-full text-sm"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-          <button 
-            type="button"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="text-gray-500 hover:text-purple-600 transition-colors px-1"
-          >
-            {showConfirmPassword ? (
-              <EyeOff size={18} />
-            ) : (
-              <Eye size={18} />
-            )}
-          </button>
-        </div>
-
-        {/* BOTÃO REGISTER */}
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          whileHover={{ scale: 1.02 }}
-          onClick={handleRegister}
-          className="mt-4 bg-gradient-to-r from-purple-500 to-purple-700 py-3 rounded-full font-semibold shadow-lg"
+      <div className="relative z-10 min-h-[calc(100svh-3rem)] flex items-center justify-center">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="w-full max-w-[440px]"
         >
-          Register
-        </motion.button>
+          <motion.div
+            variants={itemVariants}
+            className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-3xl p-5 sm:p-8 shadow-2xl"
+          >
+            {/* Voltar */}
+            <motion.button
+              variants={itemVariants}
+              type="button"
+              disabled={loading}
+              onClick={() => navigate("/login")}
+              whileHover={
+                !loading
+                  ? {
+                    x: -3,
+                  }
+                  : {}
+              }
+              whileTap={
+                !loading
+                  ? {
+                    scale: 0.95,
+                  }
+                  : {}
+              }
+              className="flex items-center gap-2 text-sm text-zinc-400 hover:text-purple-400 transition mb-2 disabled:opacity-60"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Voltar para o login
+            </motion.button>
 
-        {/* TERMOS */}
-        <p className="text-center text-xs text-gray-400 mt-2">
-          Ao clicar em registrar você concorda com nossos{" "}
-          <span className="text-cyan-400 cursor-pointer">
-            Termos de Política e Privacidade
-          </span>
-        </p>
+            {/* Logo e título */}
+            <motion.div
+              variants={itemVariants}
+              className="flex flex-col items-center mb-6"
+            >
+              <motion.img
+                src={logo}
+                alt="Logo Veloxy"
+                className="w-24 h-24 sm:w-28 sm:h-28 object-contain mb-2 drop-shadow-2xl"
+                whileHover={{
+                  scale: 1.06,
+                  rotate: [0, -2, 2, 0],
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 220,
+                  damping: 16,
+                }}
+              />
 
+              <h1 className="text-3xl font-bold text-white">
+                Crie sua conta
+              </h1>
+
+              <p className="text-zinc-400 mt-2 text-sm text-center">
+                Comece sua jornada com a Veloxy
+              </p>
+            </motion.div>
+
+            <form onSubmit={handleRegister} className="space-y-4">
+              {/* Nome de usuário */}
+              <motion.div variants={itemVariants}>
+                <label
+                  htmlFor="username"
+                  className="text-sm text-zinc-300 mb-2 block font-medium"
+                >
+                  Nome de usuário
+                </label>
+
+                <div className="relative">
+                  <User className="absolute left-4 top-3.5 text-zinc-500 w-5 h-5" />
+
+                  <input
+                    id="username"
+                    type="text"
+                    placeholder="Digite seu nome de usuário"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    disabled={loading}
+                    autoComplete="username"
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 pl-11 pr-4 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
+                  />
+                </div>
+              </motion.div>
+
+              {/* Email */}
+              <motion.div variants={itemVariants}>
+                <label
+                  htmlFor="email"
+                  className="text-sm text-zinc-300 mb-2 block font-medium"
+                >
+                  Email
+                </label>
+
+                <div className="relative">
+                  <Mail className="absolute left-4 top-3.5 text-zinc-500 w-5 h-5" />
+
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder="Digite seu email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={loading}
+                    autoComplete="email"
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 pl-11 pr-4 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
+                  />
+                </div>
+              </motion.div>
+
+              {/* Confirmar email */}
+              <motion.div variants={itemVariants}>
+                <label
+                  htmlFor="confirmEmail"
+                  className="text-sm text-zinc-300 mb-2 block font-medium"
+                >
+                  Confirmar email
+                </label>
+
+                <div className="relative">
+                  <Mail className="absolute left-4 top-3.5 text-zinc-500 w-5 h-5" />
+
+                  <input
+                    id="confirmEmail"
+                    type="email"
+                    placeholder="Digite seu email novamente"
+                    value={confirmEmail}
+                    onChange={(e) => setConfirmEmail(e.target.value)}
+                    disabled={loading}
+                    autoComplete="email"
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 pl-11 pr-4 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
+                  />
+                </div>
+              </motion.div>
+
+              {/* Senha */}
+              <motion.div variants={itemVariants}>
+                <label
+                  htmlFor="password"
+                  className="text-sm text-zinc-300 mb-2 block font-medium"
+                >
+                  Senha
+                </label>
+
+                <div className="relative">
+                  <Lock className="absolute left-4 top-3.5 text-zinc-500 w-5 h-5" />
+
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Crie uma senha"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
+                    autoComplete="new-password"
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 pl-11 pr-11 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((current) => !current)}
+                    disabled={loading}
+                    aria-label={
+                      showPassword ? "Ocultar senha" : "Mostrar senha"
+                    }
+                    className="absolute right-4 top-3.5 text-zinc-400 hover:text-purple-400 transition disabled:opacity-60"
+                  >
+                    <AnimatePresence mode="wait">
+                      {showPassword ? (
+                        <motion.div
+                          key="password-eye-off"
+                          initial={{
+                            opacity: 0,
+                            rotate: -90,
+                            scale: 0.8,
+                          }}
+                          animate={{
+                            opacity: 1,
+                            rotate: 0,
+                            scale: 1,
+                          }}
+                          exit={{
+                            opacity: 0,
+                            rotate: 90,
+                            scale: 0.8,
+                          }}
+                          transition={{
+                            duration: 0.2,
+                          }}
+                        >
+                          <EyeOff className="w-5 h-5" />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="password-eye"
+                          initial={{
+                            opacity: 0,
+                            rotate: -90,
+                            scale: 0.8,
+                          }}
+                          animate={{
+                            opacity: 1,
+                            rotate: 0,
+                            scale: 1,
+                          }}
+                          exit={{
+                            opacity: 0,
+                            rotate: 90,
+                            scale: 0.8,
+                          }}
+                          transition={{
+                            duration: 0.2,
+                          }}
+                        >
+                          <Eye className="w-5 h-5" />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </button>
+                </div>
+
+                <p className="text-xs text-zinc-500 mt-2">
+                  Use pelo menos 6 caracteres.
+                </p>
+              </motion.div>
+
+              {/* Confirmar senha */}
+              <motion.div variants={itemVariants}>
+                <label
+                  htmlFor="confirmPassword"
+                  className="text-sm text-zinc-300 mb-2 block font-medium"
+                >
+                  Confirmar senha
+                </label>
+
+                <div className="relative">
+                  <Lock className="absolute left-4 top-3.5 text-zinc-500 w-5 h-5" />
+
+                  <input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Digite sua senha novamente"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={loading}
+                    autoComplete="new-password"
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 pl-11 pr-11 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowConfirmPassword((current) => !current)
+                    }
+                    disabled={loading}
+                    aria-label={
+                      showConfirmPassword
+                        ? "Ocultar confirmação de senha"
+                        : "Mostrar confirmação de senha"
+                    }
+                    className="absolute right-4 top-3.5 text-zinc-400 hover:text-purple-400 transition disabled:opacity-60"
+                  >
+                    <AnimatePresence mode="wait">
+                      {showConfirmPassword ? (
+                        <motion.div
+                          key="confirm-eye-off"
+                          initial={{
+                            opacity: 0,
+                            rotate: -90,
+                            scale: 0.8,
+                          }}
+                          animate={{
+                            opacity: 1,
+                            rotate: 0,
+                            scale: 1,
+                          }}
+                          exit={{
+                            opacity: 0,
+                            rotate: 90,
+                            scale: 0.8,
+                          }}
+                          transition={{
+                            duration: 0.2,
+                          }}
+                        >
+                          <EyeOff className="w-5 h-5" />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="confirm-eye"
+                          initial={{
+                            opacity: 0,
+                            rotate: -90,
+                            scale: 0.8,
+                          }}
+                          animate={{
+                            opacity: 1,
+                            rotate: 0,
+                            scale: 1,
+                          }}
+                          exit={{
+                            opacity: 0,
+                            rotate: 90,
+                            scale: 0.8,
+                          }}
+                          transition={{
+                            duration: 0.2,
+                          }}
+                        >
+                          <Eye className="w-5 h-5" />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </button>
+                </div>
+              </motion.div>
+
+              {/* Botão cadastrar */}
+              <motion.button
+                variants={itemVariants}
+                whileHover={
+                  !loading
+                    ? {
+                      scale: 1.02,
+                    }
+                    : {}
+                }
+                whileTap={
+                  !loading
+                    ? {
+                      scale: 0.98,
+                    }
+                    : {}
+                }
+                disabled={loading}
+                type="submit"
+                className="w-full bg-purple-600 hover:bg-purple-700 transition rounded-xl py-3 text-white text-base font-semibold flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Criando conta...
+                  </>
+                ) : (
+                  "Criar conta"
+                )}
+              </motion.button>
+            </form>
+
+            {/* Termos */}
+            <motion.p
+              variants={itemVariants}
+              className="text-center text-xs text-zinc-500 mt-4 leading-relaxed"
+            >
+              Ao criar sua conta, você concorda com nossos{" "}
+              <button
+                type="button"
+                onClick={() => navigate("/termos-e-privacidade")}
+                className="text-purple-400 hover:text-purple-300 transition">
+                Termos de Uso e Política de Privacidade
+              </button>{""}
+              .
+            </motion.p>
+
+            {/* Link para login */}
+            <motion.p
+              variants={itemVariants}
+              className="text-center text-sm text-zinc-400 mt-4"
+            >
+              Já possui uma conta?{" "}
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => navigate("/login")}
+                className="text-purple-400 hover:text-purple-300 font-semibold transition disabled:opacity-60"
+              >
+                Entrar
+              </button>
+            </motion.p>
+          </motion.div>
+        </motion.div>
       </div>
     </div>
   );

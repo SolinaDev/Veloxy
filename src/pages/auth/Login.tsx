@@ -1,39 +1,54 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Lock, Loader2, Eye, EyeOff } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  Loader2,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 
 import {
-  sendPasswordResetEmail,
   signInWithEmailAndPassword,
 } from "firebase/auth";
+
 import { FirebaseError } from "firebase/app";
 
-import { AnimatePresence, motion } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+} from "framer-motion";
+
 import type { Variants } from "framer-motion";
 
 import { auth } from "@/config/firebase";
 import { useAuth } from "@/hooks/useAuth";
 
 import {
-  loginComApple,
   loginComGooglePopup,
-  loginComMicrosoft,
 } from "@/services/auth";
+
+import ForgotPasswordModal from "@/components/auth/ForgotPasswordModal";
 
 import { toast } from "sonner";
 
 import logo from "@/assets/LogoNova-login.png";
 
 import { FcGoogle } from "react-icons/fc";
-import { FaApple, FaMicrosoft } from "react-icons/fa";
+
+/* ================================
+   ANIMAÇÕES
+================================ */
 
 const containerVariants: Variants = {
   hidden: {
     opacity: 0,
   },
+
   visible: {
     opacity: 1,
+
     transition: {
       staggerChildren: 0.08,
       delayChildren: 0.1,
@@ -46,14 +61,20 @@ const itemVariants: Variants = {
     opacity: 0,
     y: 18,
   },
+
   visible: {
     opacity: 1,
     y: 0,
+
     transition: {
       duration: 0.35,
     },
   },
 };
+
+/* ================================
+   ERROS FIREBASE
+================================ */
 
 function getAuthErrorCode(error: unknown) {
   if (error instanceof FirebaseError) {
@@ -74,6 +95,7 @@ function getAuthErrorCode(error: unknown) {
 
 function getAuthErrorMessage(error: unknown) {
   const code = getAuthErrorCode(error);
+
   const message =
     error instanceof Error
       ? error.message
@@ -93,19 +115,19 @@ function getAuthErrorMessage(error: unknown) {
   }
 
   if (code === "auth/popup-blocked") {
-    return "Popup bloqueado. Permita popups para concluir o login social.";
+    return "Popup bloqueado. Permita popups para concluir o login com Google.";
   }
 
   if (code === "auth/unauthorized-domain") {
-    return "Domínio localhost não autorizado no Firebase.";
+    return "Este domínio não está autorizado no Firebase.";
   }
 
   if (code === "auth/operation-not-allowed") {
-    return "Esse provedor de login não está ativado no Firebase.";
+    return "Este método de login não está ativado no Firebase.";
   }
 
   if (code === "auth/network-request-failed") {
-    return "Erro de rede. Desative Brave Shields/AdBlock para localhost.";
+    return "Erro de rede. Verifique sua conexão e tente novamente.";
   }
 
   if (code === "auth/user-not-found") {
@@ -123,6 +145,10 @@ function getAuthErrorMessage(error: unknown) {
     return "Email inválido.";
   }
 
+  if (code === "auth/too-many-requests") {
+    return "Muitas tentativas. Aguarde um pouco e tente novamente.";
+  }
+
   if (code) {
     return `Erro ao fazer login: ${code}`;
   }
@@ -134,44 +160,98 @@ function getAuthErrorMessage(error: unknown) {
   return "Erro ao fazer login. Tente novamente.";
 }
 
+/* ================================
+   COMPONENTE
+================================ */
+
 export default function Login() {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+
+  const {
+    user,
+    loading: authLoading,
+  } = useAuth();
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const [mostrarSenha, setMostrarSenha] = useState(false);
-  const [loading, setLoading] = useState(false);
+
+  const [mostrarSenha, setMostrarSenha] =
+    useState(false);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [
+    forgotPasswordOpen,
+    setForgotPasswordOpen,
+  ] = useState(false);
+
+  /* ================================
+     REDIRECIONAMENTO
+  ================================ */
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate("/feed", { replace: true });
+      navigate("/feed", {
+        replace: true,
+      });
     }
-  }, [authLoading, user, navigate]);
+  }, [
+    authLoading,
+    user,
+    navigate,
+  ]);
 
-  async function handleLogin(e: FormEvent<HTMLFormElement>) {
+  /* ================================
+     LOGIN EMAIL / SENHA
+  ================================ */
+
+  async function handleLogin(
+    e: FormEvent<HTMLFormElement>,
+  ) {
     e.preventDefault();
 
     if (!email || !senha) {
-      toast.error("Preencha email e senha");
+      toast.error(
+        "Preencha email e senha",
+      );
+
       return;
     }
 
     try {
       setLoading(true);
 
-      await signInWithEmailAndPassword(auth, email, senha);
+      await signInWithEmailAndPassword(
+        auth,
+        email,
+        senha,
+      );
 
-      toast.success("Login realizado com sucesso!");
+      toast.success(
+        "Login realizado com sucesso!",
+      );
 
-      navigate("/feed", { replace: true });
+      navigate("/feed", {
+        replace: true,
+      });
     } catch (error: unknown) {
-      console.error("Erro completo no login:", error);
-      toast.error(getAuthErrorMessage(error));
+      console.error(
+        "Erro completo no login:",
+        error,
+      );
+
+      toast.error(
+        getAuthErrorMessage(error),
+      );
     } finally {
       setLoading(false);
     }
   }
+
+  /* ================================
+     LOGIN GOOGLE
+  ================================ */
 
   async function handleGoogleLogin() {
     try {
@@ -179,65 +259,30 @@ export default function Login() {
 
       await loginComGooglePopup();
 
-      toast.success("Login com Google realizado!");
-      navigate("/feed", { replace: true });
+      toast.success(
+        "Login com Google realizado!",
+      );
+
+      navigate("/feed", {
+        replace: true,
+      });
     } catch (error: unknown) {
-      console.error("Erro completo Google:", error);
-      toast.error(getAuthErrorMessage(error));
+      console.error(
+        "Erro completo Google:",
+        error,
+      );
+
+      toast.error(
+        getAuthErrorMessage(error),
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleMicrosoftLogin() {
-    try {
-      setLoading(true);
-
-      await loginComMicrosoft();
-
-      toast.success("Login com Microsoft realizado!");
-
-      navigate("/feed", { replace: true });
-    } catch (error: unknown) {
-      console.error("Erro completo Microsoft:", error);
-      toast.error(getAuthErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleAppleLogin() {
-    try {
-      setLoading(true);
-
-      await loginComApple();
-
-      toast.success("Login com Apple realizado!");
-
-      navigate("/feed", { replace: true });
-    } catch (error: unknown) {
-      console.error("Erro completo Apple:", error);
-      toast.error(getAuthErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleResetPassword() {
-    if (!email) {
-      toast.error("Digite seu email primeiro");
-      return;
-    }
-
-    try {
-      await sendPasswordResetEmail(auth, email);
-
-      toast.success("Email de recuperação enviado!");
-    } catch (error: unknown) {
-      console.error("Erro ao recuperar senha:", error);
-      toast.error(getAuthErrorMessage(error));
-    }
-  }
+  /* ================================
+     CARREGAMENTO DO AUTH
+  ================================ */
 
   if (authLoading) {
     return (
@@ -245,15 +290,25 @@ export default function Login() {
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
 
-          <p className="text-zinc-400 text-sm">Verificando login...</p>
+          <p className="text-zinc-400 text-sm">
+            Verificando login...
+          </p>
         </div>
       </div>
     );
   }
 
+  /* ================================
+     INTERFACE
+  ================================ */
+
   return (
     <div className="h-[100svh] flex items-center justify-center bg-black px-4 py-3 overflow-hidden relative">
+
+      {/* FUNDO */}
+
       <div className="absolute inset-0 overflow-hidden">
+
         <motion.div
           animate={{
             x: [0, 50, 0],
@@ -279,7 +334,10 @@ export default function Login() {
           }}
           className="absolute bottom-10 right-10 w-80 h-80 bg-pink-500/20 rounded-full blur-3xl"
         />
+
       </div>
+
+      {/* CONTAINER */}
 
       <motion.div
         variants={containerVariants}
@@ -287,21 +345,33 @@ export default function Login() {
         animate="visible"
         className="relative z-10 w-full max-w-[390px]"
       >
+
+        {/* CARD */}
+
         <motion.div
           variants={itemVariants}
           className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-3xl p-5 sm:p-8 shadow-2xl"
         >
+
+          {/* LOGO */}
+
           <motion.div
             variants={itemVariants}
             className="flex flex-col items-center mb-5"
           >
+
             <motion.img
               src={logo}
               alt="Logo Veloxy"
               className="w-24 h-24 sm:w-32 sm:h-32 object-contain mb-3 drop-shadow-2xl"
               whileHover={{
                 scale: 1.06,
-                rotate: [0, -2, 2, 0],
+                rotate: [
+                  0,
+                  -2,
+                  2,
+                  0,
+                ],
               }}
               transition={{
                 type: "spring",
@@ -310,57 +380,107 @@ export default function Login() {
               }}
             />
 
-            <h1 className="text-3xl font-bold text-white">Bem-vindo</h1>
+            <h1 className="text-3xl font-bold text-white">
+              Bem-vindo
+            </h1>
 
             <p className="text-zinc-400 mt-2 text-sm">
               Faça login para continuar
             </p>
+
           </motion.div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <motion.div variants={itemVariants}>
+          {/* FORM */}
+
+          <form
+            onSubmit={handleLogin}
+            className="space-y-4"
+          >
+
+            {/* EMAIL */}
+
+            <motion.div
+              variants={itemVariants}
+            >
+
               <label className="text-sm text-zinc-300 mb-2 block font-medium">
                 Email
               </label>
 
               <div className="relative">
+
                 <Mail className="absolute left-4 top-3.5 text-zinc-500 w-5 h-5" />
 
                 <input
                   type="email"
                   placeholder="Digite seu email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) =>
+                    setEmail(
+                      e.target.value,
+                    )
+                  }
                   disabled={loading}
+                  autoComplete="email"
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 pl-11 pr-4 text-white text-sm outline-none focus:border-purple-500 transition disabled:opacity-60"
                 />
+
               </div>
+
             </motion.div>
 
-            <motion.div variants={itemVariants}>
+            {/* SENHA */}
+
+            <motion.div
+              variants={itemVariants}
+            >
+
               <label className="text-sm text-zinc-300 mb-2 block font-medium">
                 Senha
               </label>
 
               <div className="relative">
+
                 <Lock className="absolute left-4 top-3.5 text-zinc-500 w-5 h-5" />
 
                 <input
-                  type={mostrarSenha ? "text" : "password"}
+                  type={
+                    mostrarSenha
+                      ? "text"
+                      : "password"
+                  }
                   placeholder="Digite sua senha"
                   value={senha}
-                  onChange={(e) => setSenha(e.target.value)}
+                  onChange={(e) =>
+                    setSenha(
+                      e.target.value,
+                    )
+                  }
                   disabled={loading}
+                  autoComplete="current-password"
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 pl-11 pr-11 text-white text-sm outline-none focus:border-purple-500 transition disabled:opacity-60"
                 />
 
+                {/* MOSTRAR / ESCONDER SENHA */}
+
                 <button
                   type="button"
-                  onClick={() => setMostrarSenha(!mostrarSenha)}
+                  onClick={() =>
+                    setMostrarSenha(
+                      !mostrarSenha,
+                    )
+                  }
                   disabled={loading}
                   className="absolute right-4 top-3.5 text-zinc-400 hover:text-purple-400 transition disabled:opacity-60"
+                  aria-label={
+                    mostrarSenha
+                      ? "Ocultar senha"
+                      : "Mostrar senha"
+                  }
                 >
+
                   <AnimatePresence mode="wait">
+
                     {mostrarSenha ? (
                       <motion.div
                         key="eyeoff"
@@ -410,21 +530,38 @@ export default function Login() {
                         <Eye className="w-5 h-5" />
                       </motion.div>
                     )}
+
                   </AnimatePresence>
+
                 </button>
+
               </div>
+
             </motion.div>
 
-            <motion.div variants={itemVariants} className="flex justify-end">
+            {/* ESQUECI MINHA SENHA */}
+
+            <motion.div
+              variants={itemVariants}
+              className="flex justify-end"
+            >
+
               <button
                 type="button"
-                onClick={handleResetPassword}
+                onClick={() =>
+                  setForgotPasswordOpen(
+                    true,
+                  )
+                }
                 disabled={loading}
                 className="text-sm text-purple-400 hover:text-purple-300 transition disabled:opacity-60"
               >
                 Esqueci minha senha
               </button>
+
             </motion.div>
+
+            {/* LOGIN */}
 
             <motion.button
               variants={itemVariants}
@@ -446,6 +583,7 @@ export default function Login() {
               type="submit"
               className="w-full bg-purple-600 hover:bg-purple-700 transition rounded-xl py-3 text-white text-base font-semibold flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
+
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -454,85 +592,101 @@ export default function Login() {
               ) : (
                 "Entrar"
               )}
+
             </motion.button>
+
           </form>
+
+          {/* CRIAR CONTA */}
 
           <motion.p
             variants={itemVariants}
             className="text-center text-sm text-zinc-400 mt-4"
           >
+
             Não tem uma conta?{" "}
+
             <button
               type="button"
-              onClick={() => navigate("/register")}
+              onClick={() =>
+                navigate(
+                  "/register",
+                )
+              }
               className="text-purple-400 hover:text-purple-300 font-semibold transition"
             >
               Criar conta
             </button>
+
           </motion.p>
+
+          {/* DIVISOR */}
 
           <motion.div
             variants={itemVariants}
             className="flex items-center gap-4 my-4"
           >
-            <div className="flex-1 h-px bg-zinc-700" />
-
-            <span className="text-zinc-500 text-sm">ou continue com</span>
 
             <div className="flex-1 h-px bg-zinc-700" />
+
+            <span className="text-zinc-500 text-sm">
+              ou continue com
+            </span>
+
+            <div className="flex-1 h-px bg-zinc-700" />
+
           </motion.div>
 
-          <motion.div variants={itemVariants} className="grid grid-cols-3 gap-3">
-            <motion.button
-              whileHover={{
-                scale: 1.05,
-                y: -2,
-              }}
-              whileTap={{
-                scale: 0.95,
-              }}
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              type="button"
-              className="bg-zinc-800 hover:bg-zinc-700 transition rounded-xl py-3 flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <FcGoogle className="text-2xl" />
-            </motion.button>
+          {/* GOOGLE */}
+
+          <motion.div
+            variants={itemVariants}
+          >
 
             <motion.button
               whileHover={{
-                scale: 1.05,
+                scale: 1.02,
                 y: -2,
               }}
               whileTap={{
-                scale: 0.95,
+                scale: 0.98,
               }}
-              onClick={handleMicrosoftLogin}
+              onClick={
+                handleGoogleLogin
+              }
               disabled={loading}
               type="button"
-              className="bg-zinc-800 hover:bg-zinc-700 transition rounded-xl py-3 flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full bg-zinc-800 hover:bg-zinc-700 transition rounded-xl py-3 flex items-center justify-center gap-3 text-white font-medium disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <FaMicrosoft className="text-2xl text-white" />
+
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  <FcGoogle className="text-2xl" />
+
+                  Continuar com Google
+                </>
+              )}
+
             </motion.button>
 
-            <motion.button
-              whileHover={{
-                scale: 1.05,
-                y: -2,
-              }}
-              whileTap={{
-                scale: 0.95,
-              }}
-              onClick={handleAppleLogin}
-              disabled={loading}
-              type="button"
-              className="bg-zinc-800 hover:bg-zinc-700 transition rounded-xl py-3 flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <FaApple className="text-2xl text-white" />
-            </motion.button>
           </motion.div>
+
         </motion.div>
+
       </motion.div>
+
+      {/* MODAL DE RECUPERAÇÃO DE SENHA */}
+
+      <ForgotPasswordModal
+        open={forgotPasswordOpen}
+        onClose={() =>
+          setForgotPasswordOpen(false)
+        }
+        initialEmail={email}
+      />
+
     </div>
   );
 }

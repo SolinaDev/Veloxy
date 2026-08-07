@@ -1,6 +1,6 @@
 # Arquitetura
 
-O Veloxy e um aplicativo React/Vite com Firebase para autenticacao, banco de dados e armazenamento de arquivos.
+O Runnex e um aplicativo React/Vite com Firebase para autenticacao, banco de dados e armazenamento de arquivos.
 
 ## Organizacao
 
