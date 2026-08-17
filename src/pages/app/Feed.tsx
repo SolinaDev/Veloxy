@@ -166,12 +166,13 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
       </AnimatePresence>
 
       {!embedded && (
-      <div className="app-header sticky top-0 z-40">
+      <div className="bg-card/80 backdrop-blur-xl border-b border-border sticky top-0 z-40">
         <header className="px-6 py-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <button
               onClick={() => navigate("/profile")}
-              className="w-10 h-10 rounded-full bg-zinc-800 border border-purple-500/30 overflow-hidden flex items-center justify-center active:scale-95 transition-transform shadow-[0_0_22px_rgba(147,51,234,0.18)]"
+              className="w-10 h-10 rounded-full bg-secondary border border-purple-500/30 overflow-hidden flex items-center justify-center active:scale-95 transition-transform"
+              aria-label="Ver perfil"
             >
               <SafeAvatar
                 src={userPhotoURL}
@@ -181,11 +182,12 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                 fallbackClassName="text-xs font-bold text-purple-500"
               />
             </button>
-            <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500 drop-shadow-[0_0_18px_rgba(168,85,247,0.35)]">VELOXY</h1>
+            <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500">VELOXY</h1>
 
             <button
               onClick={handleBellClick}
-              className="w-10 h-10 rounded-full premium-panel text-zinc-400 flex items-center justify-center relative active:scale-95 transition-transform"
+              className="w-10 h-10 rounded-full bg-card/80 backdrop-blur-xl border border-border text-zinc-400 flex items-center justify-center relative active:scale-95 transition-transform"
+              aria-label="Ver curtidas recebidas"
             >
               <Bell size={20} />
               <AnimatePresence>
@@ -203,7 +205,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
 
           <motion.div
             animate={{ borderColor: query ? "rgba(147,51,234,0.6)" : "rgba(63,63,70,0.8)" }}
-            className="flex items-center gap-3 premium-panel rounded-2xl px-4 py-3"
+            className="flex items-center gap-3 bg-secondary border border-input rounded-xl px-4 py-3"
           >
             <Search size={16} className={`flex-shrink-0 transition-colors duration-200 ${query ? "text-purple-400" : "text-zinc-500"}`} />
             <input
@@ -221,6 +223,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                   exit={{ opacity: 0, scale: 0.5 }}
                   onClick={() => { setQuery(""); searchRef.current?.focus(); }}
                   className="w-5 h-5 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0"
+                  aria-label="Limpar busca"
                 >
                   <X size={11} className="text-zinc-300" />
                 </motion.button>
@@ -246,7 +249,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.06 }}
-                    className="premium-panel p-3 rounded-2xl relative overflow-hidden"
+                    className="bg-card/80 backdrop-blur-xl border border-border p-3 rounded-2xl relative overflow-hidden"
                   >
                     <p className="text-[7px] font-bold text-zinc-500 uppercase tracking-tighter mb-0.5">{s.label}</p>
                     <div className="flex items-baseline gap-0.5">
@@ -285,9 +288,9 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                       layout
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="flex items-center gap-4 premium-panel rounded-2xl px-4 py-3"
+                      className="flex items-center gap-4 bg-card/80 backdrop-blur-xl border border-border rounded-2xl px-4 py-3"
                     >
-                      <div className="w-11 h-11 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center flex-shrink-0">
+                      <div className="w-11 h-11 rounded-full bg-secondary border border-input overflow-hidden flex items-center justify-center flex-shrink-0">
                         <SafeAvatar
                           src={athlete.avatar}
                           name={athlete.name}
@@ -325,9 +328,9 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                       layout
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="flex items-center gap-4 premium-panel rounded-2xl px-4 py-3"
+                      className="flex items-center gap-4 bg-card/80 backdrop-blur-xl border border-border rounded-2xl px-4 py-3"
                     >
-                      <div className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-secondary border border-input overflow-hidden flex items-center justify-center flex-shrink-0">
                         <SafeAvatar
                           src={item.userAvatar}
                           name={item.userName || "Atleta"}
@@ -385,7 +388,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                         onClick={() => setQuery(athlete.name)}
                         className="flex flex-col items-center gap-1.5 min-w-[68px]"
                       >
-                        <div className="w-14 h-14 rounded-[1.2rem] premium-panel overflow-hidden flex items-center justify-center relative">
+                        <div className="w-14 h-14 rounded-2xl bg-card/80 backdrop-blur-xl border border-border overflow-hidden flex items-center justify-center relative">
                           <SafeAvatar
                             src={athlete.avatar}
                             name={athlete.name}
@@ -428,7 +431,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => navigate("/run")}
-                    className="px-8 py-3 bg-purple-600 rounded-2xl text-sm font-black uppercase tracking-widest text-white shadow-[0_5px_30px_rgba(147,51,234,0.35)]"
+                    className="px-8 py-3 bg-purple-600 hover:bg-purple-700 transition rounded-xl text-sm font-black uppercase tracking-widest text-white"
                   >
                     Iniciar Corrida
                   </motion.button>
@@ -453,7 +456,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                         whileTap={{ scale: 0.95 }}
                         onClick={handleLoadMore}
                         disabled={loadingMore}
-                        className="flex items-center gap-2 px-6 py-3 premium-panel rounded-2xl text-xs font-black text-zinc-400 uppercase tracking-widest disabled:opacity-50 transition-opacity"
+                        className="flex items-center gap-2 px-6 py-3 bg-card/80 backdrop-blur-xl border border-border rounded-2xl text-xs font-black text-zinc-400 uppercase tracking-widest disabled:opacity-50 transition-opacity"
                       >
                         {loadingMore
                           ? <><Loader2 size={13} className="animate-spin text-purple-500" /> Carregando...</>

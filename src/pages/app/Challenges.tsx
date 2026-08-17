@@ -33,10 +33,10 @@ const Challenges = () => {
     }, [user]);
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24 safe-top">
+    <div className="min-h-screen bg-background text-foreground pb-24 safe-top">
       {/* Header */}
-      <header className="px-6 py-4 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur-md z-40">
-        <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 overflow-hidden">
+      <header className="px-6 py-4 flex items-center justify-between sticky top-0 bg-card/80 backdrop-blur-xl border-b border-border z-40">
+        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center border border-input overflow-hidden">
           {user?.photoURL ? (
             <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
           ) : (
@@ -48,7 +48,7 @@ const Challenges = () => {
           VELOXY CHALLENGES
         </h1>
         
-        <button className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center border border-zinc-800 text-zinc-400">
+        <button className="w-10 h-10 rounded-full bg-card flex items-center justify-center border border-border text-zinc-400" aria-label="Ver conquistas">
           <Trophy size={18} />
         </button>
       </header>
@@ -58,7 +58,7 @@ const Challenges = () => {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-zinc-900/50 border border-zinc-800 p-8 rounded-[3rem] text-center relative overflow-hidden group"
+          className="bg-card/80 backdrop-blur-xl border border-border p-8 rounded-3xl text-center relative overflow-hidden group"
         >
           <div className="relative z-10 flex flex-col items-center">
             <div className="bg-purple-600/10 p-3 rounded-2xl mb-2 text-purple-500 border border-purple-500/20">
@@ -72,7 +72,7 @@ const Challenges = () => {
                 {userProfile?.totalXP?.toLocaleString("pt-BR") || "0"}
               </h2>
             )}
-            <div className="mt-4 px-4 py-1.5 bg-black/50 border border-zinc-800 rounded-full flex items-center gap-2">
+            <div className="mt-4 px-4 py-1.5 bg-background/50 border border-border rounded-full flex items-center gap-2">
                 <Zap size={10} className="text-orange-400 fill-current" />
                 <span className="text-[9px] font-black text-zinc-400 italic">
                   NÍVEL {userProfile?.level?.toUpperCase() || "INICIANTE"}
@@ -132,10 +132,10 @@ const Challenges = () => {
             <motion.div
               key={i}
               whileHover={{ y: -5 }}
-              className={`flex flex-col items-center gap-2 p-4 rounded-[2rem] border transition-all ${
+              className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${
                 a.unlocked
-                  ? "bg-zinc-900 border-purple-500/30 text-purple-500"
-                  : "bg-zinc-900/40 border-zinc-800 text-zinc-600 grayscale opacity-50"
+                  ? "bg-card/80 backdrop-blur-xl border-purple-500/30 text-purple-500"
+                  : "bg-card/80 backdrop-blur-xl border-border text-zinc-600 grayscale opacity-50"
               }`}
             >
               <div className="mb-1">{a.icon}</div>
@@ -169,16 +169,16 @@ const Challenges = () => {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className={`flex items-center gap-4 p-4 rounded-[2rem] border ${
-                  isUser 
-                  ? "bg-purple-600 border-purple-400 shadow-[0_0_15px_rgba(147,51,234,0.3)] text-white" 
-                  : "bg-zinc-900/60 border-zinc-800 text-zinc-400 group hover:border-zinc-700 transition-colors"
+                className={`flex items-center gap-4 p-4 rounded-2xl border ${
+                  isUser
+                  ? "bg-purple-600 border-purple-400 text-white"
+                  : "bg-card/80 backdrop-blur-xl border-border text-zinc-400 group hover:border-zinc-700 transition-colors"
                 }`}
               >
                 <span className={`w-6 font-display font-black text-xs ${isUser ? "text-white" : "text-zinc-600"}`}>
                   {i + 1}
                 </span>
-                <div className="w-10 h-10 rounded-2xl bg-zinc-800 border-2 border-zinc-700 overflow-hidden flex items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-secondary border-2 border-input overflow-hidden flex items-center justify-center">
                   {r.photoURL ? (
                     <img src={r.photoURL} alt={r.displayName} className="w-full h-full object-cover" />
                   ) : (

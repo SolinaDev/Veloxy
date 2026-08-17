@@ -14,7 +14,7 @@ export interface ActivityCardProps {
 }
 
 const ActivityCard = ({ item, userUid, idx, onLike }: ActivityCardProps) => {
-  const isLiked = item.likes?.includes(userUid);
+  const isLiked = Boolean(userUid && item.likes?.includes(userUid));
   const badge = getActivityBadge(item.distance || 0);
 
   return (
@@ -23,8 +23,7 @@ const ActivityCard = ({ item, userUid, idx, onLike }: ActivityCardProps) => {
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -3 }}
       transition={{ delay: Math.min(idx * 0.08, 0.4), type: "spring", stiffness: 260, damping: 24 }}
-      className="premium-surface premium-line rounded-[2.5rem] overflow-hidden animate-fade-up"
-      style={{ animationDelay: `${Math.min(idx * 70, 360)}ms` }}
+      className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl overflow-hidden"
     >
       <div className="flex items-center justify-between px-5 pt-5 pb-3">
         <div className="flex items-center gap-3">
@@ -68,7 +67,7 @@ const ActivityCard = ({ item, userUid, idx, onLike }: ActivityCardProps) => {
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-3 divide-x divide-zinc-800 mx-3 my-3 premium-panel py-4 rounded-2xl">
+      <div className="grid grid-cols-3 divide-x divide-zinc-800 mx-3 my-3 bg-secondary/60 border border-input py-4 rounded-2xl">
         {[
           { label: "Ritmo", value: item.pace, unit: "/km" },
           { label: "Tempo", value: item.time, unit: "" },
@@ -86,7 +85,11 @@ const ActivityCard = ({ item, userUid, idx, onLike }: ActivityCardProps) => {
 
       <div className="flex items-center justify-between px-5 pb-5 pt-1">
         <div className="flex items-center gap-5">
-          <button onClick={() => onLike(item.id, item.likes)} className="flex items-center gap-1.5 group outline-none pressable-premium">
+          <button
+            onClick={() => onLike(item.id, item.likes ?? [])}
+            className="flex items-center gap-1.5 group outline-none pressable-premium"
+            aria-label={isLiked ? "Descurtir corrida" : "Curtir corrida"}
+          >
             <motion.div
               animate={isLiked ? { scale: [1, 1.2, 1] } : { scale: 1 }}
               transition={{ duration: 0.28 }}
@@ -101,7 +104,8 @@ const ActivityCard = ({ item, userUid, idx, onLike }: ActivityCardProps) => {
         </div>
         <button
           onClick={() => shareActivity(item)}
-          className="w-9 h-9 rounded-2xl bg-zinc-800/60 border border-zinc-700/50 flex items-center justify-center active:scale-95 transition-transform group hover:border-purple-500/40 hover:bg-purple-500/10"
+          className="w-9 h-9 rounded-2xl bg-secondary/60 border border-input/50 flex items-center justify-center active:scale-95 transition-transform group hover:border-purple-500/40 hover:bg-purple-500/10"
+          aria-label="Compartilhar corrida"
         >
           <Share2 size={15} className="text-zinc-500 group-hover:text-purple-400 transition-colors" />
         </button>

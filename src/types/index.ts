@@ -21,6 +21,8 @@ export interface UserProfile {
   onboarded?: boolean;
   enrolledEvents?: string[];
   joinedGroupIds?: string[];
+  termsAcceptedAt?: Timestamp;
+  termsVersion?: string;
   createdAt?: Timestamp;
   lastUpdated?: Timestamp;
 }
@@ -109,6 +111,7 @@ export interface RunningGroup {
   memberIds: string[];
   membersCount: number;
   weeklyKm: number;
+  weeklyKmWeek?: string;
   createdAt?: Timestamp | Date;
   updatedAt?: Timestamp | Date;
 }

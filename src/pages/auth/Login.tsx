@@ -286,7 +286,7 @@ export default function Login() {
 
   if (authLoading) {
     return (
-      <div className="h-[100svh] flex items-center justify-center bg-black">
+      <div className="h-[100svh] flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
 
@@ -303,7 +303,7 @@ export default function Login() {
   ================================ */
 
   return (
-    <div className="h-[100svh] flex items-center justify-center bg-black px-4 py-3 overflow-hidden relative">
+    <div className="h-[100svh] flex items-center justify-center bg-background px-4 py-3 overflow-hidden relative">
 
       {/* FUNDO */}
 
@@ -350,7 +350,7 @@ export default function Login() {
 
         <motion.div
           variants={itemVariants}
-          className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-3xl p-5 sm:p-8 shadow-2xl"
+          className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-5 sm:p-8 shadow-2xl"
         >
 
           {/* LOGO */}
@@ -422,7 +422,7 @@ export default function Login() {
                   }
                   disabled={loading}
                   autoComplete="email"
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 pl-11 pr-4 text-white text-sm outline-none focus:border-purple-500 transition disabled:opacity-60"
+                  className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-4 text-white text-sm outline-none focus:border-purple-500 transition disabled:opacity-60"
                 />
 
               </div>
@@ -458,7 +458,7 @@ export default function Login() {
                   }
                   disabled={loading}
                   autoComplete="current-password"
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 pl-11 pr-11 text-white text-sm outline-none focus:border-purple-500 transition disabled:opacity-60"
+                  className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-11 text-white text-sm outline-none focus:border-purple-500 transition disabled:opacity-60"
                 />
 
                 {/* MOSTRAR / ESCONDER SENHA */}
@@ -656,7 +656,7 @@ export default function Login() {
               }
               disabled={loading}
               type="button"
-              className="w-full bg-zinc-800 hover:bg-zinc-700 transition rounded-xl py-3 flex items-center justify-center gap-3 text-white font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full bg-secondary hover:bg-secondary/80 transition rounded-xl py-3 flex items-center justify-center gap-3 text-white font-medium disabled:opacity-60 disabled:cursor-not-allowed"
             >
 
               {loading ? (

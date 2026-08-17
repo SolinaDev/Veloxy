@@ -1,6 +1,5 @@
 import { Suspense, lazy, useEffect } from "react";
 
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -32,7 +31,7 @@ const CompleteProfile = lazy(
 );
 
 /* NOVA PÁGINA */
-const Legal = lazy(() => import("@/pages/auth/legal"));
+const Legal = lazy(() => import("@/pages/auth/Legal"));
 
 /* =========================
    PÁGINAS DO APP
@@ -43,7 +42,6 @@ const Social = lazy(() => import("@/pages/app/Social"));
 const Dashboard = lazy(() => import("@/pages/app/Dashboard"));
 const RunTracking = lazy(() => import("@/pages/app/RunTracking"));
 const Challenges = lazy(() => import("@/pages/app/Challenges"));
-const Community = lazy(() => import("@/pages/app/Community"));
 const Events = lazy(() => import("@/pages/app/Events"));
 const Profile = lazy(() => import("@/pages/app/Profile"));
 
@@ -96,7 +94,6 @@ const App = () => {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <Toaster />
           <Sonner />
 
           <AuthProvider>
@@ -174,18 +171,8 @@ const App = () => {
                     />
 
                     <Route
-                      path="community"
-                      element={<Community />}
-                    />
-
-                    <Route
                       path="events"
                       element={<Events />}
-                    />
-
-                    <Route
-                      path="shop"
-                      element={<Social />}
                     />
 
                     <Route

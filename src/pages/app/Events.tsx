@@ -2,12 +2,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, MapPin, Users, ChevronRight, Bell, Tag, Clock, Loader2, CheckCircle, ExternalLink, Navigation } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { 
-  getEvents, 
-  getUserEvents, 
-  joinEvent, 
+import {
+  getEvents,
+  joinEvent,
   getUserProfile,
-  RunningEvent 
+  RunningEvent
 } from "@/services/database";
 import { toast } from "sonner";
 import { toDateSafe } from "@/lib/feed-utils";
@@ -175,8 +174,8 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
   return (
     <div className={`${embedded ? "min-h-0 pb-4" : "app-shell pb-24 safe-top"}`}>
       {/* Header */}
-      {!embedded && <header className="app-header px-6 py-4 flex items-center justify-between sticky top-0 z-40">
-        <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 overflow-hidden">
+      {!embedded && <header className="bg-card/80 backdrop-blur-xl border-b border-border px-6 py-4 flex items-center justify-between sticky top-0 z-40">
+        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center border border-input overflow-hidden">
           {user?.photoURL ? (
             <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
           ) : (
@@ -188,7 +187,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
           VELOXY EVENTS
         </h1>
         
-        <button className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center border border-zinc-800 text-zinc-400">
+        <button className="w-10 h-10 rounded-full bg-card flex items-center justify-center border border-border text-zinc-400" aria-label="Ver calendário de eventos">
           <Calendar size={18} />
         </button>
       </header>}
@@ -208,8 +207,8 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
               }}
               className={`px-6 py-2 rounded-full text-[10px] font-black tracking-widest transition-all ${
                 activeTab === c
-                  ? "nav-action"
-                  : "premium-panel text-zinc-500"
+                  ? "bg-purple-600 text-white"
+                  : "bg-card/80 backdrop-blur-xl border border-border text-zinc-500"
               }`}
             >
               {c.toUpperCase()}
@@ -221,12 +220,12 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
           <button
             onClick={requestLocation}
             disabled={locationLoading}
-            className="premium-panel flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest text-zinc-400 disabled:opacity-60"
+            className="bg-card/80 backdrop-blur-xl border border-border flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest text-zinc-400 disabled:opacity-60"
           >
             {locationLoading ? <Loader2 size={14} className="animate-spin text-purple-500" /> : <Navigation size={14} className="text-purple-500" />}
             {userCoords ? "Localizacao ativa" : "Usar minha localizacao"}
           </button>
-          <div className="premium-panel flex min-h-12 items-center justify-center rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest text-purple-400">
+          <div className="bg-card/80 backdrop-blur-xl border border-border flex min-h-12 items-center justify-center rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest text-purple-400">
             {filteredEvents.length} eventos
           </div>
         </div>
@@ -237,7 +236,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
               key={distance}
               onClick={() => setSelectedDistance(distance)}
               className={`rounded-full px-4 py-2 text-[9px] font-black uppercase tracking-widest transition ${
-                selectedDistance === distance ? "bg-purple-600 text-white" : "premium-panel text-zinc-500"
+                selectedDistance === distance ? "bg-purple-600 text-white" : "bg-card/80 backdrop-blur-xl border border-border text-zinc-500"
               }`}
             >
               {distance}
@@ -252,7 +251,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
                 key={radius.label}
                 onClick={() => setSelectedRadius(radius.value)}
                 className={`rounded-full px-4 py-2 text-[9px] font-black uppercase tracking-widest transition ${
-                  selectedRadius === radius.value ? "bg-purple-600 text-white" : "premium-panel text-zinc-500"
+                  selectedRadius === radius.value ? "bg-purple-600 text-white" : "bg-card/80 backdrop-blur-xl border border-border text-zinc-500"
                 }`}
               >
                 {radius.label}
@@ -267,7 +266,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="group relative h-64 rounded-[3rem] overflow-hidden border border-zinc-800/50 cursor-pointer shadow-[0_20px_40px_rgba(0,0,0,0.5)]"
+            className="group relative h-64 rounded-3xl overflow-hidden border border-border cursor-pointer shadow-2xl"
           >
               <img src={events[0].image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="featured" />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
@@ -311,12 +310,12 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className={`bg-zinc-900/40 border rounded-[2.5rem] p-5 flex flex-col gap-6 transition-all ${
-                isLocal ? "border-purple-500/30 bg-purple-500/5 shadow-[0_0_30px_rgba(147,51,234,0.05)]" : "border-zinc-800/50"
+              className={`bg-card/80 backdrop-blur-xl border rounded-3xl p-5 flex flex-col gap-6 transition-all ${
+                isLocal ? "border-purple-500/30 bg-purple-500/5" : "border-border"
               }`}
             >
                <div className="flex items-center gap-5">
-                  <div className="w-24 h-24 rounded-[2rem] overflow-hidden border border-zinc-800 relative flex-shrink-0">
+                  <div className="w-24 h-24 rounded-2xl overflow-hidden border border-border relative flex-shrink-0">
                       <img src={event.image} className="w-full h-full object-cover" alt="event" />
                       <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md p-1.5 rounded-xl border border-white/10">
                           <Tag size={12} className="text-purple-500" />
@@ -344,13 +343,13 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
                   </div>
                </div>
   
-               <div className="flex items-center justify-between pt-6 border-t border-zinc-800/50">
+               <div className="flex items-center justify-between pt-6 border-t border-border/50">
                   <div className="flex items-center gap-4">
                       <div className="flex flex-col">
                           <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none mb-1">Inscrição</p>
                           <p className="text-sm font-black text-purple-500 italic uppercase leading-none">{event.price}</p>
                       </div>
-                      <div className="w-[1px] h-6 bg-zinc-800/50" />
+                      <div className="w-[1px] h-6 bg-border/50" />
                       <div className="flex flex-col">
                           <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none mb-1">Salvos</p>
                           <div className="flex items-center gap-1 leading-none">

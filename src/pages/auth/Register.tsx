@@ -11,6 +11,7 @@ import {
   EyeOff,
   Loader2,
   ArrowLeft,
+  Check,
 } from "lucide-react";
 
 import { AnimatePresence, motion } from "framer-motion";
@@ -24,6 +25,8 @@ import {
 import { FirebaseError } from "firebase/app";
 
 import { auth } from "@/config/firebase";
+import { createUserProfile } from "@/services/database";
+import { LEGAL_VERSION } from "@/content/legalContent";
 import { toast } from "sonner";
 
 import logo from "@/assets/LogoNova-login.png";
@@ -100,6 +103,8 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
   const [loading, setLoading] = useState(false);
 
   async function handleRegister(e: FormEvent<HTMLFormElement>) {
@@ -140,6 +145,11 @@ export default function Register() {
       return;
     }
 
+    if (!termsAccepted) {
+      toast.error("Voce precisa aceitar os Termos de Uso e a Politica de Privacidade para continuar.");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -153,11 +163,17 @@ export default function Register() {
         displayName: usernameTrimmed,
       });
 
+      await createUserProfile(userCredential.user.uid, {
+        displayName: usernameTrimmed,
+        photoURL: userCredential.user.photoURL,
+        termsVersion: LEGAL_VERSION,
+      });
+
       toast.success(
         `Bem-vindo, ${usernameTrimmed}! Sua conta foi criada com sucesso.`,
       );
 
-      navigate("/feed", {
+      navigate("/complete-profile", {
         replace: true,
       });
     } catch (error: unknown) {
@@ -169,7 +185,7 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-[100svh] bg-black px-4 py-6 relative overflow-y-auto">
+    <div className="min-h-[100svh] bg-background px-4 py-6 relative overflow-y-auto">
       {/* Fundo animado */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div
@@ -208,7 +224,7 @@ export default function Register() {
         >
           <motion.div
             variants={itemVariants}
-            className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-3xl p-5 sm:p-8 shadow-2xl"
+            className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-5 sm:p-8 shadow-2xl"
           >
             {/* Voltar */}
             <motion.button
@@ -281,13 +297,19 @@ export default function Register() {
                   <input
                     id="username"
                     type="text"
+                    maxLength={30}
                     placeholder="Digite seu nome de usuário"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     disabled={loading}
                     autoComplete="username"
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 pl-11 pr-4 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
+                    className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-4 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
                   />
+
+
+                  <span className="absolute bottom-2 right-3 text-xs text-zinc-500">
+                    {username.length}/30
+                  </span>
                 </div>
               </motion.div>
 
@@ -302,7 +324,6 @@ export default function Register() {
 
                 <div className="relative">
                   <Mail className="absolute left-4 top-3.5 text-zinc-500 w-5 h-5" />
-
                   <input
                     id="email"
                     type="email"
@@ -311,7 +332,7 @@ export default function Register() {
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={loading}
                     autoComplete="email"
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 pl-11 pr-4 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
+                    className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-4 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
                   />
                 </div>
               </motion.div>
@@ -336,8 +357,9 @@ export default function Register() {
                     onChange={(e) => setConfirmEmail(e.target.value)}
                     disabled={loading}
                     autoComplete="email"
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 pl-11 pr-4 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
+                    className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-4 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
                   />
+
                 </div>
               </motion.div>
 
@@ -361,7 +383,7 @@ export default function Register() {
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={loading}
                     autoComplete="new-password"
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 pl-11 pr-11 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
+                    className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-11 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
                   />
 
                   <button
@@ -452,7 +474,7 @@ export default function Register() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     disabled={loading}
                     autoComplete="new-password"
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 pl-11 pr-11 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
+                    className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-11 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
                   />
 
                   <button
@@ -556,19 +578,34 @@ export default function Register() {
             </form>
 
             {/* Termos */}
-            <motion.p
+            <motion.div
               variants={itemVariants}
-              className="text-center text-xs text-zinc-500 mt-4 leading-relaxed"
+              className="flex items-start gap-3 mt-4"
             >
-              Ao criar sua conta, você concorda com nossos{" "}
               <button
                 type="button"
-                onClick={() => navigate("/termos-e-privacidade")}
-                className="text-purple-400 hover:text-purple-300 transition">
-                Termos de Uso e Política de Privacidade
-              </button>{""}
-              .
-            </motion.p>
+                role="checkbox"
+                aria-checked={termsAccepted}
+                aria-label="Aceitar os Termos de Uso e a Política de Privacidade"
+                onClick={() => setTermsAccepted((prev) => !prev)}
+                disabled={loading}
+                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition disabled:opacity-60 ${
+                  termsAccepted ? "bg-purple-600 border-purple-500" : "bg-secondary border-input"
+                }`}
+              >
+                {termsAccepted && <Check size={13} className="text-white" strokeWidth={3} />}
+              </button>
+              <p className="text-xs text-zinc-500 leading-relaxed">
+                Li e concordo com os{" "}
+                <button
+                  type="button"
+                  onClick={() => navigate("/termos-e-privacidade")}
+                  className="text-purple-400 hover:text-purple-300 transition">
+                  Termos de Uso e Política de Privacidade
+                </button>
+                .
+              </p>
+            </motion.div>
 
             {/* Link para login */}
             <motion.p

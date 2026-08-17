@@ -124,7 +124,7 @@ export default function ForgotPasswordModal({
             transition={{
               duration: 0.2,
             }}
-            className="relative w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl"
+            className="relative w-full max-w-md rounded-3xl border border-border bg-card p-6 shadow-2xl"
           >
             {/* Fechar */}
             <button
@@ -170,7 +170,7 @@ export default function ForgotPasswordModal({
                     autoComplete="email"
                     autoFocus
                     disabled={loading}
-                    className="w-full rounded-xl border border-zinc-700 bg-zinc-800 py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-purple-500 disabled:opacity-60"
+                    className="w-full rounded-xl border border-input bg-secondary py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-purple-500 disabled:opacity-60"
                   />
                 </div>
               </div>

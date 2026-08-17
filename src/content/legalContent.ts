@@ -1,3 +1,7 @@
+// Identifica a versão dos termos aceita por cada usuário no cadastro.
+// Atualize junto com a data em "Última atualização" abaixo.
+export const LEGAL_VERSION = "2026-08-07";
+
 export const legalContent = `
 TERMOS DE USO E POLÍTICA DE PRIVACIDADE — RUNNEX
 Performance — Supere seus limites

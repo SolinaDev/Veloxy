@@ -82,7 +82,7 @@ function GroupCreateModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[1100] bg-black/80 backdrop-blur-md"
+            className="fixed inset-0 z-[1100] bg-background/80 backdrop-blur-md"
             onClick={onClose}
           />
           <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 pointer-events-none">
@@ -90,14 +90,14 @@ function GroupCreateModal({
               initial={{ opacity: 0, scale: 0.94 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.94 }}
-              className="w-full max-w-lg rounded-[2rem] premium-surface p-5 pointer-events-auto"
+              className="w-full max-w-lg rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5 pointer-events-auto"
             >
               <div className="mb-6 flex items-center justify-between">
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500">Comunidade</p>
                   <h2 className="font-display text-2xl font-black italic text-purple-500">CRIAR GRUPO</h2>
                 </div>
-                <button onClick={onClose} className="h-10 w-10 rounded-full premium-panel flex items-center justify-center text-zinc-400">
+                <button onClick={onClose} className="h-10 w-10 rounded-full bg-card/80 backdrop-blur-xl border border-border flex items-center justify-center text-zinc-400" aria-label="Fechar">
                   <X size={18} />
                 </button>
               </div>
@@ -114,7 +114,7 @@ function GroupCreateModal({
                       value={form[field.key as keyof GroupForm]}
                       onChange={(event) => setForm((prev) => ({ ...prev, [field.key]: event.target.value }))}
                       placeholder={field.placeholder}
-                      className="w-full rounded-2xl premium-panel px-4 py-4 text-sm outline-none focus:ring-2 focus:ring-purple-500/40"
+                      className="w-full bg-secondary border border-input rounded-xl px-4 py-4 text-sm outline-none focus:border-purple-500 transition"
                     />
                   </label>
                 ))}
@@ -126,7 +126,7 @@ function GroupCreateModal({
                     onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
                     placeholder="Conte o objetivo do grupo"
                     rows={3}
-                    className="w-full resize-none rounded-2xl premium-panel px-4 py-4 text-sm outline-none focus:ring-2 focus:ring-purple-500/40"
+                    className="w-full resize-none bg-secondary border border-input rounded-xl px-4 py-4 text-sm outline-none focus:border-purple-500 transition"
                   />
                 </label>
               </div>
@@ -134,7 +134,7 @@ function GroupCreateModal({
               <button
                 onClick={() => onCreate(form)}
                 disabled={creating}
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-3xl bg-purple-600 py-4 text-xs font-black uppercase tracking-widest text-white disabled:opacity-60"
+                className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 hover:bg-purple-700 transition py-4 text-xs font-black uppercase tracking-widest text-white disabled:opacity-60"
               >
                 {creating ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
                 Criar comunidade
@@ -289,10 +289,10 @@ export default function Social() {
 
   return (
     <div className="app-shell pb-28 safe-top">
-      <header className="app-header sticky top-0 z-50 px-5 py-4">
+      <header className="bg-card/80 backdrop-blur-xl border-b border-border sticky top-0 z-50 px-5 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <SafeAvatar src={userPhotoURL} name={displayName} alt="Perfil" className="h-11 w-11 rounded-full border border-purple-500/30 bg-zinc-900" />
+            <SafeAvatar src={userPhotoURL} name={displayName} alt="Perfil" className="h-11 w-11 rounded-full border border-purple-500/30 bg-card" />
             <div>
               <p className="text-[9px] font-black uppercase tracking-[0.24em] text-zinc-600">Veloxy</p>
               <h1 className="font-display text-2xl font-black italic tracking-tighter text-purple-500">SOCIAL</h1>
@@ -311,7 +311,7 @@ export default function Social() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`relative flex flex-col items-center gap-1 rounded-2xl px-2 py-3 text-[9px] font-black uppercase transition ${
-                activeTab === tab.id ? "nav-action" : "premium-panel text-zinc-500"
+                activeTab === tab.id ? "bg-purple-600 text-white" : "bg-card/80 backdrop-blur-xl border border-border text-zinc-500"
               }`}
             >
               <tab.icon size={16} />
@@ -333,7 +333,7 @@ export default function Social() {
           {activeTab === "feed" && <Feed embedded />}
           {activeTab === "leaderboard" && (
             <section>
-              <div className="hero-card mb-5 rounded-[2rem] p-5">
+              <div className="bg-card/80 backdrop-blur-xl border border-border mb-5 rounded-3xl p-5">
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-[0.22em] text-purple-300">Leaderboard</p>
@@ -349,7 +349,7 @@ export default function Social() {
                     <Loader2 className="animate-spin text-purple-500" size={32} />
                   </div>
                 ) : ranking.length === 0 ? (
-                  <div className="rounded-[2rem] premium-panel p-10 text-center">
+                  <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-10 text-center">
                     <Trophy className="mx-auto text-zinc-700" size={36} />
                     <p className="mt-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Ranking vazio por enquanto</p>
                   </div>
@@ -364,7 +364,7 @@ export default function Social() {
                 <button
                   onClick={() => setRankingLimit((value) => Math.min(value + RANKING_STEP, RANKING_CAP))}
                   disabled={rankingLoading}
-                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl premium-panel py-4 text-xs font-black uppercase tracking-widest text-zinc-300 disabled:opacity-60"
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-card/80 backdrop-blur-xl border border-border py-4 text-xs font-black uppercase tracking-widest text-zinc-300 disabled:opacity-60"
                 >
                   {rankingLoading ? <Loader2 size={14} className="animate-spin text-purple-500" /> : <ChevronDown size={14} className="text-purple-500" />}
                   Ver mais
@@ -382,7 +382,7 @@ export default function Social() {
                 </div>
                 <button
                   onClick={() => setCreateOpen(true)}
-                  className="hero-icon flex h-11 w-11 items-center justify-center rounded-2xl"
+                  className="bg-purple-600 text-white flex h-11 w-11 items-center justify-center rounded-2xl"
                   aria-label="Criar grupo"
                 >
                   <Plus size={18} />
@@ -400,8 +400,8 @@ export default function Social() {
                       <button
                         key={group.id}
                         onClick={() => setSelectedGroupId(group.id)}
-                        className={`min-w-[180px] rounded-[1.5rem] p-4 text-left transition ${
-                          selectedGroupId === group.id ? "border border-purple-500/50 bg-purple-500/15" : "premium-panel"
+                        className={`min-w-[180px] rounded-2xl p-4 text-left transition ${
+                          selectedGroupId === group.id ? "border border-purple-500/50 bg-purple-500/15" : "bg-card/80 backdrop-blur-xl border border-border"
                         }`}
                       >
                         <p className="truncate font-display text-lg font-black italic">{group.name}</p>
@@ -416,7 +416,7 @@ export default function Social() {
 
                   {selectedGroup && (
                     <div className="space-y-5">
-                      <div className="rounded-[2rem] premium-panel p-5">
+                      <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5">
                         <div className="flex items-start justify-between gap-4">
                           <div>
                             <div className="mb-2 inline-flex rounded-full border border-purple-500/25 bg-purple-500/10 px-3 py-1 text-[9px] font-black uppercase text-purple-300">
@@ -429,11 +429,11 @@ export default function Social() {
                         </div>
 
                         <div className="mt-5 grid grid-cols-2 gap-3">
-                          <div className="rounded-2xl premium-panel p-3">
+                          <div className="rounded-2xl bg-secondary/60 border border-input p-3">
                             <p className="font-display text-2xl font-black italic">{selectedGroup.membersCount}</p>
                             <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-600">membros</p>
                           </div>
-                          <div className="rounded-2xl premium-panel p-3">
+                          <div className="rounded-2xl bg-secondary/60 border border-input p-3">
                             <p className="font-display text-2xl font-black italic">{selectedGroup.weeklyKm.toFixed(0)}</p>
                             <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-600">km semanais</p>
                           </div>
@@ -450,7 +450,7 @@ export default function Social() {
                         </button>
                       </div>
 
-                      <div className="rounded-[2rem] premium-panel p-5">
+                      <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5">
                         <h4 className="font-display text-lg font-black italic">Ranking do grupo</h4>
                         <div className="mt-4 space-y-3">
                           {groupDetailsLoading ? (
@@ -463,7 +463,7 @@ export default function Social() {
                         </div>
                       </div>
 
-                      <div className="rounded-[2rem] premium-panel p-5">
+                      <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5">
                         <h4 className="font-display text-lg font-black italic">Feed do grupo</h4>
                         <div className="mt-4 space-y-3">
                           {groupDetailsLoading ? (
@@ -472,7 +472,7 @@ export default function Social() {
                             <p className="py-5 text-center text-xs font-black uppercase tracking-[0.16em] text-zinc-600">Sem corridas recentes neste grupo</p>
                           ) : (
                             groupFeed.map((activity) => (
-                              <div key={activity.id} className="rounded-2xl premium-panel p-4">
+                              <div key={activity.id} className="rounded-2xl bg-card/80 backdrop-blur-xl border border-border p-4">
                                 <div className="flex items-center justify-between gap-4">
                                   <div className="min-w-0">
                                     <p className="truncate text-sm font-black">{activity.userName}</p>
@@ -516,9 +516,9 @@ function AthleteRow({
   compact?: boolean;
 }) {
   return (
-    <div className={`flex items-center gap-4 rounded-[1.5rem] ${compact ? "p-3 premium-panel" : "p-4"} ${active ? "border border-purple-500/35 bg-purple-500/10" : "premium-panel"}`}>
+    <div className={`flex items-center gap-4 rounded-2xl ${compact ? "p-3 bg-card/80 backdrop-blur-xl border border-border" : "p-4"} ${active ? "border border-purple-500/35 bg-purple-500/10" : "bg-card/80 backdrop-blur-xl border border-border"}`}>
       <div className="w-8 text-center font-display text-xl font-black italic text-purple-400">{index + 1}</div>
-      <SafeAvatar src={athlete.photoURL} name={athlete.displayName || "Atleta"} className="h-11 w-11 rounded-2xl bg-zinc-900" />
+      <SafeAvatar src={athlete.photoURL} name={athlete.displayName || "Atleta"} className="h-11 w-11 rounded-2xl bg-card" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-black">{athlete.displayName || "Atleta"}</p>
         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">{athlete.level || "Iniciante"}</p>

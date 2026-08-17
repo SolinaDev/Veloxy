@@ -13,7 +13,7 @@ import {
   Loader2
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { getUserStats, ActivityData, getUserProfile, UserProfile } from "@/services/database";
 import { getLevelFromXP } from "@/lib/gamification";
@@ -97,28 +97,20 @@ const Dashboard = () => {
     return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }).toUpperCase();
   };
 
-  const legacyStatCards = [
-    { label: "Distância Total",   value: stats.totalKm,                     unit: "KM",      icon: <MapPin size={16} />,     color: "purple" },
-    { label: "Total de Treinos",  value: stats.runsCount.toString(),         unit: "RUNS",    icon: <Zap size={16} />,        color: "zinc"   },
-    { label: "Tempo de Atividade",value: stats.totalTime,                   unit: "ATIVO",   icon: <Timer size={16} />,      color: "zinc"   },
-    { label: "Energia Gasta",     value: stats.totalCalories.toString(),    unit: "KCAL",    icon: <Flame size={16} />,      color: "zinc"   },
-  ];
-  void legacyStatCards;
-
-  const realStatCards = [
+  const realStatCards = useMemo(() => [
     { label: "Distancia Total", value: stats.totalKm, unit: "KM", icon: <MapPin size={16} />, color: "purple" },
     { label: "Km na Semana", value: stats.weeklyTotalKm.toFixed(1), unit: "KM", icon: <TrendingUp size={16} />, color: "purple" },
     { label: "Ritmo Medio", value: stats.averagePace, unit: "/KM", icon: <Timer size={16} />, color: "zinc" },
     { label: "Sequencia", value: stats.currentStreak.toString(), unit: stats.currentStreak === 1 ? "DIA" : "DIAS", icon: <Zap size={16} />, color: "zinc" },
     { label: "Calorias", value: stats.totalCalories.toString(), unit: "KCAL", icon: <Flame size={16} />, color: "zinc" },
     { label: "Melhor Corrida", value: bestRunDistance, unit: "KM", icon: <Award size={16} />, color: "zinc" },
-  ];
+  ], [stats, bestRunDistance]);
 
   return (
     <div className="app-shell pb-24 safe-top">
       {/* Header */}
-      <header className="app-header px-6 py-4 flex items-center justify-between sticky top-0 z-40">
-        <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 overflow-hidden">
+      <header className="bg-card/80 backdrop-blur-xl border-b border-border px-6 py-4 flex items-center justify-between sticky top-0 z-40">
+        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center border border-input overflow-hidden">
           {user?.photoURL ? (
             <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
           ) : (
@@ -133,7 +125,8 @@ const Dashboard = () => {
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={() => navigate("/run")}
-          className="hero-icon w-10 h-10 rounded-full flex items-center justify-center"
+          className="bg-purple-600 w-10 h-10 rounded-full flex items-center justify-center"
+          aria-label="Iniciar corrida"
         >
           <Play size={16} className="text-white fill-current ml-0.5" />
         </motion.button>
@@ -189,7 +182,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-2 gap-4">
           {loading ? (
             <>
-              {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-36 rounded-[2.5rem]" />)}
+              {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-36 rounded-3xl" />)}
             </>
           ) : (
             realStatCards.map((stat, i) => (
@@ -198,13 +191,13 @@ const Dashboard = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.08 }}
-                className="bg-zinc-900/40 border border-zinc-800/50 p-6 rounded-[2.5rem] relative group"
+                className="bg-card/80 backdrop-blur-xl border border-border p-6 rounded-3xl relative group"
               >
                 <div
                   className={`w-8 h-8 rounded-xl flex items-center justify-center mb-3 ${
                     stat.color === "purple"
                       ? "bg-purple-500/20 text-purple-400"
-                      : "bg-zinc-800 text-zinc-400"
+                      : "bg-secondary text-zinc-400"
                   }`}
                 >
                   {stat.icon}
@@ -228,7 +221,7 @@ const Dashboard = () => {
 
       {/* Weekly Chart */}
       <section className="px-6 mt-10">
-        <div className="bg-zinc-900/60 border border-zinc-800 rounded-[3rem] p-7">
+        <div className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-7">
           <div className="flex items-center justify-between mb-8">
             <h3 className="font-display font-black text-sm italic tracking-tighter uppercase text-white">
               Últimos 7 Dias
@@ -264,7 +257,7 @@ const Dashboard = () => {
                       className={`w-full rounded-2xl ${
                         d.km > 0
                           ? "bg-gradient-to-t from-purple-600 to-purple-400 shadow-[0_0_15px_rgba(147,51,234,0.3)]"
-                          : "bg-zinc-800/50"
+                          : "bg-secondary/50"
                       }`}
                       style={{ minHeight: d.km > 0 ? "10px" : "4px" }}
                     />
@@ -286,7 +279,7 @@ const Dashboard = () => {
       {/* Best Run Card */}
       {stats.bestActivity && (
         <section className="px-6 mt-10">
-          <div className="rounded-[2.5rem] border border-purple-500/20 bg-purple-500/10 p-6">
+          <div className="rounded-3xl border border-purple-500/20 bg-purple-500/10 p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-[9px] font-black uppercase tracking-[0.22em] text-purple-300">
@@ -296,7 +289,7 @@ const Dashboard = () => {
                   {stats.bestActivity.distance.toFixed(2)} km
                 </h3>
               </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-600 text-white shadow-[0_0_24px_rgba(147,51,234,0.35)]">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-600 text-white">
                 <Award size={22} />
               </div>
             </div>
@@ -328,7 +321,7 @@ const Dashboard = () => {
             <Loader2 className="animate-spin text-purple-500" size={24} />
           </div>
         ) : stats.lastActivity ? (
-          <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-[2.5rem] p-8 relative overflow-hidden">
+          <div className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-8 relative overflow-hidden">
             {/* purple glow blob */}
             <div className="absolute -top-10 -right-10 w-40 h-40 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -371,7 +364,7 @@ const Dashboard = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="bg-zinc-900/30 border border-zinc-800/30 rounded-[2.5rem] p-10 flex flex-col items-center gap-4"
+            className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-10 flex flex-col items-center gap-4"
           >
             <div className="w-16 h-16 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
               <Play size={28} className="text-purple-500 fill-current ml-1" />
@@ -382,7 +375,7 @@ const Dashboard = () => {
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => navigate("/run")}
-              className="px-6 py-3 bg-purple-600 rounded-2xl text-[11px] font-black uppercase tracking-widest text-white shadow-[0_5px_20px_rgba(147,51,234,0.3)]"
+              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 transition rounded-xl text-[11px] font-black uppercase tracking-widest text-white"
             >
               Iniciar Primeira Corrida
             </motion.button>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { updateProfile } from "firebase/auth";
@@ -11,7 +11,7 @@ import logo from "@/assets/LogoNova-login.png";
 
 export default function CompleteProfile() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const [username, setUsername] = useState(user?.displayName || "");
   const [location, setLocation] = useState("");
@@ -19,7 +19,20 @@ export default function CompleteProfile() {
   const [saving, setSaving] = useState(false);
   const [photoURL, setPhotoURL] = useState(user?.photoURL || "");
 
+  // Rota só faz sentido para quem acabou de se cadastrar/logar; sem sessão,
+  // manda para o login em vez de deixar o formulário "salvar" sem efeito.
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/login", { replace: true });
+    }
+  }, [authLoading, user, navigate]);
+
   const handleComplete = async () => {
+    if (!user) {
+      toast.error("Sua sessão ainda está carregando. Tente novamente em instantes.");
+      return;
+    }
+
     if (!username.trim()) {
       toast.error("Escolha um nome de corredor");
       return;
@@ -27,24 +40,23 @@ export default function CompleteProfile() {
 
     setSaving(true);
     try {
-      if (user) {
-        const normalizedPhoto = photoURL.trim();
-        await updateProfile(user, {
-          displayName: username.trim(),
-          photoURL: normalizedPhoto || null,
-        });
+      const normalizedPhoto = photoURL.trim();
+      await updateProfile(user, {
+        displayName: username.trim(),
+        photoURL: normalizedPhoto || null,
+      });
 
-        // Salvar dados do perfil no Firestore (não mais em localStorage)
-        const userRef = doc(db, "users", user.uid);
-        await setDoc(userRef, {
-          displayName: username.trim(),
-          photoURL: normalizedPhoto || null,
-          location: location.trim(),
-          bio: bio.trim(),
-          onboarded: true,
-          createdAt: serverTimestamp(),
-        }, { merge: true });
-      }
+      // Salvar dados do perfil no Firestore (não mais em localStorage)
+      const userRef = doc(db, "users", user.uid);
+      await setDoc(userRef, {
+        displayName: username.trim(),
+        photoURL: normalizedPhoto || null,
+        location: location.trim(),
+        bio: bio.trim(),
+        onboarded: true,
+        lastUpdated: serverTimestamp(),
+      }, { merge: true });
+
       toast.success(`Bem-vindo ao Veloxy, ${username}! 🏃‍♂️`);
       navigate("/");
     } catch (err) {
@@ -56,19 +68,26 @@ export default function CompleteProfile() {
   };
 
   const handleSkip = async () => {
-    if (user) {
+    if (!user) {
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    try {
       // Marcar como onboarded no Firestore mesmo pulando
       const userRef = doc(db, "users", user.uid);
       await setDoc(userRef, {
         onboarded: true,
-        createdAt: serverTimestamp(),
+        lastUpdated: serverTimestamp(),
       }, { merge: true });
+    } catch (err) {
+      console.error(err);
     }
     navigate("/");
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-6 text-white">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-foreground">
       {/* Logo pequena */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -128,7 +147,7 @@ export default function CompleteProfile() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Escolha seu nome ou apelido"
-            className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition"
+            className="w-full bg-secondary border border-input rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none focus:border-purple-500 transition"
           />
         </div>
 
@@ -143,11 +162,11 @@ export default function CompleteProfile() {
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             placeholder="Ex: São Paulo, SP"
-            className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition"
+            className="w-full bg-secondary border border-input rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none focus:border-purple-500 transition"
           />
         </div>
 
-        {/* Bio */}
+        {/* Foto */}
         <div>
           <div className="mb-1.5 flex items-center justify-between">
             <label className="text-xs text-gray-400 font-medium flex items-center gap-1.5">
@@ -167,7 +186,7 @@ export default function CompleteProfile() {
             value={photoURL}
             onChange={(e) => setPhotoURL(e.target.value)}
             placeholder="https://..."
-            className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition"
+            className="w-full bg-secondary border border-input rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none focus:border-purple-500 transition"
           />
         </div>
 
@@ -183,7 +202,7 @@ export default function CompleteProfile() {
             placeholder="Conte um pouco sobre você como corredor..."
             rows={2}
             maxLength={150}
-            className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition resize-none"
+            className="w-full bg-secondary border border-input rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none focus:border-purple-500 transition resize-none"
           />
           <p className="text-[10px] text-gray-600 text-right mt-0.5">
             {bio.length}/150
@@ -196,7 +215,7 @@ export default function CompleteProfile() {
           whileHover={{ scale: 1.02 }}
           onClick={handleComplete}
           disabled={saving}
-          className="w-full bg-gradient-to-r from-purple-500 to-purple-700 py-3.5 rounded-xl font-semibold shadow-lg hover:shadow-purple-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full bg-purple-600 hover:bg-purple-700 transition py-3.5 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {saving ? (
             <>

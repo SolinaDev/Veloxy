@@ -24,7 +24,7 @@ const BottomNav = () => {
   if (location.pathname === "/run") return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-[1000] premium-nav safe-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-[1000] bg-card/80 backdrop-blur-xl border-t border-border safe-bottom">
       <div className="flex items-center justify-around px-2 pt-3 pb-2 max-w-lg mx-auto relative">
         {tabs.map((tab, idx) => {
           if (tab.path === "RECORD") {
@@ -36,7 +36,8 @@ const BottomNav = () => {
                   whileHover={{ scale: 1.1, rotate: -4 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => navigate("/run")}
-                  className="nav-action w-14 h-14 rounded-full flex items-center justify-center border-4 border-background"
+                  className="bg-purple-600 w-14 h-14 rounded-full flex items-center justify-center border-4 border-background"
+                  aria-label="Iniciar corrida"
                 >
                   <div className="w-4 h-4 rounded-full bg-white/95 shadow-[0_0_10px_rgba(255,255,255,0.7)] animate-pulse" />
                 </motion.button>
@@ -47,7 +48,7 @@ const BottomNav = () => {
           const isActive =
             location.pathname === tab.path ||
             (tab.path === "/" && location.pathname === "/home") ||
-            (tab.path === "/social" && ["/feed", "/shop", "/community"].includes(location.pathname));
+            (tab.path === "/social" && location.pathname === "/feed");
           return (
             <NavLink
               key={tab.path}

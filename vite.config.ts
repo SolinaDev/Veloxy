@@ -67,7 +67,6 @@ export default defineConfig(({ mode }) => ({
           ],
           maps: ["leaflet", "react-leaflet"],
           motion: ["framer-motion"],
-          charts: ["recharts"],
         },
       },
     },

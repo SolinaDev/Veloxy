@@ -8,14 +8,16 @@ O Veloxy foi criado para transformar treinos em uma experiencia mais social e or
 
 ## Funcionalidades
 
-- Autenticacao com e-mail/senha e provedores sociais
+- Autenticacao com e-mail/senha e login com Google
 - Feed de atividades da comunidade
-- Registro de corrida com distancia, tempo, ritmo e calorias
+- Registro de corrida com GPS real (foreground e background no Android), distancia, tempo, ritmo e calorias
 - Dashboard com resumo de desempenho
 - Sistema de XP, niveis e ranking
+- Grupos de corrida com km semanal por grupo
 - Eventos de corrida por localidade
-- Marketplace com descontos baseados em performance
 - Perfil do usuario com foto e estatisticas
+
+> Marketplace/loja com descontos ainda nao esta implementado (ver Roadmap).
 
 ## Stack
 
@@ -90,11 +92,13 @@ VITE_FIREBASE_APP_ID
 
 ## Roadmap
 
-- [x] Autenticacao
+- [x] Autenticacao (e-mail/senha e Google)
 - [x] Estrutura base do app
 - [x] Feed e dashboard inicial
 - [x] Gamificacao base
-- [ ] Tracking real com GPS
+- [x] Tracking real com GPS (foreground e background no Android)
+- [x] Grupos com km semanal calculado a partir das corridas dos membros
+- [ ] Cloud Function para validar XP no servidor (hoje o calculo e so no cliente)
 - [ ] Engine completa de descontos
 - [ ] Marketplace funcional com checkout
 - [ ] Historico avancado de atividades

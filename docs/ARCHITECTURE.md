@@ -24,7 +24,7 @@ src/
 2. `src/App.tsx` registra provedores globais e rotas.
 3. `src/config/firebase.ts` centraliza as instancias do Firebase.
 4. `src/services/*` concentra leitura e escrita de dados.
-5. `src/pages/*` monta as experiencias de login, feed, corrida, eventos, loja e perfil.
+5. `src/pages/*` monta as experiencias de login, feed, corrida, grupos, eventos, desafios e perfil. (A loja/marketplace ainda nao existe — ver Roadmap no README.)
 
 ## Convencoes
 

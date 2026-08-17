@@ -38,6 +38,8 @@ import type { FeedActivity } from "@/types";
 import { getLevelFromXP } from "@/lib/gamification";
 import { getGooglePhotoURL } from "@/lib/user-photo";
 import { toDateSafe } from "@/lib/feed-utils";
+import { uploadAvatar } from "@/services/storage";
+import RunHistoryRow from "@/components/RunHistoryRow";
 
 type Theme = "dark" | "light";
 
@@ -142,7 +144,7 @@ function SettingsRow({
   children: ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-[1.6rem] premium-panel p-4">
+    <div className="flex items-center justify-between gap-4 rounded-2xl bg-card/80 backdrop-blur-xl border border-border p-4">
       <div className="flex items-center gap-3 min-w-0">
         <div className="w-10 h-10 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0">
           {icon}
@@ -162,7 +164,7 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (chec
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`h-7 w-12 rounded-full p-1 transition-colors ${checked ? "bg-purple-600" : "bg-zinc-800"}`}
+      className={`h-7 w-12 rounded-full p-1 transition-colors ${checked ? "bg-purple-600" : "bg-secondary"}`}
     >
       <span
         className={`block h-5 w-5 rounded-full bg-white transition-transform ${checked ? "translate-x-5" : "translate-x-0"}`}
@@ -243,7 +245,7 @@ function SettingsModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/80 backdrop-blur-md z-50"
+            className="fixed inset-0 bg-background/80 backdrop-blur-md z-50"
           />
           <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 pointer-events-none">
           <motion.div
@@ -251,21 +253,21 @@ function SettingsModal({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.94 }}
             transition={{ type: "spring", damping: 30, stiffness: 400 }}
-            className="w-full max-w-lg max-h-[82svh] overflow-hidden rounded-[2rem] premium-surface p-5 shadow-2xl pointer-events-auto"
+            className="w-full max-w-lg max-h-[82svh] overflow-hidden rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5 shadow-2xl pointer-events-auto"
           >
             <div className="flex items-center justify-between mb-6">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500">Veloxy</p>
                 <h2 className="font-display text-2xl font-black italic text-purple-500">CONFIGURAÇÕES</h2>
               </div>
-              <button onClick={onClose} className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400">
+              <button onClick={onClose} className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-zinc-400" aria-label="Fechar">
                 <X size={20} />
               </button>
             </div>
 
             <div className="max-h-[calc(82svh-7rem)] overflow-y-auto no-scrollbar space-y-3 pb-1">
               <SettingsRow icon={theme === "light" ? <Sun size={18} /> : <Moon size={18} />} title="Tema do app" description="Escolha como o Veloxy aparece na tela.">
-                <div className="relative flex rounded-2xl bg-black/50 border border-zinc-800 p-1">
+                <div className="relative flex rounded-2xl bg-background/50 border border-border p-1">
                   {(["dark", "light"] as Theme[]).map((option) => (
                     <button
                       key={option}
@@ -306,7 +308,7 @@ function SettingsModal({
               </SettingsRow>
 
               <SettingsRow icon={<Ruler size={18} />} title="Unidade de distância" description="Define a unidade preferida para corridas.">
-                <div className="flex rounded-2xl bg-black/50 border border-zinc-800 p-1">
+                <div className="flex rounded-2xl bg-background/50 border border-border p-1">
                   {(["km", "mi"] as const).map((unit) => (
                     <button
                       key={unit}
@@ -322,12 +324,12 @@ function SettingsModal({
               </SettingsRow>
 
               <div className="grid grid-cols-2 gap-3 pt-2">
-                <button className="rounded-[1.6rem] premium-panel p-4 text-left">
+                <button className="rounded-2xl bg-card/80 backdrop-blur-xl border border-border p-4 text-left">
                   <HelpCircle size={18} className="text-purple-500 mb-3" />
                   <p className="settings-title text-xs font-black text-white">Ajuda</p>
                   <p className="settings-muted text-[10px] text-zinc-500 mt-1">FAQ e suporte</p>
                 </button>
-                <button className="rounded-[1.6rem] premium-panel p-4 text-left">
+                <button className="rounded-2xl bg-card/80 backdrop-blur-xl border border-border p-4 text-left">
                   <Lock size={18} className="text-purple-500 mb-3" />
                   <p className="settings-title text-xs font-black text-white">Privacidade</p>
                   <p className="settings-muted text-[10px] text-zinc-500 mt-1">Dados e segurança</p>
@@ -341,10 +343,10 @@ function SettingsModal({
                 <button
                   onClick={handleDeleteRuns}
                   disabled={deletingRuns}
-                  className={`settings-danger-action w-full rounded-[1.6rem] border p-4 text-left transition disabled:opacity-60 ${
+                  className={`settings-danger-action w-full rounded-2xl border p-4 text-left transition disabled:opacity-60 ${
                     confirmDelete
                       ? "border-red-500/60 bg-red-500/10 text-red-400"
-                      : "border-zinc-800 bg-black/40 text-zinc-400 premium-panel"
+                      : "border-border bg-card/80 backdrop-blur-xl text-zinc-400"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -447,7 +449,7 @@ function EditProfileModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 transition-all"
+            className="fixed inset-0 bg-background/80 backdrop-blur-md z-50 transition-all"
           />
           <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 pointer-events-none">
           <motion.div
@@ -455,11 +457,11 @@ function EditProfileModal({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.94 }}
             transition={{ type: "spring", damping: 30, stiffness: 400 }}
-            className="w-full max-w-lg max-h-[82svh] overflow-hidden rounded-[2rem] premium-surface p-6 shadow-2xl pointer-events-auto"
+            className="w-full max-w-lg max-h-[82svh] overflow-hidden rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-6 shadow-2xl pointer-events-auto"
           >
             <div className="flex items-center justify-between mb-8">
               <h2 className="font-display text-2xl font-black italic text-purple-500">EDITAR PERFIL</h2>
-              <button onClick={onClose} className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400">
+              <button onClick={onClose} className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-zinc-400" aria-label="Fechar">
                 <X size={20} />
               </button>
             </div>
@@ -471,7 +473,7 @@ function EditProfileModal({
                       type="text"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      className="w-full premium-panel rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                      className="w-full bg-secondary border border-input rounded-xl px-5 py-4 text-sm outline-none focus:border-purple-500 transition"
                     />
                   </div>
                   <div>
@@ -481,7 +483,7 @@ function EditProfileModal({
                       placeholder="Ex: São Paulo, SP"
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
-                      className="w-full premium-panel rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                      className="w-full bg-secondary border border-input rounded-xl px-5 py-4 text-sm outline-none focus:border-purple-500 transition"
                     />
                   </div>
                   <div>
@@ -500,7 +502,7 @@ function EditProfileModal({
                       placeholder="Cole uma URL de imagem"
                       value={photoURL}
                       onChange={(e) => setPhotoURL(e.target.value)}
-                      className="w-full premium-panel rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                      className="w-full bg-secondary border border-input rounded-xl px-5 py-4 text-sm outline-none focus:border-purple-500 transition"
                     />
                   </div>
                   <div>
@@ -512,7 +514,7 @@ function EditProfileModal({
                       step="0.5"
                       value={weeklyGoalKm}
                       onChange={(e) => setWeeklyGoalKm(e.target.value)}
-                      className="w-full premium-panel rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                      className="w-full bg-secondary border border-input rounded-xl px-5 py-4 text-sm outline-none focus:border-purple-500 transition"
                     />
                   </div>
                   <div>
@@ -521,7 +523,7 @@ function EditProfileModal({
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
                       rows={3}
-                      className="w-full premium-panel rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 resize-none"
+                      className="w-full bg-secondary border border-input rounded-xl px-5 py-4 text-sm outline-none focus:border-purple-500 transition resize-none"
                     />
                   </div>
             </div>
@@ -530,7 +532,7 @@ function EditProfileModal({
               whileTap={{ scale: 0.96 }}
               onClick={handleSave}
               disabled={saving}
-              className="w-full mt-4 bg-purple-600 py-5 rounded-3xl font-black tracking-widest text-sm shadow-[0_0_20px_rgba(147,51,234,0.3)] disabled:opacity-50"
+              className="w-full mt-4 bg-purple-600 hover:bg-purple-700 transition py-5 rounded-xl font-black tracking-widest text-sm disabled:opacity-50"
             >
               {saving ? "SALVANDO..." : "SALVAR ALTERAÇÕES"}
             </motion.button>
@@ -673,20 +675,22 @@ const Profile = () => {
   return (
     <div className="app-shell pb-24 safe-top">
       {/* Header */}
-      <header className="app-header px-6 py-4 flex items-center justify-between sticky top-0 z-40">
+      <header className="bg-card/80 backdrop-blur-xl border-b border-border px-6 py-4 flex items-center justify-between sticky top-0 z-40">
         <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500">
           VELOXY PROFILE
         </h1>
         <div className="flex gap-2">
             <button
                 onClick={() => setEditOpen(true)}
-                className="w-10 h-10 rounded-full premium-panel flex items-center justify-center text-zinc-400 active:scale-95 transition-transform"
+                className="w-10 h-10 rounded-full bg-card/80 backdrop-blur-xl border border-border flex items-center justify-center text-zinc-400 active:scale-95 transition-transform"
+                aria-label="Editar perfil"
             >
                 <Pencil size={18} />
             </button>
             <button
               onClick={() => setSettingsOpen(true)}
-              className="w-10 h-10 rounded-full premium-panel flex items-center justify-center text-zinc-400 active:scale-95 transition-transform"
+              className="w-10 h-10 rounded-full bg-card/80 backdrop-blur-xl border border-border flex items-center justify-center text-zinc-400 active:scale-95 transition-transform"
+              aria-label="Configurações"
             >
                 <Settings size={20} />
             </button>
@@ -703,7 +707,8 @@ const Profile = () => {
             <button
                 type="button"
                 onClick={() => setEditOpen(true)}
-                className="block w-32 h-32 cursor-pointer relative group overflow-hidden rounded-[2.2rem] premium-panel"
+                className="block w-32 h-32 cursor-pointer relative group overflow-hidden rounded-3xl bg-card/80 backdrop-blur-xl border border-border"
+                aria-label="Alterar foto de perfil"
             >
                 {profile?.photoURL || user?.photoURL ? (
                     <img src={profile?.photoURL || user?.photoURL || ""} className="w-full h-full object-cover transition-all group-hover:opacity-40 group-hover:blur-[2px]" alt="avatar" />
@@ -728,7 +733,7 @@ const Profile = () => {
         >
           {displayName}
         </motion.h2>
-        <div className="mt-3 flex items-center gap-1.5 rounded-full premium-panel px-3 py-1.5 text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
+        <div className="mt-3 flex items-center gap-1.5 rounded-full bg-card/80 backdrop-blur-xl border border-border px-3 py-1.5 text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
             <MapPin size={12} className="text-purple-500" />
             {profile?.location || "São Paulo, SP"}
         </div>
@@ -743,7 +748,7 @@ const Profile = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ y: -3 }}
-                className="premium-surface premium-line p-6 rounded-[2.5rem] relative overflow-hidden"
+                className="bg-card/80 backdrop-blur-xl border border-border p-6 rounded-3xl relative overflow-hidden"
             >
                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Total acumulado</p>
                 <div className="flex items-baseline gap-1">
@@ -757,7 +762,7 @@ const Profile = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
                 whileHover={{ y: -3 }}
-                className="premium-surface premium-line p-6 rounded-[2.5rem] relative overflow-hidden"
+                className="bg-card/80 backdrop-blur-xl border border-border p-6 rounded-3xl relative overflow-hidden"
             >
                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">XP Total</p>
                 <div className="flex items-baseline gap-1">
@@ -770,7 +775,7 @@ const Profile = () => {
       <section className="px-6 mt-6">
         <button
           onClick={() => navigate("/stats")}
-          className="premium-surface premium-line w-full rounded-[2.2rem] p-5 text-left transition active:scale-[0.98]"
+          className="bg-card/80 backdrop-blur-xl border border-border w-full rounded-3xl p-5 text-left transition active:scale-[0.98]"
         >
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -780,7 +785,7 @@ const Profile = () => {
                 Ritmo medio, melhor corrida, sequencia, calorias e progresso semanal.
               </p>
             </div>
-            <div className="hero-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl">
+            <div className="bg-purple-600 text-white flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl">
               <BarChart3 size={22} />
             </div>
           </div>
@@ -788,7 +793,7 @@ const Profile = () => {
       </section>
 
       <section className="px-6 mt-6">
-        <div className="premium-surface premium-line rounded-[2.2rem] p-5">
+        <div className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-5">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Meta semanal</p>
@@ -798,7 +803,7 @@ const Profile = () => {
             </div>
             <Zap size={22} className="text-purple-500" />
           </div>
-          <div className="h-3 rounded-full bg-zinc-950/80 p-1 border border-zinc-800">
+          <div className="h-3 rounded-full bg-background/80 p-1 border border-border">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${weeklyProgress}%` }}
@@ -820,13 +825,13 @@ const Profile = () => {
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.18 }}
-          className="premium-surface premium-line rounded-[2.5rem] p-6"
+          className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-6"
         >
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xs font-black tracking-widest text-zinc-500 uppercase">Progresso do Nível</h3>
                 <span className="text-xs font-black text-purple-500 uppercase">{levelInfo.nextLevel}</span>
             </div>
-            <div className="w-full h-4 bg-zinc-950/80 rounded-full overflow-hidden p-1 border border-zinc-800 shadow-inner">
+            <div className="w-full h-4 bg-background/80 rounded-full overflow-hidden p-1 border border-border shadow-inner">
                 <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: `${levelInfo.progress}%` }}
@@ -855,7 +860,7 @@ const Profile = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.35, delay: i * 0.08 }}
                   whileHover={{ y: -4, scale: 1.02 }}
-                  className={`min-w-[150px] premium-panel p-5 rounded-[2rem] flex flex-col items-center gap-3 ${a.unlocked ? "" : "opacity-45"}`}
+                  className={`min-w-[150px] bg-card/80 backdrop-blur-xl border border-border p-5 rounded-3xl flex flex-col items-center gap-3 ${a.unlocked ? "" : "opacity-45"}`}
                 >
                     <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/15 flex items-center justify-center text-purple-500 shadow-[0_0_18px_rgba(147,51,234,0.14)]">
                         {a.icon}
@@ -878,38 +883,13 @@ const Profile = () => {
         </div>
         <div className="space-y-3">
           {runHistory.length === 0 ? (
-            <div className="rounded-[2rem] premium-panel p-8 text-center">
+            <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-8 text-center">
               <Calendar size={32} className="mx-auto text-zinc-700" />
               <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Nenhuma corrida no histórico</p>
             </div>
           ) : (
             runHistory.map((run) => (
-              <div key={run.id} className="premium-panel rounded-[1.5rem] p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-500">{formatRunHistoryDate(run)}</p>
-                    <p className="mt-1 font-display text-lg font-black italic">Corrida</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-display text-2xl font-black italic text-purple-400">{run.distance.toFixed(2)}</p>
-                    <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-600">km</p>
-                  </div>
-                </div>
-                <div className="mt-3 grid grid-cols-3 gap-2 border-t border-zinc-800 pt-3">
-                  <div>
-                    <p className="text-xs font-black">{run.pace}</p>
-                    <p className="text-[8px] uppercase tracking-[0.14em] text-zinc-600">ritmo</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-black">{run.time}</p>
-                    <p className="text-[8px] uppercase tracking-[0.14em] text-zinc-600">tempo</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-black">{run.calories ?? 0}</p>
-                    <p className="text-[8px] uppercase tracking-[0.14em] text-zinc-600">kcal</p>
-                  </div>
-                </div>
-              </div>
+              <RunHistoryRow key={run.id} run={run} dateLabel={formatRunHistoryDate(run)} />
             ))
           )}
         </div>
@@ -920,7 +900,7 @@ const Profile = () => {
         <button
             onClick={handleDeleteRunsFromProfile}
             disabled={profileDeletingRuns}
-            className={`w-full mb-3 premium-panel py-4 rounded-3xl text-[10px] font-black tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-60 ${
+            className={`w-full mb-3 bg-card/80 backdrop-blur-xl border border-border py-4 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-60 ${
               confirmProfileDelete
                 ? "text-red-400 border-red-500/40 bg-red-500/10"
                 : "text-zinc-500 hover:text-red-500 hover:border-red-500/30"
@@ -931,7 +911,7 @@ const Profile = () => {
         </button>
         <button 
             onClick={handleLogout}
-            className="w-full premium-panel py-4 rounded-3xl text-[10px] font-black tracking-widest text-zinc-500 hover:text-red-500 hover:border-red-500/30 transition-all flex items-center justify-center gap-2"
+            className="w-full bg-card/80 backdrop-blur-xl border border-border py-4 rounded-xl text-[10px] font-black tracking-widest text-zinc-500 hover:text-red-500 hover:border-red-500/30 transition-all flex items-center justify-center gap-2"
         >
             <LogOut size={16} />
             SAIR DA CONTA

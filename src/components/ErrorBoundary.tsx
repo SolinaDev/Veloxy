@@ -32,7 +32,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center bg-zinc-900 border border-red-500/30 p-8 rounded-3xl w-full max-w-sm"
+            className="flex flex-col items-center bg-card border border-red-500/30 p-8 rounded-3xl w-full max-w-sm"
           >
             <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-6">
               <AlertCircle size={32} className="text-red-500" />
@@ -49,7 +49,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <RefreshCw size={16} />
               Tentar Novamente
             </button>
-            <div className="mt-6 text-[10px] uppercase text-zinc-600 font-mono break-all text-left w-full h-24 overflow-y-auto bg-black p-3 rounded-xl border border-zinc-800">
+            <div className="mt-6 text-[10px] uppercase text-zinc-600 font-mono break-all text-left w-full h-24 overflow-y-auto bg-background p-3 rounded-xl border border-border">
               {this.state.error?.message || "Unknown Error"}
             </div>
           </motion.div>

@@ -3,13 +3,11 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
   Activity,
-  BarChart3,
   Flame,
   Loader2,
   MapPin,
   Timer,
   Trophy,
-  Trash2,
   Zap,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,6 +15,7 @@ import { deleteUserActivity, getUserActivities, getUserStats } from "@/services/
 import type { FeedActivity, UserStats } from "@/types";
 import { toDateSafe } from "@/lib/feed-utils";
 import SafeAvatar from "@/components/SafeAvatar";
+import RunHistoryRow from "@/components/RunHistoryRow";
 import { getBestUserPhotoURL } from "@/lib/user-photo";
 import { toast } from "sonner";
 
@@ -108,11 +107,11 @@ export default function Home() {
 
   return (
     <div className="app-shell pb-28 safe-top">
-      <header className="app-header sticky top-0 z-40 px-6 py-4">
+      <header className="bg-card/80 backdrop-blur-xl border-b border-border sticky top-0 z-40 px-6 py-4">
         <div className="flex items-center justify-between">
           <button
             onClick={() => navigate("/profile")}
-            className="h-11 w-11 overflow-hidden rounded-full border border-purple-500/30 bg-zinc-900 flex items-center justify-center"
+            className="h-11 w-11 overflow-hidden rounded-full border border-purple-500/30 bg-card flex items-center justify-center"
           >
             <SafeAvatar
               src={userPhotoURL}
@@ -145,7 +144,7 @@ export default function Home() {
               Bora, {firstName}
             </h2>
 
-            <div className="hero-card mt-6 rounded-[2.5rem] p-6">
+            <div className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl shadow-2xl mt-6 p-6">
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-[0.22em] text-purple-300">Distancia total</p>
@@ -154,7 +153,7 @@ export default function Home() {
                     <span className="mb-2 text-xs font-black uppercase text-purple-400">km</span>
                   </div>
                 </div>
-                <div className="hero-icon flex h-14 w-14 items-center justify-center rounded-2xl">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-600 text-white">
                   <Activity size={24} />
                 </div>
               </div>
@@ -165,7 +164,7 @@ export default function Home() {
                   { label: "Tempo", value: stats.totalTime },
                   { label: "Melhor", value: stats.bestActivity ? `${stats.bestActivity.distance.toFixed(1)}km` : "0km" },
                 ].map((item) => (
-                  <div key={item.label} className="rounded-2xl premium-panel p-3">
+                  <div key={item.label} className="rounded-2xl bg-secondary/60 border border-input p-3">
                     <p className="font-display text-xl font-black italic leading-none">{item.value}</p>
                     <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.18em] text-zinc-500">{item.label}</p>
                   </div>
@@ -181,7 +180,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="rounded-[1.8rem] premium-panel p-4"
+                className="rounded-2xl bg-card/80 backdrop-blur-xl border border-border p-4"
               >
                 <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
                   <card.icon size={17} />
@@ -196,7 +195,7 @@ export default function Home() {
           </section>
 
           <section className="mt-8 px-6">
-            <div className="rounded-[2.2rem] premium-panel p-5">
+            <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5">
               <div className="mb-5 flex items-center justify-between">
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">Ultimos 7 dias</p>
@@ -212,7 +211,7 @@ export default function Home() {
                     <motion.div
                       initial={{ height: 4 }}
                       animate={{ height: Math.max(6, (day.km / maxKm) * 96) }}
-                      className={`w-full rounded-full ${day.km > 0 ? "bg-purple-500" : "bg-zinc-800"}`}
+                      className={`w-full rounded-full ${day.km > 0 ? "bg-purple-500" : "bg-secondary"}`}
                     />
                     <span className="text-[8px] font-black text-zinc-500">{day.day}</span>
                   </div>
@@ -229,71 +228,27 @@ export default function Home() {
 
             <div className="mt-4 space-y-3">
               {activities.length === 0 ? (
-                <div className="rounded-[2rem] premium-panel p-8 text-center">
+                <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-8 text-center">
                   <Trophy size={34} className="mx-auto text-zinc-700" />
                   <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Nenhuma corrida salva ainda</p>
                   <button
                     onClick={() => navigate("/run")}
-                    className="mt-5 rounded-2xl bg-purple-600 px-6 py-3 text-xs font-black uppercase tracking-widest text-white"
+                    className="mt-5 rounded-xl bg-purple-600 hover:bg-purple-700 transition px-6 py-3 text-xs font-black uppercase tracking-widest text-white"
                   >
                     Comecar corrida
                   </button>
                 </div>
               ) : (
                 activities.map((run) => (
-                  <div
+                  <RunHistoryRow
                     key={run.id}
-                    className={`w-full rounded-[1.6rem] premium-panel p-4 text-left transition ${
-                      confirmDeleteId === run.id ? "border-red-500/40 bg-red-500/5" : ""
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-4">
-                      <button
-                        type="button"
-                        onClick={() => navigate("/stats")}
-                        className="min-w-0 flex-1 text-left"
-                      >
-                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">{formatRunDate(run)}</p>
-                        <p className="mt-1 font-display text-xl font-black italic text-white">Corrida</p>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => navigate("/stats")}
-                        className="text-right"
-                      >
-                        <p className="font-display text-2xl font-black italic text-purple-400">{run.distance.toFixed(2)}</p>
-                        <p className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-600">km</p>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteRun(run)}
-                        disabled={deletingId === run.id}
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border transition active:scale-95 disabled:opacity-60 ${
-                          confirmDeleteId === run.id
-                            ? "border-red-500/50 bg-red-500/15 text-red-400"
-                            : "border-zinc-800 bg-black/30 text-zinc-500 hover:border-red-500/35 hover:text-red-400"
-                        }`}
-                        aria-label="Apagar corrida"
-                      >
-                        {deletingId === run.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                      </button>
-                    </div>
-                    <div className="mt-4 grid grid-cols-3 gap-3 border-t border-zinc-800/70 pt-4">
-                      {[
-                        { label: "Pace", value: run.pace, icon: Timer },
-                        { label: "Tempo", value: run.time, icon: BarChart3 },
-                        { label: "Kcal", value: (run.calories ?? 0).toString(), icon: Flame },
-                      ].map((item) => (
-                        <div key={item.label} className="flex items-center gap-2 text-zinc-400">
-                          <item.icon size={13} className="text-purple-500" />
-                          <div>
-                            <p className="text-xs font-black">{item.value}</p>
-                            <p className="text-[8px] uppercase tracking-[0.15em] text-zinc-600">{item.label}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                    run={run}
+                    dateLabel={formatRunDate(run)}
+                    onSelect={() => navigate("/stats")}
+                    onDelete={() => handleDeleteRun(run)}
+                    deleting={deletingId === run.id}
+                    confirmDelete={confirmDeleteId === run.id}
+                  />
                 ))
               )}
             </div>

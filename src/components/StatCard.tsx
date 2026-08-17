@@ -22,7 +22,7 @@ const StatCard = ({ icon, label, value, unit, color = "lime" }: StatCardProps) =
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card rounded-lg p-4 shadow-card border border-border"
+      className="bg-card/80 backdrop-blur-xl rounded-2xl p-4 border border-border"
     >
       <div className="flex items-center gap-2 mb-2">
         <span className={colorMap[color]}>{icon}</span>

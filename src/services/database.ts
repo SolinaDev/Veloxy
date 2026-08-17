@@ -20,6 +20,7 @@ import {
   writeBatch,
   deleteDoc,
   documentId,
+  runTransaction,
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { calculateXP, getLevelFromXP } from "@/lib/gamification";
@@ -100,27 +101,41 @@ function calculateCurrentStreak(activeDays: Set<string>) {
 }
 
 // Salvar uma nova atividade (corrida)
+// Retorna { id, xpUpdateFailed }: se a criação da atividade falhar, a
+// exceção é relançada (nada foi salvo, seguro tentar de novo). Se só a
+// atualização de XP falhar, a atividade já está salva — não relançamos,
+// para não fazer o usuário pensar que a corrida inteira se perdeu; o
+// chamador decide como avisar sobre o xpUpdateFailed.
 export const saveActivity = async (data: ActivityData) => {
+  const xpGained = calculateXP(data.distance, data.durationSeconds);
+  const activityData = removeUndefinedFields({
+    ...data,
+    xpGained,
+    likes: [],
+    createdAtMs: Date.now(),
+    timestamp: serverTimestamp()
+  });
+
+  let docRef;
   try {
-    const xpGained = calculateXP(data.distance, data.durationSeconds);
-    const activityData = removeUndefinedFields({
-      ...data,
-      xpGained,
-      likes: [],
-      createdAtMs: Date.now(),
-      timestamp: serverTimestamp()
-    });
-    
-    const docRef = await addDoc(collection(db, "activities"), activityData);
-
-    // Atualizar o perfil do usuário com o novo XP e KM
-    await updateUserXP(data.userId, xpGained, data.distance, data.userName, data.userAvatar);
-
-    return docRef.id;
+    docRef = await addDoc(collection(db, "activities"), activityData);
   } catch (error) {
     console.error("Erro ao salvar atividade:", error);
     throw error;
   }
+
+  let xpUpdateFailed = false;
+  try {
+    await updateUserXP(data.userId, xpGained, data.distance, data.userName, data.userAvatar);
+  } catch (error) {
+    console.error("Corrida salva, mas falhou ao atualizar XP/estatisticas:", error);
+    xpUpdateFailed = true;
+  }
+
+  // Melhor esforço: nunca bloqueia nem falha o salvamento da corrida.
+  await addDistanceToUserGroups(data.userId, data.distance);
+
+  return { id: docRef.id, xpUpdateFailed };
 };
 
 // Buscar ou criar perfil do usuário
@@ -139,6 +154,29 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
   }
 };
 
+// Cria o documento inicial do usuário no Firestore logo após o cadastro.
+// Não inclui totalXP/level: a regra validUserCreate só aceita um doc novo
+// com totalXP == 0 (ou ausente) e level == 'Iniciante' (ou ausente).
+export const createUserProfile = async (
+  userId: string,
+  data: { displayName?: string | null; photoURL?: string | null; termsVersion?: string }
+) => {
+  const userRef = doc(db, "users", userId);
+  await setDoc(
+    userRef,
+    {
+      displayName: data.displayName ?? null,
+      photoURL: data.photoURL ?? null,
+      ...(data.termsVersion
+        ? { termsVersion: data.termsVersion, termsAcceptedAt: serverTimestamp() }
+        : {}),
+      createdAt: serverTimestamp(),
+      lastUpdated: serverTimestamp(),
+    },
+    { merge: true }
+  );
+};
+
 // Atualizar XP e KM do usuário
 // Bug 9 Fix: monthlyKm agora inclui reset mensal automático
 export const updateUserXP = async (
@@ -151,7 +189,13 @@ export const updateUserXP = async (
   try {
     const userRef = doc(db, "users", userId);
     const userSnap = await getDoc(userRef);
-    
+
+    // Garante que o doc de usuário exista antes de incrementar estatísticas
+    // (create com totalXP ausente, como exige validUserCreate).
+    if (!userSnap.exists()) {
+      await createUserProfile(userId, { displayName, photoURL });
+    }
+
     let currentXP = xpAmount;
     const currentMonth = new Date().toISOString().slice(0, 7); // "2026-04"
 
@@ -169,9 +213,11 @@ export const updateUserXP = async (
 
     const { currentLevel } = getLevelFromXP(currentXP);
 
+    // Escrita isolada: só os campos de estatísticas. displayName/photoURL
+    // não entram aqui — se divergirem do que já está salvo, misturá-los
+    // faria o diff sair do formato aceito por validStatsProgressUpdate e
+    // rejeitar a atualização de XP inteira.
     await setDoc(userRef, {
-      displayName,
-      photoURL,
       totalXP: increment(xpAmount),
       monthlyKm: increment(kmAmount),
       monthlyKmMonth: currentMonth,
@@ -180,6 +226,7 @@ export const updateUserXP = async (
     }, { merge: true });
   } catch (error) {
     console.error("Erro ao atualizar XP:", error);
+    throw error;
   }
 };
 
@@ -525,6 +572,7 @@ function normalizeGroup(docId: string, data: Record<string, unknown>): RunningGr
     memberIds: Array.isArray(data.memberIds) ? data.memberIds.filter((id): id is string => typeof id === "string") : [],
     membersCount: typeof data.membersCount === "number" ? data.membersCount : 0,
     weeklyKm: typeof data.weeklyKm === "number" ? data.weeklyKm : 0,
+    weeklyKmWeek: typeof data.weeklyKmWeek === "string" ? data.weeklyKmWeek : undefined,
     createdAt: data.createdAt as RunningGroup["createdAt"],
     updatedAt: data.updatedAt as RunningGroup["updatedAt"],
   };
@@ -542,6 +590,67 @@ export const getGroups = async (): Promise<RunningGroup[]> => {
   }
 };
 
+// Identificador de semana ISO (ex: "2026-W07") usado para saber quando
+// zerar o km semanal de um grupo.
+function isoWeekKey(date: Date): string {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+}
+
+// Soma a distância de uma corrida ao km semanal de cada grupo real (não
+// fallback/demo) do qual o usuário participa, resetando automaticamente
+// quando a semana muda. É "melhor esforço": nunca lança erro para quem
+// chamou, pois a corrida em si já foi salva com sucesso a essa altura.
+export const addDistanceToUserGroups = async (userId: string, distanceKm: number): Promise<void> => {
+  if (!(distanceKm > 0)) return;
+
+  try {
+    const userSnap = await getDoc(doc(db, "users", userId));
+    if (!userSnap.exists()) return;
+
+    const joinedGroupIds: string[] = Array.isArray(userSnap.data().joinedGroupIds)
+      ? userSnap.data().joinedGroupIds
+      : [];
+    const realGroupIds = joinedGroupIds.filter(
+      (groupId) => !FALLBACK_GROUPS.some((group) => group.id === groupId)
+    );
+    if (realGroupIds.length === 0) return;
+
+    const currentWeek = isoWeekKey(new Date());
+
+    await Promise.all(realGroupIds.map(async (groupId) => {
+      try {
+        await runTransaction(db, async (transaction) => {
+          const groupRef = doc(db, "groups", groupId);
+          const groupSnap = await transaction.get(groupRef);
+          if (!groupSnap.exists()) return;
+
+          const data = groupSnap.data();
+          const sameWeek = data.weeklyKmWeek === currentWeek;
+          const previousKm = sameWeek && typeof data.weeklyKm === "number" ? data.weeklyKm : 0;
+          const nextWeeklyKm = Math.min(Number((previousKm + distanceKm).toFixed(2)), 100000);
+
+          transaction.update(groupRef, {
+            weeklyKm: nextWeeklyKm,
+            weeklyKmWeek: currentWeek,
+            updatedAt: serverTimestamp(),
+          });
+        });
+      } catch (error) {
+        console.warn(`Nao foi possivel atualizar weeklyKm do grupo ${groupId}:`, error);
+      }
+    }));
+  } catch (error) {
+    console.warn("Nao foi possivel atualizar weeklyKm dos grupos do usuario:", error);
+  }
+};
+
+//Função de Criar Grupo. #Socia>Grupos#
+
 export const createGroup = async ({
   name,
   city,
@@ -557,36 +666,51 @@ export const createGroup = async ({
   userId: string;
   userName: string;
 }) => {
-  const groupRef = await addDoc(collection(db, "groups"), removeUndefinedFields({
-    name: name.trim(),
-    city: city.trim() || "Brasil",
-    description: description.trim(),
-    tag: tag.trim() || "Run",
-    createdBy: userId,
-    creatorName: userName,
-    memberIds: [userId],
-    membersCount: 1,
-    weeklyKm: 0,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  }));
+  const groupRef = doc(collection(db, "groups"));
+  const userRef = doc(db, "users", userId);
 
-  await setDoc(doc(db, "users", userId), { joinedGroupIds: arrayUnion(groupRef.id) }, { merge: true });
+  await runTransaction(db, async (transaction) => {
+    transaction.set(groupRef, removeUndefinedFields({
+      name: name.trim(),
+      city: city.trim() || "Brasil",
+      description: description.trim(),
+      tag: tag.trim() || "Run",
+      createdBy: userId,
+      creatorName: userName,
+      memberIds: [userId],
+      membersCount: 1,
+      weeklyKm: 0,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }));
+    transaction.set(userRef, { joinedGroupIds: arrayUnion(groupRef.id) }, { merge: true });
+  });
+
   return groupRef.id;
 };
 
+// joinGroup/leaveGroup gravam no documento do grupo e no perfil do usuário
+// dentro de uma única transação: se uma das duas escritas falhar, a outra
+// também não é aplicada, evitando que memberIds e joinedGroupIds fiquem
+// dessincronizados por uma falha parcial (rede caindo entre as duas chamadas).
 export const joinGroup = async (groupId: string, userId: string) => {
   if (FALLBACK_GROUPS.some((group) => group.id === groupId)) {
     await setDoc(doc(db, "users", userId), { joinedGroupIds: arrayUnion(groupId) }, { merge: true });
     return true;
   }
 
-  await updateDoc(doc(db, "groups", groupId), {
-    memberIds: arrayUnion(userId),
-    membersCount: increment(1),
-    updatedAt: serverTimestamp(),
+  const groupRef = doc(db, "groups", groupId);
+  const userRef = doc(db, "users", userId);
+
+  await runTransaction(db, async (transaction) => {
+    transaction.update(groupRef, {
+      memberIds: arrayUnion(userId),
+      membersCount: increment(1),
+      updatedAt: serverTimestamp(),
+    });
+    transaction.set(userRef, { joinedGroupIds: arrayUnion(groupId) }, { merge: true });
   });
-  await setDoc(doc(db, "users", userId), { joinedGroupIds: arrayUnion(groupId) }, { merge: true });
+
   return true;
 };
 
@@ -596,12 +720,18 @@ export const leaveGroup = async (groupId: string, userId: string) => {
     return true;
   }
 
-  await updateDoc(doc(db, "groups", groupId), {
-    memberIds: arrayRemove(userId),
-    membersCount: increment(-1),
-    updatedAt: serverTimestamp(),
+  const groupRef = doc(db, "groups", groupId);
+  const userRef = doc(db, "users", userId);
+
+  await runTransaction(db, async (transaction) => {
+    transaction.update(groupRef, {
+      memberIds: arrayRemove(userId),
+      membersCount: increment(-1),
+      updatedAt: serverTimestamp(),
+    });
+    transaction.set(userRef, { joinedGroupIds: arrayRemove(groupId) }, { merge: true });
   });
-  await setDoc(doc(db, "users", userId), { joinedGroupIds: arrayRemove(groupId) }, { merge: true });
+
   return true;
 };
 
@@ -651,93 +781,6 @@ export const getGroupLeaderboard = async (group: RunningGroup): Promise<UserProf
     return [];
   }
 };
-
-export const seedProducts = async () => {
-  try {
-    const existing = await getDocs(collection(db, "products"));
-    if (!existing.empty) return; 
-
-    const initialProducts: Omit<Product, "id">[] = [
-      {
-        name: "Nike Pegasus 41",
-        category: "Tênis",
-        price: 899,
-        rating: 4.8,
-        reviews: 312,
-        tag: "MAIS VENDIDO",
-        gradient: "from-orange-500/20 to-red-500/10",
-        accent: "text-orange-400",
-        emoji: "👟",
-        externalUrl: "https://www.nike.com.br"
-      },
-      {
-        name: "Garmin Forerunner 255",
-        category: "Acessórios",
-        price: 2499,
-        rating: 4.9,
-        reviews: 842,
-        tag: "O MELHOR",
-        gradient: "from-blue-500/20 to-cyan-500/10",
-        accent: "text-blue-400",
-        emoji: "⌚",
-        externalUrl: "https://www.garmin.com.br"
-      },
-      {
-        name: "Camiseta Veloxy Aero",
-        category: "Roupas",
-        price: 159,
-        rating: 4.7,
-        reviews: 56,
-        gradient: "from-purple-500/20 to-violet-500/10",
-        accent: "text-purple-400",
-        emoji: "👕",
-        externalUrl: "#"
-      },
-      {
-        name: "Fone Shokz OpenRun",
-        category: "Acessórios",
-        price: 1199,
-        rating: 4.6,
-        reviews: 120,
-        tag: "OFERTA",
-        gradient: "from-zinc-500/20 to-zinc-400/10",
-        accent: "text-zinc-400",
-        emoji: "🎧",
-        externalUrl: "https://shokz.com"
-      },
-      {
-        name: "Adidas Adizero Pro",
-        category: "Tênis",
-        price: 1299,
-        rating: 4.9,
-        reviews: 215,
-        tag: "ELITE",
-        gradient: "from-blue-600/20 to-indigo-500/10",
-        accent: "text-indigo-400",
-        emoji: "👟",
-        externalUrl: "https://www.adidas.com.br"
-      },
-      {
-        name: "Gel Energético (Kit 10)",
-        category: "Suplementos",
-        price: 99,
-        rating: 4.2,
-        reviews: 89,
-        gradient: "from-green-500/20 to-emerald-500/10",
-        accent: "text-green-400",
-        emoji: "🧪",
-        externalUrl: "#"
-      }
-    ];
-
-    const promises = initialProducts.map(p => addDoc(collection(db, "products"), p));
-    await Promise.all(promises);
-    console.log("Produtos semeados com sucesso!");
-  } catch (error) {
-    console.error("Erro no seeding de produtos:", error);
-  }
-};
-
 // ─── Events Functions ───────────────────────────────────────────────────────
 
 /**
@@ -893,24 +936,22 @@ export const joinEvent = async (eventId: string, userId: string) => {
     const userRef = doc(db, "users", userId);
 
     if (eventId.startsWith("local-")) {
-      await updateDoc(userRef, {
-        enrolledEvents: arrayUnion(eventId)
-      });
-
+      await setDoc(userRef, { enrolledEvents: arrayUnion(eventId) }, { merge: true });
       return true;
     }
 
+    // Grava o evento e o perfil do usuário juntos: se uma escrita falhar,
+    // a outra também não é aplicada (evita participantsIds e enrolledEvents
+    // ficarem dessincronizados por falha parcial).
     const eventRef = doc(db, "events", eventId);
-    await updateDoc(eventRef, {
-      participantsIds: arrayUnion(userId),
-      participantsCount: increment(1)
+    await runTransaction(db, async (transaction) => {
+      transaction.update(eventRef, {
+        participantsIds: arrayUnion(userId),
+        participantsCount: increment(1),
+      });
+      transaction.set(userRef, { enrolledEvents: arrayUnion(eventId) }, { merge: true });
     });
 
-    // Também registrar no perfil do usuário para busca rápida
-    await updateDoc(userRef, {
-      enrolledEvents: arrayUnion(eventId)
-    });
-    
     return true;
   } catch (error) {
     console.error("Erro ao se inscrever no evento:", error);
@@ -918,148 +959,3 @@ export const joinEvent = async (eventId: string, userId: string) => {
   }
 };
 
-/**
- * Busca eventos onde o usuário está inscrito
- */
-export const getUserEvents = async (userId: string): Promise<RunningEvent[]> => {
-  try {
-    const userRef = doc(db, "users", userId);
-    const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) return [];
-
-    const enrolledIds = userSnap.data().enrolledEvents || [];
-    if (enrolledIds.length === 0) return [];
-
-    const localEvents = getFallbackEvents().filter((event) => enrolledIds.includes(event.id));
-    const firestoreEventIds = enrolledIds.filter((eventId: string) => !eventId.startsWith("local-"));
-    if (firestoreEventIds.length === 0) return localEvents;
-
-    // Buscar os docs dos ids (em chunks de 10 por limitação do where "in")
-    const q = query(collection(db, "events"), where("__name__", "in", firestoreEventIds.slice(0, 10)));
-    const snapshot = await getDocs(q);
-    return [
-      ...localEvents,
-      ...snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RunningEvent)),
-    ];
-  } catch (error) {
-    console.error("Erro ao buscar eventos do usuário:", error);
-    return [];
-  }
-};
-
-/**
- * Seed inicial de eventos — com datas dinâmicas (sempre futuras)
- * Usar apenas para popular o banco pela primeira vez via console.
- */
-export const seedEvents = async () => {
-  try {
-    const existing = await getDocs(collection(db, "events"));
-    if (!existing.empty) return;
-
-    // Gerar datas futuras dinamicamente
-    const futureDate = (daysFromNow: number) => {
-      const d = new Date();
-      d.setDate(d.getDate() + daysFromNow);
-      return d;
-    };
-
-    const formatSeedDate = (date: Date) => {
-      const months = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
-      return `${date.getDate().toString().padStart(2, "0")} ${months[date.getMonth()]}`;
-    };
-
-    const d1 = futureDate(30);
-    const d2 = futureDate(60);
-    const d3 = futureDate(90);
-    const d4 = futureDate(150);
-
-    const initialEvents: Omit<RunningEvent, "id">[] = [
-      {
-        title: "Maratona de São Paulo",
-        date: formatSeedDate(d1),
-        location: "Parque do Ibirapuera",
-        city: "São Paulo",
-        participantsCount: 1250,
-        category: "MARATONA",
-        distanceOptions: ["42K"],
-        image: "https://images.unsplash.com/photo-1530541930197-ff16ac917b0e?q=80&w=800&auto=format&fit=crop",
-        price: "R$ 120",
-        officialUrl: "https://www.ticketsports.com.br/",
-        source: "Importador Veloxy",
-        sourceUrl: "https://www.ticketsports.com.br/",
-        sourceType: "manual",
-        verified: false,
-        status: "unknown",
-        lat: -23.5874,
-        lng: -46.6576,
-        timestamp: d1
-      },
-      {
-        title: "Night Run: Edição Verão",
-        date: formatSeedDate(d2),
-        location: "Marginal Pinheiros",
-        city: "São Paulo",
-        participantsCount: 450,
-        category: "10K / 5K",
-        distanceOptions: ["10K", "5K"],
-        image: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=800&auto=format&fit=crop",
-        price: "R$ 85",
-        officialUrl: "https://www.ticketsports.com.br/",
-        source: "Importador Veloxy",
-        sourceUrl: "https://www.ticketsports.com.br/",
-        sourceType: "manual",
-        verified: false,
-        status: "unknown",
-        lat: -23.5954,
-        lng: -46.7018,
-        timestamp: d2
-      },
-      {
-        title: "Rio City Half Marathon",
-        date: formatSeedDate(d3),
-        location: "Aterro do Flamengo",
-        city: "Rio de Janeiro",
-        participantsCount: 3000,
-        category: "21K",
-        distanceOptions: ["21K"],
-        image: "https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=800&auto=format&fit=crop",
-        price: "R$ 150",
-        officialUrl: "https://www.ticketsports.com.br/",
-        source: "Importador Veloxy",
-        sourceUrl: "https://www.ticketsports.com.br/",
-        sourceType: "manual",
-        verified: false,
-        status: "unknown",
-        lat: -22.9339,
-        lng: -43.1706,
-        timestamp: d3
-      },
-      {
-        title: "Floripa Marathon",
-        date: formatSeedDate(d4),
-        location: "Beira Mar Norte",
-        city: "Florianópolis",
-        participantsCount: 800,
-        category: "MARATONA",
-        distanceOptions: ["42K"],
-        image: "https://images.unsplash.com/photo-1502904550040-7534597429ae?q=80&w=800&auto=format&fit=crop",
-        price: "R$ 110",
-        officialUrl: "https://www.ticketsports.com.br/",
-        source: "Importador Veloxy",
-        sourceUrl: "https://www.ticketsports.com.br/",
-        sourceType: "manual",
-        verified: false,
-        status: "unknown",
-        lat: -27.5904,
-        lng: -48.5480,
-        timestamp: d4
-      }
-    ];
-
-    const promises = initialEvents.map(e => addDoc(collection(db, "events"), e));
-    await Promise.all(promises);
-    console.log("Eventos semeados com sucesso!");
-  } catch (error) {
-    console.error("Erro no seeding de eventos:", error);
-  }
-};

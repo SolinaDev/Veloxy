@@ -10,7 +10,7 @@ export default function Legal() {
     const navigate = useNavigate();
 
     return (
-        <div className="min-h-[100svh] bg-black text-white relative overflow-hidden">
+        <div className="min-h-[100svh] bg-background text-foreground relative overflow-hidden">
             {/* FUNDO ANIMADO */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <motion.div
@@ -71,10 +71,10 @@ export default function Legal() {
                     transition={{
                         duration: 0.4,
                     }}
-                    className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-3xl shadow-2xl overflow-hidden"
+                    className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl shadow-2xl overflow-hidden"
                 >
                     {/* HEADER */}
-                    <div className="px-5 sm:px-8 pt-7 pb-6 border-b border-zinc-800">
+                    <div className="px-5 sm:px-8 pt-7 pb-6 border-b border-border">
                         <div className="flex flex-col items-center text-center">
                             <motion.img
                                 src={logo}
