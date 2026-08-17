@@ -43,7 +43,10 @@ service cloud.firestore {
         && (
           !('userAvatar' in request.resource.data)
           || request.resource.data.userAvatar == null
-          || request.resource.data.userAvatar is string
+          || (
+            request.resource.data.userAvatar is string
+            && request.resource.data.userAvatar.size() <= 1000
+          )
         )
         && request.resource.data.distance is number
         && request.resource.data.distance >= 0
@@ -251,12 +254,16 @@ service cloud.firestore {
           || request.resource.data.totalXP >= resource.data.totalXP
         )
         && (
+          // Teto de XP por escrita alinhado ao máximo real que uma única
+          // atividade pode gerar: 200km (limite de "activities.distance")
+          // * 100 XP/km * 1.2 de bônus de pace = 24.000. 25.000 dá uma
+          // margem pequena para arredondamento.
           !('totalXP' in resource.data)
-          || request.resource.data.totalXP <= resource.data.totalXP + 100000
+          || request.resource.data.totalXP <= resource.data.totalXP + 25000
         )
         && (
           'totalXP' in resource.data
-          || request.resource.data.totalXP <= 100000
+          || request.resource.data.totalXP <= 25000
         )
         && (
           !('monthlyKm' in resource.data)
@@ -304,6 +311,13 @@ service cloud.firestore {
         );
     }
 
+    // Usada só ao apagar uma corrida (o cliente recalcula a soma das
+    // atividades restantes). Remover uma atividade nunca pode fazer as
+    // estatísticas do usuário aumentarem — por isso, além da faixa
+    // absoluta, totalXP/monthlyKm aqui só podem manter ou diminuir o valor
+    // já salvo. Isso fecha a brecha de um cliente chamar esta função
+    // isoladamente para se colocar no topo do ranking sem nenhuma corrida
+    // real por trás.
     function validStatsRecalculation(userId) {
       return validUserBase(userId)
         && request.resource.data.diff(resource.data).affectedKeys()
@@ -317,9 +331,17 @@ service cloud.firestore {
         && request.resource.data.totalXP is number
         && request.resource.data.totalXP >= 0
         && request.resource.data.totalXP <= 1000000
+        && (
+          !('totalXP' in resource.data)
+          || request.resource.data.totalXP <= resource.data.totalXP
+        )
         && request.resource.data.monthlyKm is number
         && request.resource.data.monthlyKm >= 0
         && request.resource.data.monthlyKm <= 5000
+        && (
+          !('monthlyKm' in resource.data)
+          || request.resource.data.monthlyKm <= resource.data.monthlyKm
+        )
         && (
           !('lastUpdated' in request.resource.data)
           || request.resource.data.lastUpdated == request.time
@@ -439,6 +461,14 @@ service cloud.firestore {
           || request.resource.data.updatedAt == request.time
         )
 
+        // Garante que ninguém além do próprio uid entrando/saindo mude de
+        // posição na lista: com o uid do autor removido dos dois lados, o
+        // restante do array precisa ser idêntico. Sem isso, um cliente
+        // poderia trocar outro membro por um uid forjado mantendo só o
+        // delta de tamanho batendo.
+        && request.resource.data.memberIds.removeAll([request.auth.uid])
+          == resource.data.memberIds.removeAll([request.auth.uid])
+
         && (
           (
             !(request.auth.uid in resource.data.memberIds)
@@ -468,6 +498,7 @@ service cloud.firestore {
     // ou reiniciar quando a semana registrada muda.
     function validGroupWeeklyKmUpdate() {
       return signedIn()
+        && request.auth.uid in resource.data.memberIds
         && request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['weeklyKm', 'weeklyKmWeek', 'updatedAt'])
 
@@ -532,6 +563,15 @@ service cloud.firestore {
             && request.resource.data.participantsIds.size()
               == resource.data.participantsIds.size() + 1
           )
+        )
+
+        // Mesma proteção de integridade de validGroupMembershipUpdate: com o
+        // próprio uid removido dos dois lados, o restante da lista precisa
+        // ser idêntico — impede substituir outro participante já inscrito.
+        && (
+          !('participantsIds' in resource.data)
+          || request.resource.data.participantsIds.removeAll([request.auth.uid])
+            == resource.data.participantsIds.removeAll([request.auth.uid])
         )
 
         && request.resource.data.participantsCount

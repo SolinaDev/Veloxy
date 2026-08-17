@@ -159,19 +159,47 @@ export default function Register() {
         password,
       );
 
-      await updateProfile(userCredential.user, {
-        displayName: usernameTrimmed,
-      });
+      // A partir daqui a conta de autenticação já existe. Se qualquer coisa
+      // abaixo falhar, o usuário não pode simplesmente reenviar este
+      // formulário (o Firebase recusaria com "email já em uso"), então o
+      // restante do fluxo nunca relança erro pra fora: sempre segue para
+      // /complete-profile, que sabe criar/completar o documento do usuário
+      // sozinho caso este passo não consiga.
+      try {
+        await updateProfile(userCredential.user, {
+          displayName: usernameTrimmed,
+        });
+      } catch (displayNameError) {
+        console.warn("Nao foi possivel definir o nome de exibicao no Auth:", displayNameError);
+      }
 
-      await createUserProfile(userCredential.user.uid, {
-        displayName: usernameTrimmed,
-        photoURL: userCredential.user.photoURL,
-        termsVersion: LEGAL_VERSION,
-      });
+      let profileCreated = false;
+      for (let attempt = 1; attempt <= 3 && !profileCreated; attempt++) {
+        try {
+          await createUserProfile(userCredential.user.uid, {
+            displayName: usernameTrimmed,
+            photoURL: userCredential.user.photoURL,
+            termsVersion: LEGAL_VERSION,
+          });
+          profileCreated = true;
+        } catch (profileError) {
+          console.warn(`Falha ao criar perfil (tentativa ${attempt}/3):`, profileError);
+          if (attempt < 3) {
+            await new Promise((resolve) => setTimeout(resolve, attempt * 600));
+          }
+        }
+      }
 
-      toast.success(
-        `Bem-vindo, ${usernameTrimmed}! Sua conta foi criada com sucesso.`,
-      );
+      if (profileCreated) {
+        toast.success(
+          `Bem-vindo, ${usernameTrimmed}! Sua conta foi criada com sucesso.`,
+        );
+      } else {
+        toast.warning(
+          "Sua conta foi criada, mas não conseguimos salvar seu perfil agora. Vamos tentar novamente na próxima tela.",
+          { duration: 8000 },
+        );
+      }
 
       navigate("/complete-profile", {
         replace: true,

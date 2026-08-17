@@ -625,12 +625,16 @@ const RunTracking = () => {
         >
           {isRunning ? (isPaused ? "PAUSADO" : isSimulating ? "SIMULANDO..." : "MONITORANDO") : "INICIAR TREINO"}
         </motion.h1>
-        <button 
-          onClick={() => setIsSimulating(!isSimulating)}
-          className={`text-[10px] font-black px-3 py-2 rounded-xl border transition-colors ${isSimulating ? 'bg-purple-600 border-purple-400 text-white' : 'bg-card/80 backdrop-blur-xl border-border text-zinc-500'}`}
-        >
-          {isSimulating ? "OFF" : "SIMULAR"}
-        </button>
+        {import.meta.env.DEV ? (
+          <button
+            onClick={() => setIsSimulating(!isSimulating)}
+            className={`text-[10px] font-black px-3 py-2 rounded-xl border transition-colors ${isSimulating ? 'bg-purple-600 border-purple-400 text-white' : 'bg-card/80 backdrop-blur-xl border-border text-zinc-500'}`}
+          >
+            {isSimulating ? "OFF" : "SIMULAR"}
+          </button>
+        ) : (
+          <div className="w-10 h-10" aria-hidden="true" />
+        )}
       </motion.header>
 
       {/* Map Content Section */}
