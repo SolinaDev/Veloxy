@@ -60,6 +60,9 @@ const itemVariants: Variants = {
   },
 };
 
+const USERNAME_REGEX = /^[a-zA-Z0-9]+$/;
+const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d).+$/;
+
 function getRegisterErrorMessage(error: unknown) {
   const code = error instanceof FirebaseError ? error.code : undefined;
 
@@ -130,6 +133,11 @@ export default function Register() {
       return;
     }
 
+    if (!USERNAME_REGEX.test(usernameTrimmed)) {
+      toast.error("O nome de usuário deve conter apenas letras e números, sem símbolos.");
+      return;
+    }
+
     if (normalizedEmail !== normalizedConfirmEmail) {
       toast.error("Os emails não coincidem.");
       return;
@@ -137,6 +145,11 @@ export default function Register() {
 
     if (password.length < 6) {
       toast.error("A senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    if (!PASSWORD_REGEX.test(password)) {
+      toast.error("A senha deve conter pelo menos uma letra e um número.");
       return;
     }
 
@@ -328,7 +341,9 @@ export default function Register() {
                     maxLength={30}
                     placeholder="Digite seu nome de usuário"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    onChange={(e) =>
+                      setUsername(e.target.value.replace(/[^a-zA-Z0-9]/g, ""))
+                    }
                     disabled={loading}
                     autoComplete="username"
                     className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-4 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
@@ -339,6 +354,10 @@ export default function Register() {
                     {username.length}/30
                   </span>
                 </div>
+
+                <p className="text-xs text-zinc-500 mt-2">
+                  Apenas letras e números, sem símbolos.
+                </p>
               </motion.div>
 
               {/* Email */}
@@ -478,7 +497,8 @@ export default function Register() {
                 </div>
 
                 <p className="text-xs text-zinc-500 mt-2">
-                  Use pelo menos 6 caracteres.
+                  Use pelo menos 6 caracteres, com letras e números. Para
+                  reforçar a segurança, inclua também símbolos (ex: @, #, !).
                 </p>
               </motion.div>
 
