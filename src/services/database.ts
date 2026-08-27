@@ -25,10 +25,10 @@ import {
 import { db } from "@/config/firebase";
 import { calculateXP, getLevelFromXP } from "@/lib/gamification";
 import { toDateSafe } from "@/lib/feed-utils";
-import type { UserProfile, ActivityData, FeedActivity, Product, RunningEvent, UserStats, RunningGroup } from "@/types";
+import type { UserProfile, ActivityData, FeedActivity, Product, RunningEvent, UserStats, RunningGroup, GroupPost, GroupPostComment, GroupMessage } from "@/types";
 
 // Re-exportar types para quem já importava direto daqui
-export type { UserProfile, ActivityData, FeedActivity, Product, RunningEvent, UserStats, RunningGroup };
+export type { UserProfile, ActivityData, FeedActivity, Product, RunningEvent, UserStats, RunningGroup, GroupPost, GroupPostComment, GroupMessage };
 
 function removeUndefinedFields<T>(value: T): T {
   if (Array.isArray(value)) {
@@ -781,6 +781,204 @@ export const getGroupLeaderboard = async (group: RunningGroup): Promise<UserProf
     return [];
   }
 };
+
+// Busca um único grupo pelo ID (usado pela tela dedicada /grupo/:id, que
+// precisa carregar o grupo direto a partir da URL, sem depender de uma
+// lista já carregada em memória).
+export const getGroupById = async (groupId: string): Promise<RunningGroup | null> => {
+  const fallback = FALLBACK_GROUPS.find((group) => group.id === groupId);
+  if (fallback) return fallback;
+
+  const snap = await getDoc(doc(db, "groups", groupId));
+  if (!snap.exists()) return null;
+  return normalizeGroup(snap.id, snap.data());
+};
+
+// Grava a foto do grupo já enviada ao Storage. Restrita pelas regras do
+// Firestore a quem criou o grupo (createdBy).
+export const updateGroupPhoto = async (groupId: string, photoURL: string): Promise<void> => {
+  await setDoc(
+    doc(db, "groups", groupId),
+    { photoURL, updatedAt: serverTimestamp() },
+    { merge: true }
+  );
+};
+
+function normalizeGroupPost(docId: string, data: Record<string, unknown>): GroupPost {
+  return {
+    id: docId,
+    authorId: typeof data.authorId === "string" ? data.authorId : "",
+    authorName: typeof data.authorName === "string" ? data.authorName : "Corredor",
+    authorPhoto: typeof data.authorPhoto === "string" ? data.authorPhoto : null,
+    text: typeof data.text === "string" ? data.text : "",
+    imageURL: typeof data.imageURL === "string" ? data.imageURL : null,
+    likes: Array.isArray(data.likes) ? data.likes.filter((id): id is string => typeof id === "string") : [],
+    commentsCount: typeof data.commentsCount === "number" ? data.commentsCount : 0,
+    createdAt: data.createdAt as GroupPost["createdAt"],
+  };
+}
+
+// Feed do grupo em tempo real (últimas publicações primeiro).
+export const subscribeToGroupPosts = (
+  groupId: string,
+  callback: (posts: GroupPost[]) => void,
+  limitCount = 30
+) => {
+  const q = query(
+    collection(db, "groups", groupId, "posts"),
+    orderBy("createdAt", "desc"),
+    limit(limitCount)
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    callback(snapshot.docs.map((postDoc) => normalizeGroupPost(postDoc.id, postDoc.data())));
+  }, (error) => {
+    console.error("Erro no listener do feed do grupo:", error);
+  });
+};
+
+export const createGroupPost = async ({
+  groupId,
+  authorId,
+  authorName,
+  authorPhoto,
+  text,
+  imageURL,
+}: {
+  groupId: string;
+  authorId: string;
+  authorName: string;
+  authorPhoto: string | null;
+  text: string;
+  imageURL?: string | null;
+}) => {
+  const docRef = await addDoc(collection(db, "groups", groupId, "posts"), removeUndefinedFields({
+    authorId,
+    authorName,
+    authorPhoto,
+    text: text.trim(),
+    imageURL: imageURL || undefined,
+    likes: [],
+    commentsCount: 0,
+    createdAt: serverTimestamp(),
+  }));
+  return docRef.id;
+};
+
+export const toggleGroupPostLike = async (groupId: string, postId: string, userId: string, isLiked: boolean) => {
+  const postRef = doc(db, "groups", groupId, "posts", postId);
+  await updateDoc(postRef, {
+    likes: isLiked ? arrayRemove(userId) : arrayUnion(userId),
+  });
+};
+
+function normalizeGroupPostComment(docId: string, data: Record<string, unknown>): GroupPostComment {
+  return {
+    id: docId,
+    authorId: typeof data.authorId === "string" ? data.authorId : "",
+    authorName: typeof data.authorName === "string" ? data.authorName : "Corredor",
+    authorPhoto: typeof data.authorPhoto === "string" ? data.authorPhoto : null,
+    text: typeof data.text === "string" ? data.text : "",
+    createdAt: data.createdAt as GroupPostComment["createdAt"],
+  };
+}
+
+// Comentários de uma publicação, em tempo real (ordem cronológica).
+export const subscribeToGroupPostComments = (
+  groupId: string,
+  postId: string,
+  callback: (comments: GroupPostComment[]) => void
+) => {
+  const q = query(
+    collection(db, "groups", groupId, "posts", postId, "comments"),
+    orderBy("createdAt", "asc"),
+    limit(200)
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    callback(snapshot.docs.map((commentDoc) => normalizeGroupPostComment(commentDoc.id, commentDoc.data())));
+  }, (error) => {
+    console.error("Erro no listener de comentarios do post:", error);
+  });
+};
+
+// Cria o comentário e incrementa o contador da publicação em uma única
+// transação, para o contador nunca ficar dessincronizado por falha parcial.
+export const addGroupPostComment = async (
+  groupId: string,
+  postId: string,
+  { authorId, authorName, authorPhoto, text }: { authorId: string; authorName: string; authorPhoto: string | null; text: string }
+) => {
+  const postRef = doc(db, "groups", groupId, "posts", postId);
+  const commentRef = doc(collection(db, "groups", groupId, "posts", postId, "comments"));
+
+  await runTransaction(db, async (transaction) => {
+    transaction.set(commentRef, removeUndefinedFields({
+      authorId,
+      authorName,
+      authorPhoto,
+      text: text.trim(),
+      createdAt: serverTimestamp(),
+    }));
+    transaction.update(postRef, { commentsCount: increment(1) });
+  });
+
+  return commentRef.id;
+};
+
+function normalizeGroupMessage(docId: string, data: Record<string, unknown>): GroupMessage {
+  return {
+    id: docId,
+    senderId: typeof data.senderId === "string" ? data.senderId : "",
+    senderName: typeof data.senderName === "string" ? data.senderName : "Corredor",
+    senderPhoto: typeof data.senderPhoto === "string" ? data.senderPhoto : null,
+    text: typeof data.text === "string" ? data.text : "",
+    createdAt: data.createdAt as GroupMessage["createdAt"],
+  };
+}
+
+// Chat do grupo em tempo real (últimas mensagens, ordem cronológica).
+export const subscribeToGroupMessages = (
+  groupId: string,
+  callback: (messages: GroupMessage[]) => void,
+  limitCount = 100
+) => {
+  const q = query(
+    collection(db, "groups", groupId, "messages"),
+    orderBy("createdAt", "desc"),
+    limit(limitCount)
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const messages = snapshot.docs.map((messageDoc) => normalizeGroupMessage(messageDoc.id, messageDoc.data()));
+    callback(messages.reverse());
+  }, (error) => {
+    console.error("Erro no listener do chat do grupo:", error);
+  });
+};
+
+export const sendGroupMessage = async ({
+  groupId,
+  senderId,
+  senderName,
+  senderPhoto,
+  text,
+}: {
+  groupId: string;
+  senderId: string;
+  senderName: string;
+  senderPhoto: string | null;
+  text: string;
+}) => {
+  await addDoc(collection(db, "groups", groupId, "messages"), removeUndefinedFields({
+    senderId,
+    senderName,
+    senderPhoto,
+    text: text.trim(),
+    createdAt: serverTimestamp(),
+  }));
+};
+
 // ─── Events Functions ───────────────────────────────────────────────────────
 
 /**

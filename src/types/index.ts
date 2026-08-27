@@ -106,6 +106,7 @@ export interface RunningGroup {
   city: string;
   description: string;
   tag: string;
+  photoURL?: string | null;
   createdBy: string;
   creatorName: string;
   memberIds: string[];
@@ -114,6 +115,38 @@ export interface RunningGroup {
   weeklyKmWeek?: string;
   createdAt?: Timestamp | Date;
   updatedAt?: Timestamp | Date;
+}
+
+// ═══ GROUP POST (FEED DO GRUPO) ═══
+export interface GroupPost {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorPhoto: string | null;
+  text: string;
+  imageURL?: string | null;
+  likes: string[];
+  commentsCount: number;
+  createdAt?: Timestamp | Date;
+}
+
+export interface GroupPostComment {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorPhoto: string | null;
+  text: string;
+  createdAt?: Timestamp | Date;
+}
+
+// ═══ GROUP CHAT MESSAGE ═══
+export interface GroupMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderPhoto: string | null;
+  text: string;
+  createdAt?: Timestamp | Date;
 }
 
 // ═══ STATS ═══

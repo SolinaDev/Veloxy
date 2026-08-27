@@ -677,7 +677,7 @@ const Profile = () => {
       {/* Header */}
       <header className="bg-card/80 backdrop-blur-xl border-b border-border px-6 py-4 flex items-center justify-between sticky top-0 z-40">
         <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500">
-          VELOXY PROFILE
+          RUNNEX PROFILE
         </h1>
         <div className="flex gap-2">
             <button
@@ -770,26 +770,6 @@ const Profile = () => {
                     <span className="text-xs font-bold text-orange-500 italic uppercase">XP</span>
                 </div>
             </motion.div>
-      </section>
-
-      <section className="px-6 mt-6">
-        <button
-          onClick={() => navigate("/stats")}
-          className="bg-card/80 backdrop-blur-xl border border-border w-full rounded-3xl p-5 text-left transition active:scale-[0.98]"
-        >
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Status completo</p>
-              <h3 className="mt-1 font-display text-2xl font-black italic">Informacoes da corrida</h3>
-              <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-                Ritmo medio, melhor corrida, sequencia, calorias e progresso semanal.
-              </p>
-            </div>
-            <div className="bg-purple-600 text-white flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl">
-              <BarChart3 size={22} />
-            </div>
-          </div>
-        </button>
       </section>
 
       <section className="px-6 mt-6">
@@ -897,18 +877,6 @@ const Profile = () => {
 
       {/* Logout Button */}
       <div className="px-6 mt-12 pb-6">
-        <button
-            onClick={handleDeleteRunsFromProfile}
-            disabled={profileDeletingRuns}
-            className={`w-full mb-3 bg-card/80 backdrop-blur-xl border border-border py-4 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-60 ${
-              confirmProfileDelete
-                ? "text-red-400 border-red-500/40 bg-red-500/10"
-                : "text-zinc-500 hover:text-red-500 hover:border-red-500/30"
-            }`}
-        >
-            {profileDeletingRuns ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-            {confirmProfileDelete ? "CONFIRMAR EXCLUSÃO DAS CORRIDAS" : "APAGAR MINHAS CORRIDAS"}
-        </button>
         <button 
             onClick={handleLogout}
             className="w-full bg-card/80 backdrop-blur-xl border border-border py-4 rounded-xl text-[10px] font-black tracking-widest text-zinc-500 hover:text-red-500 hover:border-red-500/30 transition-all flex items-center justify-center gap-2"

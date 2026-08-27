@@ -17,6 +17,22 @@ service firebase.storage {
         && request.resource.size < 5 * 1024 * 1024;
     }
 
+    match /groups/{groupId}/avatar/{creatorUid}/{fileName} {
+      allow read: if signedIn();
+      allow write: if signedIn()
+        && request.auth.uid == creatorUid
+        && isImage()
+        && request.resource.size < 5 * 1024 * 1024;
+    }
+
+    match /groups/{groupId}/posts/{userId}/{fileName} {
+      allow read: if signedIn();
+      allow write: if signedIn()
+        && request.auth.uid == userId
+        && isImage()
+        && request.resource.size < 5 * 1024 * 1024;
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

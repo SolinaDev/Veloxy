@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import {
   Calendar,
+  Camera,
   ChevronDown,
   Loader2,
   MapPin,
@@ -24,6 +26,7 @@ import {
   joinGroup,
   leaveGroup,
 } from "@/services/database";
+import { uploadGroupAvatar } from "@/services/storage";
 import type { FeedActivity, RunningGroup, UserProfile } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
 import SafeAvatar from "@/components/SafeAvatar";
@@ -65,14 +68,28 @@ function GroupCreateModal({
 }: {
   open: boolean;
   onClose: () => void;
-  onCreate: (form: GroupForm) => void;
+  onCreate: (form: GroupForm, avatarFile: File | null) => void;
   creating: boolean;
 }) {
   const [form, setForm] = useState<GroupForm>(EMPTY_GROUP_FORM);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (open) setForm(EMPTY_GROUP_FORM);
+    if (open) {
+      setForm(EMPTY_GROUP_FORM);
+      setAvatarFile(null);
+      setAvatarPreview(null);
+    }
   }, [open]);
+
+  const handleAvatarSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
 
   return (
     <AnimatePresence>
@@ -90,7 +107,7 @@ function GroupCreateModal({
               initial={{ opacity: 0, scale: 0.94 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.94 }}
-              className="w-full max-w-lg rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5 pointer-events-auto"
+              className="w-full max-w-lg max-h-[86svh] overflow-y-auto no-scrollbar rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5 pointer-events-auto"
             >
               <div className="mb-6 flex items-center justify-between">
                 <div>
@@ -102,6 +119,31 @@ function GroupCreateModal({
                 </button>
               </div>
 
+              <div className="mb-5 flex justify-center">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarSelect}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="group relative h-24 w-24 overflow-hidden rounded-3xl border border-border bg-secondary/60 flex items-center justify-center"
+                  aria-label="Escolher foto do grupo"
+                >
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="Preview do grupo" className="h-full w-full object-cover" />
+                  ) : (
+                    <Users size={28} className="text-zinc-600" />
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition group-hover:opacity-100">
+                    <Camera size={22} className="text-white" />
+                  </div>
+                </button>
+              </div>
+
               <div className="space-y-4">
                 {[
                   { key: "name", label: "Nome", placeholder: "Ex: Longao de domingo" },
@@ -109,8 +151,9 @@ function GroupCreateModal({
                   { key: "tag", label: "Tag", placeholder: "Ex: 10K" },
                 ].map((field) => (
                   <label key={field.key} className="block">
-                    <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">{field.label}</span>
+                    <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">{field.label} *</span>
                     <input
+                      required
                       value={form[field.key as keyof GroupForm]}
                       onChange={(event) => setForm((prev) => ({ ...prev, [field.key]: event.target.value }))}
                       placeholder={field.placeholder}
@@ -120,8 +163,9 @@ function GroupCreateModal({
                 ))}
 
                 <label className="block">
-                  <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Descricao</span>
+                  <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Descricao *</span>
                   <textarea
+                    required
                     value={form.description}
                     onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
                     placeholder="Conte o objetivo do grupo"
@@ -132,7 +176,7 @@ function GroupCreateModal({
               </div>
 
               <button
-                onClick={() => onCreate(form)}
+                onClick={() => onCreate(form, avatarFile)}
                 disabled={creating}
                 className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 hover:bg-purple-700 transition py-4 text-xs font-black uppercase tracking-widest text-white disabled:opacity-60"
               >
@@ -149,6 +193,7 @@ function GroupCreateModal({
 
 export default function Social() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<SocialTab>("feed");
   const [rankingLimit, setRankingLimit] = useState(RANKING_STEP);
   const [ranking, setRanking] = useState<UserProfile[]>([]);
@@ -240,41 +285,82 @@ export default function Social() {
     return index >= 0 ? index + 1 : null;
   }, [ranking, user]);
 
-  const handleToggleGroup = async (group: RunningGroup) => {
-    if (!user) return;
-    const joined = joinedGroups.includes(group.id);
+  const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null);
 
+  const handleJoinGroup = async (group: RunningGroup) => {
+    if (!user) return;
+    setJoiningGroupId(group.id);
     try {
-      if (joined) {
-        await leaveGroup(group.id, user.uid);
-        setJoinedGroups((prev) => prev.filter((id) => id !== group.id));
-        toast.success("Voce saiu do grupo.");
-      } else {
-        await joinGroup(group.id, user.uid);
-        setJoinedGroups((prev) => [...prev, group.id]);
-        toast.success("Voce entrou no grupo.");
-      }
-      await loadGroups();
+      await joinGroup(group.id, user.uid);
+      setJoinedGroups((prev) => [...prev, group.id]);
+      toast.success("Voce entrou no grupo.");
+      navigate(`/grupo/${group.id}`);
     } catch (error) {
-      console.error("Erro ao atualizar grupo:", error);
-      toast.error("Nao foi possivel atualizar o grupo.");
+      console.error("Erro ao entrar no grupo:", error);
+      toast.error("Nao foi possivel entrar no grupo.");
+    } finally {
+      setJoiningGroupId(null);
     }
   };
 
-  const handleCreateGroup = async (form: GroupForm) => {
+  const handleLeaveGroup = async (group: RunningGroup) => {
     if (!user) return;
-    if (form.name.trim().length < 3) {
+    try {
+      await leaveGroup(group.id, user.uid);
+      setJoinedGroups((prev) => prev.filter((id) => id !== group.id));
+      toast.success("Voce saiu do grupo.");
+      await loadGroups();
+    } catch (error) {
+      console.error("Erro ao sair do grupo:", error);
+      toast.error("Nao foi possivel sair do grupo.");
+    }
+  };
+
+  const handleCreateGroup = async (form: GroupForm, avatarFile: File | null) => {
+    if (!user) return;
+
+    const name = form.name.trim();
+    const city = form.city.trim();
+    const description = form.description.trim();
+    const tag = form.tag.trim();
+
+    if (name.length < 3) {
       toast.error("O nome do grupo precisa ter pelo menos 3 letras.");
+      return;
+    }
+    if (!city) {
+      toast.error("Informe a cidade do grupo.");
+      return;
+    }
+    if (!description) {
+      toast.error("Escreva uma descricao para o grupo.");
+      return;
+    }
+    if (!tag) {
+      toast.error("Informe uma tag para o grupo.");
       return;
     }
 
     setCreatingGroup(true);
     try {
       const groupId = await createGroup({
-        ...form,
+        name,
+        city,
+        description,
+        tag,
         userId: user.uid,
         userName: displayName,
       });
+
+      if (avatarFile) {
+        try {
+          await uploadGroupAvatar(avatarFile, groupId, user.uid);
+        } catch (avatarError) {
+          console.warn("Nao foi possivel enviar a foto do grupo:", avatarError);
+          toast.warning("Grupo criado, mas a foto nao pode ser enviada agora.");
+        }
+      }
+
       setCreateOpen(false);
       setSelectedGroupId(groupId);
       toast.success("Comunidade criada.");
@@ -440,14 +526,33 @@ export default function Social() {
                         </div>
 
                         <button
-                          onClick={() => handleToggleGroup(selectedGroup)}
-                          className={`mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-xs font-black uppercase tracking-widest transition ${
+                          onClick={() =>
+                            joinedGroups.includes(selectedGroup.id)
+                              ? handleLeaveGroup(selectedGroup)
+                              : handleJoinGroup(selectedGroup)
+                          }
+                          disabled={joiningGroupId === selectedGroup.id}
+                          className={`mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-xs font-black uppercase tracking-widest transition disabled:opacity-60 ${
                             joinedGroups.includes(selectedGroup.id) ? "border border-green-500/30 bg-green-500/10 text-green-400" : "bg-purple-600 text-white"
                           }`}
                         >
-                          <Zap size={14} />
+                          {joiningGroupId === selectedGroup.id ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Zap size={14} />
+                          )}
                           {joinedGroups.includes(selectedGroup.id) ? "Sair do grupo" : "Entrar no grupo"}
                         </button>
+
+                        {joinedGroups.includes(selectedGroup.id) && (
+                          <button
+                            onClick={() => navigate(`/grupo/${selectedGroup.id}`)}
+                            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-purple-500/30 bg-purple-500/10 py-4 text-xs font-black uppercase tracking-widest text-purple-300 transition"
+                          >
+                            <Users size={14} />
+                            Abrir grupo
+                          </button>
+                        )}
                       </div>
 
                       <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5">

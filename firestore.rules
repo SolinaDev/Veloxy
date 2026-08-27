@@ -384,6 +384,7 @@ service cloud.firestore {
         'city',
         'description',
         'tag',
+        'photoURL',
         'createdBy',
         'creatorName',
         'memberIds',
@@ -409,6 +410,8 @@ service cloud.firestore {
 
         && request.resource.data.tag is string
         && request.resource.data.tag.size() <= 24
+
+        && optionalString('photoURL', 1000)
 
         && request.resource.data.createdBy == request.auth.uid
 
@@ -532,6 +535,130 @@ service cloud.firestore {
         );
     }
 
+    // Foto do grupo: só quem criou o grupo pode trocar, e só esse campo
+    // (mais o timestamp de atualização) pode mudar nessa escrita.
+    function validGroupPhotoUpdate() {
+      return signedIn()
+        && resource.data.createdBy == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['photoURL', 'updatedAt'])
+        && optionalString('photoURL', 1000)
+        && (
+          !('updatedAt' in request.resource.data)
+          || request.resource.data.updatedAt == request.time
+        );
+    }
+
+    function isGroupMember(groupId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/groups/$(groupId))
+        && request.auth.uid in
+          get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
+    }
+
+    // ============================================================
+    // GROUP POSTS (FEED DO GRUPO)
+    // ============================================================
+
+    function hasOnlyGroupPostFields() {
+      return request.resource.data.keys().hasOnly([
+        'authorId',
+        'authorName',
+        'authorPhoto',
+        'text',
+        'imageURL',
+        'likes',
+        'commentsCount',
+        'createdAt'
+      ]);
+    }
+
+    function validGroupPostCreate() {
+      return hasOnlyGroupPostFields()
+        && request.resource.data.authorId == request.auth.uid
+
+        && request.resource.data.authorName is string
+        && request.resource.data.authorName.size() <= 80
+
+        && optionalString('authorPhoto', 1000)
+
+        && request.resource.data.text is string
+        && request.resource.data.text.size() >= 1
+        && request.resource.data.text.size() <= 1000
+
+        && optionalString('imageURL', 1000)
+
+        && request.resource.data.likes is list
+        && request.resource.data.likes.size() == 0
+
+        && request.resource.data.commentsCount == 0
+
+        && optionalTimestamp('createdAt');
+    }
+
+    // Reaproveita o mesmo padrao de curtir/descurtir das activities.
+    function validGroupPostCommentCountUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['commentsCount'])
+        && request.resource.data.commentsCount == resource.data.commentsCount + 1;
+    }
+
+    function hasOnlyGroupPostCommentFields() {
+      return request.resource.data.keys().hasOnly([
+        'authorId',
+        'authorName',
+        'authorPhoto',
+        'text',
+        'createdAt'
+      ]);
+    }
+
+    function validGroupPostCommentCreate() {
+      return hasOnlyGroupPostCommentFields()
+        && request.resource.data.authorId == request.auth.uid
+
+        && request.resource.data.authorName is string
+        && request.resource.data.authorName.size() <= 80
+
+        && optionalString('authorPhoto', 1000)
+
+        && request.resource.data.text is string
+        && request.resource.data.text.size() >= 1
+        && request.resource.data.text.size() <= 500
+
+        && optionalTimestamp('createdAt');
+    }
+
+    // ============================================================
+    // GROUP CHAT
+    // ============================================================
+
+    function hasOnlyGroupMessageFields() {
+      return request.resource.data.keys().hasOnly([
+        'senderId',
+        'senderName',
+        'senderPhoto',
+        'text',
+        'createdAt'
+      ]);
+    }
+
+    function validGroupMessageCreate() {
+      return hasOnlyGroupMessageFields()
+        && request.resource.data.senderId == request.auth.uid
+
+        && request.resource.data.senderName is string
+        && request.resource.data.senderName.size() <= 80
+
+        && optionalString('senderPhoto', 1000)
+
+        && request.resource.data.text is string
+        && request.resource.data.text.size() >= 1
+        && request.resource.data.text.size() <= 1000
+
+        && optionalTimestamp('createdAt');
+    }
+
     // ============================================================
     // EVENTS
     // ============================================================
@@ -611,8 +738,30 @@ service cloud.firestore {
     match /groups/{groupId} {
       allow read: if signedIn();
       allow create: if validGroupCreate();
-      allow update: if validGroupMembershipUpdate() || validGroupWeeklyKmUpdate();
+      allow update: if validGroupMembershipUpdate()
+        || validGroupWeeklyKmUpdate()
+        || validGroupPhotoUpdate();
       allow delete: if false;
+
+      match /posts/{postId} {
+        allow read: if isGroupMember(groupId);
+        allow create: if isGroupMember(groupId) && validGroupPostCreate();
+        allow update: if isGroupMember(groupId)
+          && (validLikeUpdate() || validGroupPostCommentCountUpdate());
+        allow delete: if false;
+
+        match /comments/{commentId} {
+          allow read: if isGroupMember(groupId);
+          allow create: if isGroupMember(groupId) && validGroupPostCommentCreate();
+          allow update, delete: if false;
+        }
+      }
+
+      match /messages/{messageId} {
+        allow read: if isGroupMember(groupId);
+        allow create: if isGroupMember(groupId) && validGroupMessageCreate();
+        allow update, delete: if false;
+      }
     }
 
     // Bloqueia qualquer coleção não declarada acima

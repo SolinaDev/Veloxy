@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
   Activity,
   Flame,
   Loader2,
   MapPin,
+  Ruler,
   Timer,
   Trophy,
   Zap,
@@ -18,6 +19,37 @@ import SafeAvatar from "@/components/SafeAvatar";
 import RunHistoryRow from "@/components/RunHistoryRow";
 import { getBestUserPhotoURL } from "@/lib/user-photo";
 import { toast } from "sonner";
+
+type DistanceUnit = "km" | "mi";
+
+// Mesma chave/campo usados pelo seletor de unidade em Profile.tsx, para as
+// duas telas ficarem sincronizadas mesmo sem um estado global compartilhado.
+const SETTINGS_STORAGE_KEY = "veloxy-settings";
+const KM_TO_MI = 0.621371;
+
+function getStoredUnit(): DistanceUnit {
+  try {
+    const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    const parsed = stored ? JSON.parse(stored) : null;
+    return parsed?.units === "mi" ? "mi" : "km";
+  } catch {
+    return "km";
+  }
+}
+
+function persistUnit(unit: DistanceUnit) {
+  try {
+    const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    const parsed = stored ? JSON.parse(stored) : {};
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ ...parsed, units: unit }));
+  } catch {
+    // localStorage indisponivel: a preferencia so vale para esta sessao
+  }
+}
+
+function formatDistance(km: number, unit: DistanceUnit) {
+  return (unit === "mi" ? km * KM_TO_MI : km).toFixed(1);
+}
 
 const EMPTY_STATS: UserStats = {
   totalKm: "0.0",
@@ -48,6 +80,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [unit, setUnit] = useState<DistanceUnit>(getStoredUnit);
+  const [unitModalOpen, setUnitModalOpen] = useState(false);
 
   const displayName = user?.displayName || "Corredor";
   const firstName = displayName.split(" ")[0] || "Corredor";
@@ -99,11 +133,19 @@ export default function Home() {
   const lastRun = stats.lastActivity;
 
   const summaryCards = useMemo(() => [
-    { label: "Semana", value: stats.weeklyTotalKm.toFixed(1), unit: "km", icon: TrendingIcon },
+    { label: "Semana", value: formatDistance(stats.weeklyTotalKm, unit), unit, icon: TrendingIcon },
     { label: "Ritmo medio", value: stats.averagePace, unit: "/km", icon: Timer },
     { label: "Sequencia", value: stats.currentStreak.toString(), unit: stats.currentStreak === 1 ? "dia" : "dias", icon: Zap },
     { label: "Calorias", value: stats.totalCalories.toString(), unit: "kcal", icon: Flame },
-  ], [stats]);
+  ], [stats, unit]);
+
+  const handleConfirmUnitChange = () => {
+    const next: DistanceUnit = unit === "km" ? "mi" : "km";
+    setUnit(next);
+    persistUnit(next);
+    setUnitModalOpen(false);
+    toast.success(`Distâncias agora exibidas em ${next === "mi" ? "milhas" : "quilômetros"}.`);
+  };
 
   return (
     <div className="app-shell pb-28 safe-top">
@@ -149,20 +191,24 @@ export default function Home() {
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-[0.22em] text-purple-300">Distancia total</p>
                   <div className="mt-2 flex items-end gap-2">
-                    <span className="font-display text-6xl font-black italic leading-none text-white">{stats.totalKm}</span>
-                    <span className="mb-2 text-xs font-black uppercase text-purple-400">km</span>
+                    <span className="font-display text-6xl font-black italic leading-none text-white">{formatDistance(Number(stats.totalKm), unit)}</span>
+                    <span className="mb-2 text-xs font-black uppercase text-purple-400">{unit}</span>
                   </div>
                 </div>
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-600 text-white">
+                <button
+                  onClick={() => setUnitModalOpen(true)}
+                  className="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-600 text-white active:scale-95 transition-transform"
+                  aria-label="Alternar unidade de distância entre km e milhas"
+                >
                   <Activity size={24} />
-                </div>
+                </button>
               </div>
 
               <div className="mt-7 grid grid-cols-3 gap-3">
                 {[
                   { label: "Corridas", value: stats.runsCount },
                   { label: "Tempo", value: stats.totalTime },
-                  { label: "Melhor", value: stats.bestActivity ? `${stats.bestActivity.distance.toFixed(1)}km` : "0km" },
+                  { label: "Melhor", value: stats.bestActivity ? `${formatDistance(stats.bestActivity.distance, unit)}${unit}` : `0${unit}` },
                 ].map((item) => (
                   <div key={item.label} className="rounded-2xl bg-secondary/60 border border-input p-3">
                     <p className="font-display text-xl font-black italic leading-none">{item.value}</p>
@@ -202,7 +248,7 @@ export default function Home() {
                   <h3 className="mt-1 font-display text-xl font-black italic">Progresso semanal</h3>
                 </div>
                 <div className="rounded-full bg-purple-500/10 px-3 py-1 text-[10px] font-black text-purple-400">
-                  {stats.weeklyTotalKm.toFixed(1)} km
+                  {formatDistance(stats.weeklyTotalKm, unit)} {unit}
                 </div>
               </div>
               <div className="flex h-28 items-end gap-3">
@@ -255,6 +301,50 @@ export default function Home() {
           </section>
         </>
       )}
+
+      <AnimatePresence>
+        {unitModalOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setUnitModalOpen(false)}
+              className="fixed inset-0 z-[1100] bg-background/80 backdrop-blur-md"
+            />
+            <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 pointer-events-none">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.94 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.94 }}
+                className="w-full max-w-sm rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-6 text-center pointer-events-auto"
+              >
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
+                  <Ruler size={24} />
+                </div>
+                <h2 className="mt-4 font-display text-xl font-black italic">Trocar unidade de distância?</h2>
+                <p className="mt-2 text-sm text-zinc-400">
+                  Suas distâncias vão passar a ser exibidas em {unit === "km" ? "milhas (mi)" : "quilômetros (km)"}.
+                </p>
+                <div className="mt-6 flex gap-3">
+                  <button
+                    onClick={() => setUnitModalOpen(false)}
+                    className="flex-1 rounded-xl border border-border bg-secondary/60 py-3 text-xs font-black uppercase tracking-widest text-zinc-300"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleConfirmUnitChange}
+                    className="flex-1 rounded-xl bg-purple-600 hover:bg-purple-700 transition py-3 text-xs font-black uppercase tracking-widest text-white"
+                  >
+                    Confirmar
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
