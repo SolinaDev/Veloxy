@@ -11,16 +11,12 @@ import {
   Settings,
   ChevronRight,
   MapPin,
-  Trophy,
-  Flame,
   Calendar,
-  Medal,
   Pencil,
   X,
   LogOut,
   Camera,
   Loader2,
-  Award,
   Zap,
   Moon,
   Sun,
@@ -32,6 +28,7 @@ import {
   Lock,
   Trash2,
   BarChart3,
+  PawPrint,
 } from "lucide-react";
 import { deleteUserActivities, getUserActivities, getUserStats, getUserProfile, UserProfile, UserStats } from "@/services/database";
 import type { FeedActivity } from "@/types";
@@ -39,6 +36,8 @@ import { getLevelFromXP } from "@/lib/gamification";
 import { getGooglePhotoURL } from "@/lib/user-photo";
 import { toDateSafe } from "@/lib/feed-utils";
 import { uploadAvatar } from "@/services/storage";
+import { ACHIEVEMENTS } from "@/lib/achievements";
+import { getPetSpeciesInfo } from "@/lib/pet";
 import RunHistoryRow from "@/components/RunHistoryRow";
 
 type Theme = "dark" | "light";
@@ -68,38 +67,13 @@ function formatRunHistoryDate(activity: FeedActivity) {
   return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "2-digit" });
 }
 
-function getRealAchievements(stats: UserStats | null) {
-  const runsCount = stats?.runsCount || 0;
-  const totalKm = Number(stats?.totalKm || 0);
-  const bestDistance = stats?.bestActivity?.distance || 0;
-  const streak = stats?.currentStreak || 0;
-
-  return [
-    {
-      icon: <Medal size={20} />,
-      name: "Primeira corrida",
-      detail: runsCount > 0 ? "Conquistado" : "Salve sua primeira corrida",
-      unlocked: runsCount > 0,
-    },
-    {
-      icon: <Award size={20} />,
-      name: "5K completo",
-      detail: bestDistance >= 5 ? `${bestDistance.toFixed(1)} km melhor corrida` : `${bestDistance.toFixed(1)}/5 km`,
-      unlocked: bestDistance >= 5,
-    },
-    {
-      icon: <Trophy size={20} />,
-      name: "25 km acumulados",
-      detail: totalKm >= 25 ? `${totalKm.toFixed(1)} km totais` : `${totalKm.toFixed(1)}/25 km`,
-      unlocked: totalKm >= 25,
-    },
-    {
-      icon: <Flame size={20} />,
-      name: "Sequencia 3 dias",
-      detail: streak >= 3 ? `${streak} dias ativos` : `${streak}/3 dias`,
-      unlocked: streak >= 3,
-    },
-  ];
+function getRealAchievements(stats: UserStats | null, profile: UserProfile | null) {
+  return ACHIEVEMENTS.map((achievement) => ({
+    icon: <achievement.icon size={20} />,
+    name: achievement.name,
+    detail: stats ? achievement.detail(stats, profile) : "Carregando...",
+    unlocked: stats ? achievement.unlocked(stats, profile) : false,
+  }));
 }
 
 const getStoredTheme = (): Theme => {
@@ -609,6 +583,7 @@ const Profile = () => {
   }, [theme]);
 
   const displayName = user?.displayName || "Corredor";
+  const petSpeciesInfo = getPetSpeciesInfo(profile?.petSpecies);
   const initials = displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
   
   // Níveis e Progressão
@@ -616,7 +591,7 @@ const Profile = () => {
   const weeklyGoalKm = profile?.weeklyGoalKm ?? 10;
   const weeklyKm = statsData?.weeklyTotalKm ?? 0;
   const weeklyProgress = weeklyGoalKm > 0 ? Math.min((weeklyKm / weeklyGoalKm) * 100, 100) : 0;
-  const realAchievements = getRealAchievements(statsData);
+  const realAchievements = getRealAchievements(statsData, profile);
 
   const handlePrivacyChange = async (value: boolean) => {
     if (!user) return;
@@ -677,7 +652,7 @@ const Profile = () => {
       {/* Header */}
       <header className="bg-card/80 backdrop-blur-xl border-b border-border px-6 py-4 flex items-center justify-between sticky top-0 z-40">
         <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500">
-          RUNNEX PROFILE
+          VELOXY PROFILE
         </h1>
         <div className="flex gap-2">
             <button
@@ -740,6 +715,22 @@ const Profile = () => {
         <p className="mt-6 text-sm text-zinc-400 max-w-xs italic leading-relaxed">
             {profile?.bio || "Apaixonado por corrida e desafios urbanos."}
         </p>
+
+        <button
+          onClick={() => navigate("/pet")}
+          className="mt-6 flex w-full max-w-xs items-center gap-3 rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-4 text-left active:scale-[0.98] transition-transform"
+        >
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 border border-purple-500/20 text-3xl">
+            {petSpeciesInfo?.emoji || <PawPrint className="text-purple-500" size={22} />}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Seu pet</p>
+            <p className="mt-0.5 truncate font-display text-lg font-black italic">
+              {profile?.petName || "Adote seu pet"}
+            </p>
+          </div>
+          <ChevronRight size={18} className="shrink-0 text-zinc-500" />
+        </button>
       </section>
 
       {/* Momentum Cards (Stats) */}
@@ -770,6 +761,26 @@ const Profile = () => {
                     <span className="text-xs font-bold text-orange-500 italic uppercase">XP</span>
                 </div>
             </motion.div>
+      </section>
+
+      <section className="px-6 mt-6">
+        <button
+          onClick={() => navigate("/stats")}
+          className="bg-card/80 backdrop-blur-xl border border-border w-full rounded-3xl p-5 text-left transition active:scale-[0.98]"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Status completo</p>
+              <h3 className="mt-1 font-display text-2xl font-black italic">Informacoes da corrida</h3>
+              <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                Ritmo medio, melhor corrida, sequencia, calorias e progresso semanal.
+              </p>
+            </div>
+            <div className="bg-purple-600 text-white flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl">
+              <BarChart3 size={22} />
+            </div>
+          </div>
+        </button>
       </section>
 
       <section className="px-6 mt-6">
@@ -877,6 +888,18 @@ const Profile = () => {
 
       {/* Logout Button */}
       <div className="px-6 mt-12 pb-6">
+        <button
+            onClick={handleDeleteRunsFromProfile}
+            disabled={profileDeletingRuns}
+            className={`w-full mb-3 bg-card/80 backdrop-blur-xl border border-border py-4 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-60 ${
+              confirmProfileDelete
+                ? "text-red-400 border-red-500/40 bg-red-500/10"
+                : "text-zinc-500 hover:text-red-500 hover:border-red-500/30"
+            }`}
+        >
+            {profileDeletingRuns ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+            {confirmProfileDelete ? "CONFIRMAR EXCLUSÃO DAS CORRIDAS" : "APAGAR MINHAS CORRIDAS"}
+        </button>
         <button 
             onClick={handleLogout}
             className="w-full bg-card/80 backdrop-blur-xl border border-border py-4 rounded-xl text-[10px] font-black tracking-widest text-zinc-500 hover:text-red-500 hover:border-red-500/30 transition-all flex items-center justify-center gap-2"

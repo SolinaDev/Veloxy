@@ -6,18 +6,20 @@ import {
   Flame,
   Loader2,
   MapPin,
+  PawPrint,
   Ruler,
   Timer,
   Trophy,
   Zap,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { deleteUserActivity, getUserActivities, getUserStats } from "@/services/database";
-import type { FeedActivity, UserStats } from "@/types";
+import { deleteUserActivity, getUserActivities, getUserProfile, getUserStats } from "@/services/database";
+import type { FeedActivity, UserProfile, UserStats } from "@/types";
 import { toDateSafe } from "@/lib/feed-utils";
 import SafeAvatar from "@/components/SafeAvatar";
 import RunHistoryRow from "@/components/RunHistoryRow";
 import { getBestUserPhotoURL } from "@/lib/user-photo";
+import { getPetMood, getPetSpeciesInfo } from "@/lib/pet";
 import { toast } from "sonner";
 
 type DistanceUnit = "km" | "mi";
@@ -62,6 +64,10 @@ const EMPTY_STATS: UserStats = {
   bestActivity: null,
   lastActivity: null,
   weeklyData: [],
+  hasHourLongRun: false,
+  hasSub10kRun: false,
+  dawnRunsCount: 0,
+  nightRunsCount: 0,
 };
 
 function formatRunDate(activity: FeedActivity) {
@@ -77,6 +83,7 @@ export default function Home() {
   const navigate = useNavigate();
   const [stats, setStats] = useState<UserStats>(EMPTY_STATS);
   const [activities, setActivities] = useState<FeedActivity[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -86,16 +93,20 @@ export default function Home() {
   const displayName = user?.displayName || "Corredor";
   const firstName = displayName.split(" ")[0] || "Corredor";
   const userPhotoURL = getBestUserPhotoURL(user);
+  const petSpeciesInfo = getPetSpeciesInfo(profile?.petSpecies);
+  const petMood = getPetMood(stats.currentStreak);
 
   const loadHomeData = useCallback(async () => {
     if (!user) return;
     try {
-      const [statsData, runs] = await Promise.all([
+      const [statsData, runs, userProfile] = await Promise.all([
         getUserStats(user.uid),
         getUserActivities(user.uid, 8),
+        getUserProfile(user.uid),
       ]);
       setStats(statsData);
       setActivities(runs);
+      setProfile(userProfile);
     } finally {
       setLoading(false);
     }
@@ -169,7 +180,19 @@ export default function Home() {
               INICIO
             </h1>
           </div>
-          <div className="h-11 w-11" aria-hidden="true" />
+          <button
+            onClick={() => navigate("/pet")}
+            className={`flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border bg-card ${
+              petMood === "feliz" ? "border-purple-500/40" : "border-border"
+            }`}
+            aria-label="Ver seu pet"
+          >
+            {petSpeciesInfo ? (
+              <span className="text-xl">{petSpeciesInfo.emoji}</span>
+            ) : (
+              <PawPrint size={18} className="text-zinc-500" />
+            )}
+          </button>
         </div>
       </header>
 

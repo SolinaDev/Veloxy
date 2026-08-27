@@ -130,7 +130,14 @@ service cloud.firestore {
         'termsAcceptedAt',
         'termsVersion',
         'createdAt',
-        'lastUpdated'
+        'lastUpdated',
+        'petSpecies',
+        'petName',
+        'petCoins',
+        'petUnlockedAccessoryIds',
+        'petEquippedCabeca',
+        'petEquippedPescoco',
+        'petEquippedFundo'
       ]);
     }
 
@@ -193,7 +200,73 @@ service cloud.firestore {
         && optionalString('termsVersion', 20)
         && optionalTimestamp('termsAcceptedAt')
         && optionalTimestamp('createdAt')
-        && optionalTimestamp('lastUpdated');
+        && optionalTimestamp('lastUpdated')
+        && optionalString('petSpecies', 20)
+        && optionalString('petName', 30)
+        && optionalNumber('petCoins', 0, 1000000)
+        && (
+          !('petUnlockedAccessoryIds' in request.resource.data)
+          || (
+            request.resource.data.petUnlockedAccessoryIds is list
+            && request.resource.data.petUnlockedAccessoryIds.size() <= 50
+          )
+        )
+        && optionalString('petEquippedCabeca', 40)
+        && optionalString('petEquippedPescoco', 40)
+        && optionalString('petEquippedFundo', 40);
+    }
+
+    function validPetChoice(userId) {
+      return validUserBase(userId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['petSpecies', 'petName', 'petCoins'])
+        // Só pode escolher o pet uma vez.
+        && !('petSpecies' in resource.data)
+        && request.resource.data.petSpecies is string
+        && request.resource.data.petName is string
+        && request.resource.data.petName.size() >= 1
+        && request.resource.data.petCoins == 0;
+    }
+
+    // Ganho de RunCoin ao salvar uma corrida: só pode crescer, e no máximo o
+    // equivalente a uma corrida de 500km (bem acima do teto real de uma
+    // atividade, só para fechar a regra com folga).
+    function validPetCoinsEarn(userId) {
+      return validUserBase(userId)
+        && 'petSpecies' in resource.data
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['petCoins'])
+        && request.resource.data.petCoins >= resource.data.petCoins
+        && request.resource.data.petCoins <= resource.data.petCoins + 500;
+    }
+
+    // Compra de acessório: só pode debitar RunCoin (nunca creditar) e
+    // adicionar exatamente 1 item novo à lista de desbloqueados.
+    function validPetPurchase(userId) {
+      return validUserBase(userId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['petCoins', 'petUnlockedAccessoryIds'])
+        && request.resource.data.petCoins is number
+        && request.resource.data.petCoins >= 0
+        && request.resource.data.petCoins <= resource.data.petCoins
+        && request.resource.data.petUnlockedAccessoryIds is list
+        && (
+          (
+            !('petUnlockedAccessoryIds' in resource.data)
+            && request.resource.data.petUnlockedAccessoryIds.size() == 1
+          )
+          ||
+          (
+            resource.data.petUnlockedAccessoryIds is list
+            && request.resource.data.petUnlockedAccessoryIds.size()
+              == resource.data.petUnlockedAccessoryIds.size() + 1
+          )
+        );
+    }
+
+    function validPetEquip(userId) {
+      return validUserBase(userId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['petEquippedCabeca', 'petEquippedPescoco', 'petEquippedFundo']);
     }
 
     function validUserCreate(userId) {
@@ -371,7 +444,11 @@ service cloud.firestore {
         || validUserRunReset(userId)
         || validStatsRecalculation(userId)
         || validEnrolledEventsUpdate(userId)
-        || validJoinedGroupsUpdate(userId);
+        || validJoinedGroupsUpdate(userId)
+        || validPetChoice(userId)
+        || validPetCoinsEarn(userId)
+        || validPetPurchase(userId)
+        || validPetEquip(userId);
     }
 
     // ============================================================

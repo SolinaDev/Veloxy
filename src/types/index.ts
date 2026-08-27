@@ -25,6 +25,13 @@ export interface UserProfile {
   termsVersion?: string;
   createdAt?: Timestamp;
   lastUpdated?: Timestamp;
+  petSpecies?: PetSpecies;
+  petName?: string;
+  petCoins?: number;
+  petUnlockedAccessoryIds?: string[];
+  petEquippedCabeca?: string | null;
+  petEquippedPescoco?: string | null;
+  petEquippedFundo?: string | null;
 }
 
 // ═══ ACTIVITY (CORRIDA) ═══
@@ -161,7 +168,15 @@ export interface UserStats {
   bestActivity: FeedActivity | null;
   lastActivity: FeedActivity | null;
   weeklyData: { day: string; km: number }[];
+  hasHourLongRun: boolean;
+  hasSub10kRun: boolean;
+  dawnRunsCount: number;
+  nightRunsCount: number;
 }
+
+// ═══ PET ═══
+export type PetSpecies = "guepardo" | "lebre" | "cavalo" | "falcao" | "galgo";
+export type PetAccessorySlot = "cabeca" | "pescoco" | "fundo";
 
 // ═══ GAMIFICATION ═══
 export interface LevelInfo {

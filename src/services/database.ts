@@ -25,7 +25,8 @@ import {
 import { db } from "@/config/firebase";
 import { calculateXP, getLevelFromXP } from "@/lib/gamification";
 import { toDateSafe } from "@/lib/feed-utils";
-import type { UserProfile, ActivityData, FeedActivity, Product, RunningEvent, UserStats, RunningGroup, GroupPost, GroupPostComment, GroupMessage } from "@/types";
+import { calculateRunCoins } from "@/lib/pet";
+import type { UserProfile, ActivityData, FeedActivity, Product, RunningEvent, UserStats, RunningGroup, GroupPost, GroupPostComment, GroupMessage, PetSpecies, PetAccessorySlot } from "@/types";
 
 // Re-exportar types para quem já importava direto daqui
 export type { UserProfile, ActivityData, FeedActivity, Product, RunningEvent, UserStats, RunningGroup, GroupPost, GroupPostComment, GroupMessage };
@@ -134,6 +135,7 @@ export const saveActivity = async (data: ActivityData) => {
 
   // Melhor esforço: nunca bloqueia nem falha o salvamento da corrida.
   await addDistanceToUserGroups(data.userId, data.distance);
+  await addPetCoins(data.userId, calculateRunCoins(data.distance));
 
   return { id: docRef.id, xpUpdateFailed };
 };
@@ -400,6 +402,10 @@ export const getUserStats = async (userId: string) => {
     let totalCalories = 0;
     let lastActivity: (ActivityData & { id: string }) | null = null;
     let bestActivity: FeedActivity | null = null;
+    let hasHourLongRun = false;
+    let hasSub10kRun = false;
+    let dawnRunsCount = 0;
+    let nightRunsCount = 0;
     const activeDays = new Set<string>();
 
     // Montar mapa dos últimos 7 dias (YYYY-MM-DD -> km)
@@ -427,6 +433,10 @@ export const getUserStats = async (userId: string) => {
         bestActivity = activity;
       }
 
+      const durationSeconds = Number(activity.durationSeconds || 0);
+      if (durationSeconds >= 3600) hasHourLongRun = true;
+      if (distance >= 10 && durationSeconds > 0 && durationSeconds <= 3600) hasSub10kRun = true;
+
       // Acumular km no dia correto para o gráfico semanal
       if (activity.timestamp || typeof activity.createdAtMs === "number") {
         const activityDate = toDateSafe(activity.timestamp) ?? new Date(activity.createdAtMs || 0);
@@ -435,6 +445,11 @@ export const getUserStats = async (userId: string) => {
         if (dateKey in weekMap) {
           weekMap[dateKey] += distance;
         }
+
+        // Amanhecer: 4h-7h. Noite: 20h-4h. Usado pelas conquistas "10 amanheceres"/"10 noites".
+        const hour = activityDate.getHours();
+        if (hour >= 4 && hour < 7) dawnRunsCount += 1;
+        else if (hour >= 20 || hour < 4) nightRunsCount += 1;
       }
     });
 
@@ -462,6 +477,10 @@ export const getUserStats = async (userId: string) => {
       bestActivity,
       lastActivity,
       weeklyData,
+      hasHourLongRun,
+      hasSub10kRun,
+      dawnRunsCount,
+      nightRunsCount,
     };
   } catch (error) {
     console.error("Erro ao buscar estatísticas:", error);
@@ -476,6 +495,10 @@ export const getUserStats = async (userId: string) => {
       bestActivity: null,
       lastActivity: null,
       weeklyData: [],
+      hasHourLongRun: false,
+      hasSub10kRun: false,
+      dawnRunsCount: 0,
+      nightRunsCount: 0,
     };
   }
 }
@@ -1155,5 +1178,69 @@ export const joinEvent = async (eventId: string, userId: string) => {
     console.error("Erro ao se inscrever no evento:", error);
     throw error;
   }
+};
+
+// ─── Pet ────────────────────────────────────────────────────────────────────
+
+// Escolha do pet: só pode ser feita uma vez (as regras do Firestore recusam
+// a escrita se o usuário já tiver um petSpecies salvo).
+export const choosePet = async (userId: string, species: PetSpecies, name: string): Promise<void> => {
+  await setDoc(
+    doc(db, "users", userId),
+    { petSpecies: species, petName: name.trim(), petCoins: 0 },
+    { merge: true }
+  );
+};
+
+// Credita RunCoins ganhos numa corrida. Melhor esforço: nunca lança erro
+// para quem chamou, pois a corrida em si já foi salva com sucesso.
+export const addPetCoins = async (userId: string, amount: number): Promise<void> => {
+  if (!(amount > 0)) return;
+  try {
+    const userSnap = await getDoc(doc(db, "users", userId));
+    if (!userSnap.exists() || !userSnap.data().petSpecies) return;
+
+    await updateDoc(doc(db, "users", userId), {
+      petCoins: increment(amount),
+    });
+  } catch (error) {
+    console.warn("Nao foi possivel creditar RunCoins:", error);
+  }
+};
+
+// Compra um acessório da loja: debita o preço e adiciona o id à lista de
+// desbloqueados, em uma única transação (nunca debita sem desbloquear).
+export const purchasePetAccessory = async (userId: string, accessoryId: string, price: number): Promise<void> => {
+  const userRef = doc(db, "users", userId);
+
+  await runTransaction(db, async (transaction) => {
+    const userSnap = await transaction.get(userRef);
+    if (!userSnap.exists()) throw new Error("Perfil nao encontrado.");
+
+    const data = userSnap.data();
+    const currentCoins = typeof data.petCoins === "number" ? data.petCoins : 0;
+    const unlocked: string[] = Array.isArray(data.petUnlockedAccessoryIds) ? data.petUnlockedAccessoryIds : [];
+
+    if (unlocked.includes(accessoryId)) return;
+    if (currentCoins < price) throw new Error("RunCoins insuficientes.");
+
+    transaction.update(userRef, {
+      petCoins: currentCoins - price,
+      petUnlockedAccessoryIds: arrayUnion(accessoryId),
+    });
+  });
+};
+
+const PET_SLOT_FIELD: Record<PetAccessorySlot, "petEquippedCabeca" | "petEquippedPescoco" | "petEquippedFundo"> = {
+  cabeca: "petEquippedCabeca",
+  pescoco: "petEquippedPescoco",
+  fundo: "petEquippedFundo",
+};
+
+// accessoryId === null desequipa o slot.
+export const equipPetAccessory = async (userId: string, slot: PetAccessorySlot, accessoryId: string | null): Promise<void> => {
+  await updateDoc(doc(db, "users", userId), {
+    [PET_SLOT_FIELD[slot]]: accessoryId,
+  });
 };
 
