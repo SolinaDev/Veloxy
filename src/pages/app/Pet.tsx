@@ -23,7 +23,16 @@ import {
   getAccessoryById,
   getPetMood,
   getPetSpeciesInfo,
+  type PetMood,
 } from "@/lib/pet";
+
+// Animacao de "vivo" do pet, uma por humor: feliz pula mais e mais rapido,
+// cansado balanca devagar, triste quase nao se mexe (cabisbaixo).
+const PET_IDLE_ANIMATION: Record<PetMood, { y: number[]; rotate: number[]; duration: number }> = {
+  feliz: { y: [0, -14, 0], rotate: [-6, 6, -6], duration: 1.1 },
+  cansado: { y: [0, -4, 0], rotate: [-3, 3, -3], duration: 2.2 },
+  triste: { y: [0, 3, 0], rotate: [-2, 2, -2], duration: 3.4 },
+};
 
 const EMPTY_STATS: UserStats = {
   totalKm: "0.0",
@@ -158,7 +167,7 @@ export default function Pet() {
   };
 
   const unlockedAchievementIds = useMemo(() => getUnlockedAchievementIds(stats, profile), [stats, profile]);
-  const purchasedAccessoryIds = profile?.petUnlockedAccessoryIds || [];
+  const purchasedAccessoryIds = useMemo(() => profile?.petUnlockedAccessoryIds || [], [profile]);
 
   const equippedBySlot: Record<PetAccessorySlot, string | null> = {
     cabeca: profile?.petEquippedCabeca || null,
@@ -280,17 +289,35 @@ export default function Pet() {
       </header>
 
       <section className="px-6 pt-8 flex flex-col items-center text-center">
-        <div
+        <motion.div
+          animate={{ boxShadow: [
+            `0 0 ${glowSize}px rgba(147,51,234,0.25)`,
+            `0 0 ${glowSize * 1.4}px rgba(147,51,234,0.45)`,
+            `0 0 ${glowSize}px rgba(147,51,234,0.25)`,
+          ] }}
+          transition={{ duration: PET_IDLE_ANIMATION[mood].duration * 1.5, repeat: Infinity, ease: "easeInOut" }}
           className="relative flex h-40 w-40 items-center justify-center rounded-[2.5rem] border border-purple-500/25 bg-purple-500/10"
-          style={{ boxShadow: `0 0 ${glowSize}px rgba(147,51,234,0.35)` }}
         >
-          <span className="text-7xl">{speciesInfo?.emoji}</span>
-          {equippedAccessories.map((accessory) => (
-            <span key={accessory.id} className="absolute -bottom-2 -right-2 text-3xl drop-shadow" title={accessory.label}>
+          <motion.span
+            className="text-7xl"
+            animate={{ y: PET_IDLE_ANIMATION[mood].y, rotate: PET_IDLE_ANIMATION[mood].rotate }}
+            transition={{ duration: PET_IDLE_ANIMATION[mood].duration, repeat: Infinity, ease: "easeInOut" }}
+          >
+            {speciesInfo?.emoji}
+          </motion.span>
+          {equippedAccessories.map((accessory, index) => (
+            <motion.span
+              key={accessory.id}
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: "spring", stiffness: 400, damping: 18, delay: index * 0.08 }}
+              className="absolute -bottom-2 -right-2 text-3xl drop-shadow"
+              title={accessory.label}
+            >
               {accessory.emoji}
-            </span>
+            </motion.span>
           ))}
-        </div>
+        </motion.div>
 
         <p className="mt-5 font-display text-2xl font-black italic uppercase tracking-tighter">{profile.petName}</p>
         <p className="mt-1 text-xs font-black uppercase tracking-widest text-zinc-500">{speciesInfo?.label}</p>
