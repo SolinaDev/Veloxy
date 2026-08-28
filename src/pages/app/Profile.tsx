@@ -715,27 +715,16 @@ const Profile = () => {
         <p className="mt-6 text-sm text-zinc-400 max-w-xs italic leading-relaxed">
             {profile?.bio || "Apaixonado por corrida e desafios urbanos."}
         </p>
-
-        <button
-          onClick={() => navigate("/pet")}
-          className="mt-6 flex w-full max-w-xs items-center gap-3 rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-4 text-left active:scale-[0.98] transition-transform"
-        >
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 border border-purple-500/20 text-3xl">
-            {petSpeciesInfo?.emoji || <PawPrint className="text-purple-500" size={22} />}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Seu pet</p>
-            <p className="mt-0.5 truncate font-display text-lg font-black italic">
-              {profile?.petName || "Adote seu pet"}
-            </p>
-          </div>
-          <ChevronRight size={18} className="shrink-0 text-zinc-500" />
-        </button>
       </section>
 
-      {/* Momentum Cards (Stats) */}
-      <section className="px-6 mt-10 grid grid-cols-2 gap-4">
-            <motion.div 
+      {/* Progresso: numeros principais, pet, metas e nivel agrupados sob um unico titulo */}
+      <section className="px-6 mt-10">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="font-display font-black text-sm italic tracking-tighter">SEU PROGRESSO</h3>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+            <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ y: -3 }}
@@ -748,7 +737,7 @@ const Profile = () => {
                 </div>
             </motion.div>
 
-            <motion.div 
+            <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
@@ -761,40 +750,20 @@ const Profile = () => {
                     <span className="text-xs font-bold text-orange-500 italic uppercase">XP</span>
                 </div>
             </motion.div>
-      </section>
+        </div>
 
-      <section className="px-6 mt-6">
-        <button
-          onClick={() => navigate("/stats")}
-          className="bg-card/80 backdrop-blur-xl border border-border w-full rounded-3xl p-5 text-left transition active:scale-[0.98]"
-        >
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Status completo</p>
-              <h3 className="mt-1 font-display text-2xl font-black italic">Informacoes da corrida</h3>
-              <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-                Ritmo medio, melhor corrida, sequencia, calorias e progresso semanal.
-              </p>
-            </div>
-            <div className="bg-purple-600 text-white flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl">
-              <BarChart3 size={22} />
-            </div>
-          </div>
-        </button>
-      </section>
-
-      <section className="px-6 mt-6">
-        <div className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-5">
-          <div className="mb-4 flex items-center justify-between">
+        {/* Metas e nivel: duas barras de progresso, um card so */}
+        <div className="mt-4 bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-5">
+          <div className="flex items-center justify-between">
             <div>
               <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Meta semanal</p>
-              <h3 className="mt-1 font-display text-2xl font-black italic">
+              <h3 className="mt-1 font-display text-xl font-black italic">
                 {weeklyKm.toFixed(1)} / {weeklyGoalKm.toFixed(1)} km
               </h3>
             </div>
-            <Zap size={22} className="text-purple-500" />
+            <Zap size={20} className="text-purple-500" />
           </div>
-          <div className="h-3 rounded-full bg-background/80 p-1 border border-border">
+          <div className="mt-3 h-3 rounded-full bg-background/80 p-1 border border-border">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${weeklyProgress}%` }}
@@ -803,38 +772,67 @@ const Profile = () => {
           </div>
           <button
             onClick={() => setEditOpen(true)}
-            className="mt-4 text-[10px] font-black uppercase tracking-widest text-purple-400"
+            className="mt-3 text-[10px] font-black uppercase tracking-widest text-purple-400"
           >
             Ajustar meta
           </button>
-        </div>
-      </section>
 
-      {/* Level Progress */}
-      <section className="px-6 mt-8">
-        <motion.div
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.18 }}
-          className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-6"
-        >
-            <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xs font-black tracking-widest text-zinc-500 uppercase">Progresso do Nível</h3>
-                <span className="text-xs font-black text-purple-500 uppercase">{levelInfo.nextLevel}</span>
+          <div className="my-5 border-t border-border" />
+
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Nível</p>
+            <span className="text-xs font-black text-purple-500 uppercase">{levelInfo.currentLevel} → {levelInfo.nextLevel}</span>
+          </div>
+          <div className="mt-3 h-3 rounded-full bg-background/80 p-1 border border-border">
+            <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${levelInfo.progress}%` }}
+                className="h-full rounded-full bg-gradient-to-r from-purple-600 to-purple-400"
+            />
+          </div>
+          <p className="mt-3 text-[10px] font-bold text-zinc-600 italic">
+            {levelInfo.xpToNext > 0
+              ? `Faltam ${levelInfo.xpToNext.toLocaleString("pt-BR")} XP para se tornar ${levelInfo.nextLevel.toUpperCase()}`
+              : "Você atingiu o nível máximo!"}
+          </p>
+        </div>
+
+        {/* Entradas: pet e status completo, mesmo padrao visual de linha com chevron */}
+        <div className="mt-4 space-y-3">
+          <button
+            onClick={() => navigate("/pet")}
+            className="flex w-full items-center gap-3 rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-4 text-left active:scale-[0.98] transition-transform"
+          >
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 border border-purple-500/20 text-2xl">
+              {petSpeciesInfo?.emoji || <PawPrint className="text-purple-500" size={20} />}
             </div>
-            <div className="w-full h-4 bg-background/80 rounded-full overflow-hidden p-1 border border-border shadow-inner">
-                <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${levelInfo.progress}%` }}
-                    className="h-full bg-gradient-to-r from-purple-600 to-purple-400 rounded-full shadow-[0_0_15px_rgba(147,51,234,0.5)]"
-                />
+            <div className="min-w-0 flex-1">
+              <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Seu pet</p>
+              <p className="mt-0.5 truncate font-display text-base font-black italic">
+                {profile?.petName || "Adote seu pet"}
+              </p>
             </div>
-            <p className="mt-3 text-[10px] text-center font-bold text-zinc-600 italic">
-              {levelInfo.xpToNext > 0 
-                ? `Faltam ${levelInfo.xpToNext.toLocaleString("pt-BR")} XP para se tornar ${levelInfo.nextLevel.toUpperCase()}`
-                : "Você atingiu o nível máximo!"}
-            </p>
-        </motion.div>
+            <ChevronRight size={18} className="shrink-0 text-zinc-500" />
+          </button>
+
+          <button
+            onClick={() => navigate("/stats")}
+            className="bg-card/80 backdrop-blur-xl border border-border w-full rounded-3xl p-5 text-left transition active:scale-[0.98]"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Status completo</p>
+                <h3 className="mt-1 font-display text-xl font-black italic">Informacoes da corrida</h3>
+                <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                  Ritmo medio, melhor corrida, sequencia, calorias e progresso semanal.
+                </p>
+              </div>
+              <div className="bg-purple-600 text-white flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl">
+                <BarChart3 size={22} />
+              </div>
+            </div>
+          </button>
+        </div>
       </section>
 
       {/* Achievements Horizontal */}
@@ -886,8 +884,9 @@ const Profile = () => {
         </div>
       </section>
 
-      {/* Logout Button */}
-      <div className="px-6 mt-12 pb-6">
+      {/* Conta */}
+      <section className="px-6 mt-10 pb-6">
+        <h3 className="mb-4 font-display font-black text-sm italic tracking-tighter">CONTA</h3>
         <button
             onClick={handleDeleteRunsFromProfile}
             disabled={profileDeletingRuns}
@@ -907,9 +906,9 @@ const Profile = () => {
             <LogOut size={16} />
             SAIR DA CONTA
         </button>
-      </div>
+      </section>
 
-      <EditProfileModal 
+      <EditProfileModal
         open={editOpen} 
         onClose={() => setEditOpen(false)} 
         initialData={{
