@@ -527,9 +527,6 @@ const Profile = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>(getStoredTheme);
   const [loading, setLoading] = useState(true);
-  const [confirmProfileDelete, setConfirmProfileDelete] = useState(false);
-  const [profileDeletingRuns, setProfileDeletingRuns] = useState(false);
-  
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [statsData, setStatsData] = useState<UserStats | null>(null);
   const [runHistory, setRunHistory] = useState<FeedActivity[]>([]);
@@ -612,29 +609,6 @@ const Profile = () => {
       navigate("/login");
     } catch {
       toast.error("Erro ao fazer logout");
-    }
-  };
-
-  const handleDeleteRunsFromProfile = async () => {
-    if (!user) return;
-
-    if (!confirmProfileDelete) {
-      setConfirmProfileDelete(true);
-      toast.warning("Toque novamente para confirmar a exclusão das corridas.");
-      return;
-    }
-
-    setProfileDeletingRuns(true);
-    try {
-      const deletedCount = await deleteUserActivities(user.uid);
-      toast.success(`${deletedCount} corrida${deletedCount === 1 ? "" : "s"} apagada${deletedCount === 1 ? "" : "s"}.`);
-      setConfirmProfileDelete(false);
-      await fetchProfileData();
-    } catch (error) {
-      console.error("Erro ao apagar corridas:", error);
-      toast.error("Não foi possível apagar as corridas.");
-    } finally {
-      setProfileDeletingRuns(false);
     }
   };
 
@@ -839,7 +813,7 @@ const Profile = () => {
       <section className="mt-10">
           <div className="px-6 flex items-center justify-between mb-4">
             <h3 className="font-display font-black text-sm italic tracking-tighter">CONQUISTAS</h3>
-            <button className="text-[10px] font-black text-purple-500 italic">VER TODAS</button>
+            <button onClick={() => navigate("/conquistas")} className="text-[10px] font-black text-purple-500 italic">VER TODAS</button>
           </div>
           <div className="flex gap-4 overflow-x-auto no-scrollbar px-6">
               {realAchievements.map((a, i) => (
@@ -888,18 +862,6 @@ const Profile = () => {
       <section className="px-6 mt-10 pb-6">
         <h3 className="mb-4 font-display font-black text-sm italic tracking-tighter">CONTA</h3>
         <button
-            onClick={handleDeleteRunsFromProfile}
-            disabled={profileDeletingRuns}
-            className={`w-full mb-3 bg-card/80 backdrop-blur-xl border border-border py-4 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-60 ${
-              confirmProfileDelete
-                ? "text-red-400 border-red-500/40 bg-red-500/10"
-                : "text-zinc-500 hover:text-red-500 hover:border-red-500/30"
-            }`}
-        >
-            {profileDeletingRuns ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-            {confirmProfileDelete ? "CONFIRMAR EXCLUSÃO DAS CORRIDAS" : "APAGAR MINHAS CORRIDAS"}
-        </button>
-        <button 
             onClick={handleLogout}
             className="w-full bg-card/80 backdrop-blur-xl border border-border py-4 rounded-xl text-[10px] font-black tracking-widest text-zinc-500 hover:text-red-500 hover:border-red-500/30 transition-all flex items-center justify-center gap-2"
         >

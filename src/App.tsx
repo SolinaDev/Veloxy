@@ -46,6 +46,7 @@ const Events = lazy(() => import("@/pages/app/Events"));
 const Profile = lazy(() => import("@/pages/app/Profile"));
 const Group = lazy(() => import("@/pages/app/Group"));
 const Pet = lazy(() => import("@/pages/app/Pet"));
+const Achievements = lazy(() => import("@/pages/app/Achievements"));
 
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
@@ -190,6 +191,11 @@ const App = () => {
                     <Route
                       path="pet"
                       element={<Pet />}
+                    />
+
+                    <Route
+                      path="conquistas"
+                      element={<Achievements />}
                     />
                   </Route>
 
