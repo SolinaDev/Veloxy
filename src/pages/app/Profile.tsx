@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -33,7 +33,6 @@ import {
 import { deleteUserActivities, getUserActivities, getUserStats, getUserProfile, UserProfile, UserStats } from "@/services/database";
 import type { FeedActivity } from "@/types";
 import { getLevelFromXP } from "@/lib/gamification";
-import { getGooglePhotoURL } from "@/lib/user-photo";
 import { toDateSafe } from "@/lib/feed-utils";
 import { uploadAvatar } from "@/services/storage";
 import { ACHIEVEMENTS } from "@/lib/achievements";
@@ -366,7 +365,9 @@ function EditProfileModal({
   const [location, setLocation] = useState(initialData.location);
   const [bio, setBio] = useState(initialData.bio);
   const [photoURL, setPhotoURL] = useState(initialData.photoURL);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [weeklyGoalKm, setWeeklyGoalKm] = useState(initialData.weeklyGoalKm.toString());
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -377,6 +378,24 @@ function EditProfileModal({
     setWeeklyGoalKm(initialData.weeklyGoalKm.toString());
   }, [open, initialData, user]);
 
+  const handlePhotoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+
+    setUploadingPhoto(true);
+    try {
+      const newUrl = await uploadAvatar(file, user.uid);
+      setPhotoURL(newUrl);
+      toast.success("Foto atualizada!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Não foi possível enviar a foto agora.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!displayName.trim()) {
       toast.error("O nome não pode ficar vazio");
@@ -385,19 +404,16 @@ function EditProfileModal({
     setSaving(true);
     try {
       if (user) {
-        const normalizedPhoto = photoURL.trim();
         const goalValue = Number(weeklyGoalKm);
         // Atualizar Auth
         await updateProfile(user, {
           displayName: displayName.trim(),
-          photoURL: normalizedPhoto || null,
         });
-        
+
         // Atualizar Firestore
         const userRef = doc(db, "users", user.uid);
         await setDoc(userRef, {
           displayName: displayName.trim(),
-          photoURL: normalizedPhoto || null,
           bio: bio.trim(),
           location: location.trim(),
           weeklyGoalKm: Number.isFinite(goalValue) ? Math.max(0, Math.min(goalValue, 500)) : 10,
@@ -441,6 +457,34 @@ function EditProfileModal({
             </div>
             
             <div className="space-y-6 max-h-[calc(82svh-9rem)] overflow-y-auto no-scrollbar pb-4">
+                  <div className="flex flex-col items-center">
+                    <input
+                      ref={photoInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoFileChange}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => photoInputRef.current?.click()}
+                      disabled={uploadingPhoto}
+                      className="relative block h-24 w-24 cursor-pointer overflow-hidden rounded-3xl border border-border bg-secondary group disabled:opacity-70"
+                      aria-label="Trocar foto de perfil"
+                    >
+                      {photoURL ? (
+                        <img src={photoURL} className="h-full w-full object-cover transition-all group-hover:opacity-40" alt="Foto de perfil" />
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center font-display text-2xl font-black text-purple-500">
+                          {(displayName || "?").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100">
+                        {uploadingPhoto ? <Loader2 size={22} className="animate-spin text-white" /> : <Camera size={22} className="text-white" />}
+                      </div>
+                    </button>
+                    <p className="mt-2 text-[9px] font-black uppercase tracking-widest text-zinc-500">Toque para trocar a foto</p>
+                  </div>
                   <div>
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 block">Nome de Corredor</label>
                     <input
@@ -457,25 +501,6 @@ function EditProfileModal({
                       placeholder="Ex: São Paulo, SP"
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
-                      className="w-full bg-secondary border border-input rounded-xl px-5 py-4 text-sm outline-none focus:border-purple-500 transition"
-                    />
-                  </div>
-                  <div>
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block">Foto do perfil</label>
-                      <button
-                        type="button"
-                        onClick={() => setPhotoURL(getGooglePhotoURL(user) || "")}
-                        className="text-[9px] font-black uppercase tracking-widest text-purple-400"
-                      >
-                        Usar Google
-                      </button>
-                    </div>
-                    <input
-                      type="url"
-                      placeholder="Cole uma URL de imagem"
-                      value={photoURL}
-                      onChange={(e) => setPhotoURL(e.target.value)}
                       className="w-full bg-secondary border border-input rounded-xl px-5 py-4 text-sm outline-none focus:border-purple-500 transition"
                     />
                   </div>
@@ -505,7 +530,7 @@ function EditProfileModal({
             <motion.button
               whileTap={{ scale: 0.96 }}
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || uploadingPhoto}
               className="w-full mt-4 bg-purple-600 hover:bg-purple-700 transition py-5 rounded-xl font-black tracking-widest text-sm disabled:opacity-50"
             >
               {saving ? "SALVANDO..." : "SALVAR ALTERAÇÕES"}
@@ -548,22 +573,6 @@ const Profile = () => {
       setLoading(false);
     }
   }, [user]);
-
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0] && user) {
-      try {
-        const file = e.target.files[0];
-        toast.info("Fazendo upload da nova foto...");
-        const newUrl = await uploadAvatar(file, user.uid);
-        
-        // Atualiza a View imediatamente
-        setProfile(prev => prev ? { ...prev, photoURL: newUrl } : null);
-        toast.success("Avatar atualizado com sucesso! Pode demorar alguns segundos pra atualizar em todas as telas.");
-      } catch (err) {
-        toast.error("Erro ao enviar foto. Verifique as configurações de Storage do projeto.");
-      }
-    }
-  };
 
   useEffect(() => {
     fetchProfileData();
