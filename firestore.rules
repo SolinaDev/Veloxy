@@ -217,8 +217,7 @@ service cloud.firestore {
     }
 
     function validPetChoice(userId) {
-      return validUserBase(userId)
-        && request.resource.data.diff(resource.data).affectedKeys()
+      return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['petSpecies', 'petName', 'petCoins'])
         // Só pode escolher o pet uma vez.
         && !('petSpecies' in resource.data)
@@ -232,8 +231,7 @@ service cloud.firestore {
     // equivalente a uma corrida de 500km (bem acima do teto real de uma
     // atividade, só para fechar a regra com folga).
     function validPetCoinsEarn(userId) {
-      return validUserBase(userId)
-        && 'petSpecies' in resource.data
+      return 'petSpecies' in resource.data
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['petCoins'])
         && request.resource.data.petCoins >= resource.data.petCoins
         && request.resource.data.petCoins <= resource.data.petCoins + 500;
@@ -242,8 +240,7 @@ service cloud.firestore {
     // Compra de acessório: só pode debitar RunCoin (nunca creditar) e
     // adicionar exatamente 1 item novo à lista de desbloqueados.
     function validPetPurchase(userId) {
-      return validUserBase(userId)
-        && request.resource.data.diff(resource.data).affectedKeys()
+      return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['petCoins', 'petUnlockedAccessoryIds'])
         && request.resource.data.petCoins is number
         && request.resource.data.petCoins >= 0
@@ -264,14 +261,12 @@ service cloud.firestore {
     }
 
     function validPetEquip(userId) {
-      return validUserBase(userId)
-        && request.resource.data.diff(resource.data).affectedKeys()
+      return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['petEquippedCabeca', 'petEquippedPescoco', 'petEquippedFundo']);
     }
 
     function validUserCreate(userId) {
-      return validUserBase(userId)
-        && hasOnlyUserFields()
+      return hasOnlyUserFields()
         && (
           !('totalXP' in request.resource.data)
           || request.resource.data.totalXP == 0
@@ -295,8 +290,7 @@ service cloud.firestore {
     }
 
     function validProfileUpdate(userId) {
-      return validUserBase(userId)
-        && request.resource.data.diff(resource.data).affectedKeys()
+      return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly([
             'displayName',
             'photoURL',
@@ -311,8 +305,7 @@ service cloud.firestore {
     }
 
     function validStatsProgressUpdate(userId) {
-      return validUserBase(userId)
-        && request.resource.data.diff(resource.data).affectedKeys()
+      return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly([
             'displayName',
             'photoURL',
@@ -357,8 +350,7 @@ service cloud.firestore {
     }
 
     function validMonthlyKmReset(userId) {
-      return validUserBase(userId)
-        && request.resource.data.diff(resource.data).affectedKeys()
+      return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly([
             'monthlyKm',
             'monthlyKmMonth'
@@ -367,8 +359,7 @@ service cloud.firestore {
     }
 
     function validUserRunReset(userId) {
-      return validUserBase(userId)
-        && request.resource.data.diff(resource.data).affectedKeys()
+      return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly([
             'totalXP',
             'monthlyKm',
@@ -392,8 +383,7 @@ service cloud.firestore {
     // isoladamente para se colocar no topo do ranking sem nenhuma corrida
     // real por trás.
     function validStatsRecalculation(userId) {
-      return validUserBase(userId)
-        && request.resource.data.diff(resource.data).affectedKeys()
+      return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly([
             'totalXP',
             'monthlyKm',
@@ -422,16 +412,14 @@ service cloud.firestore {
     }
 
     function validEnrolledEventsUpdate(userId) {
-      return validUserBase(userId)
-        && request.resource.data.diff(resource.data).affectedKeys()
+      return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['enrolledEvents'])
         && request.resource.data.enrolledEvents is list
         && request.resource.data.enrolledEvents.size() <= 100;
     }
 
     function validJoinedGroupsUpdate(userId) {
-      return validUserBase(userId)
-        && request.resource.data.diff(resource.data).affectedKeys()
+      return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['joinedGroupIds'])
         && request.resource.data.joinedGroupIds is list
         && request.resource.data.joinedGroupIds.size() <= 100;
@@ -796,8 +784,8 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if signedIn();
-      allow create: if validUserCreate(userId);
-      allow update: if validUserUpdate(userId);
+      allow create: if validUserBase(userId) && validUserCreate(userId);
+      allow update: if validUserBase(userId) && validUserUpdate(userId);
       allow delete: if false;
     }
 

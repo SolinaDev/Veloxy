@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -33,7 +33,6 @@ import {
 import { deleteUserActivities, getUserActivities, getUserStats, getUserProfile, UserProfile, UserStats } from "@/services/database";
 import type { FeedActivity } from "@/types";
 import { getLevelFromXP } from "@/lib/gamification";
-import { getGooglePhotoURL } from "@/lib/user-photo";
 import { toDateSafe } from "@/lib/feed-utils";
 import { uploadAvatar } from "@/services/storage";
 import { ACHIEVEMENTS } from "@/lib/achievements";
@@ -366,7 +365,9 @@ function EditProfileModal({
   const [location, setLocation] = useState(initialData.location);
   const [bio, setBio] = useState(initialData.bio);
   const [photoURL, setPhotoURL] = useState(initialData.photoURL);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [weeklyGoalKm, setWeeklyGoalKm] = useState(initialData.weeklyGoalKm.toString());
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -377,6 +378,24 @@ function EditProfileModal({
     setWeeklyGoalKm(initialData.weeklyGoalKm.toString());
   }, [open, initialData, user]);
 
+  const handlePhotoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+
+    setUploadingPhoto(true);
+    try {
+      const newUrl = await uploadAvatar(file, user.uid);
+      setPhotoURL(newUrl);
+      toast.success("Foto atualizada!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Não foi possível enviar a foto agora.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!displayName.trim()) {
       toast.error("O nome não pode ficar vazio");
@@ -385,19 +404,16 @@ function EditProfileModal({
     setSaving(true);
     try {
       if (user) {
-        const normalizedPhoto = photoURL.trim();
         const goalValue = Number(weeklyGoalKm);
         // Atualizar Auth
         await updateProfile(user, {
           displayName: displayName.trim(),
-          photoURL: normalizedPhoto || null,
         });
-        
+
         // Atualizar Firestore
         const userRef = doc(db, "users", user.uid);
         await setDoc(userRef, {
           displayName: displayName.trim(),
-          photoURL: normalizedPhoto || null,
           bio: bio.trim(),
           location: location.trim(),
           weeklyGoalKm: Number.isFinite(goalValue) ? Math.max(0, Math.min(goalValue, 500)) : 10,
@@ -441,6 +457,34 @@ function EditProfileModal({
             </div>
             
             <div className="space-y-6 max-h-[calc(82svh-9rem)] overflow-y-auto no-scrollbar pb-4">
+                  <div className="flex flex-col items-center">
+                    <input
+                      ref={photoInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoFileChange}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => photoInputRef.current?.click()}
+                      disabled={uploadingPhoto}
+                      className="relative block h-24 w-24 cursor-pointer overflow-hidden rounded-3xl border border-border bg-secondary group disabled:opacity-70"
+                      aria-label="Trocar foto de perfil"
+                    >
+                      {photoURL ? (
+                        <img src={photoURL} className="h-full w-full object-cover transition-all group-hover:opacity-40" alt="Foto de perfil" />
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center font-display text-2xl font-black text-purple-500">
+                          {(displayName || "?").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100">
+                        {uploadingPhoto ? <Loader2 size={22} className="animate-spin text-white" /> : <Camera size={22} className="text-white" />}
+                      </div>
+                    </button>
+                    <p className="mt-2 text-[9px] font-black uppercase tracking-widest text-zinc-500">Toque para trocar a foto</p>
+                  </div>
                   <div>
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 block">Nome de Corredor</label>
                     <input
@@ -457,25 +501,6 @@ function EditProfileModal({
                       placeholder="Ex: São Paulo, SP"
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
-                      className="w-full bg-secondary border border-input rounded-xl px-5 py-4 text-sm outline-none focus:border-purple-500 transition"
-                    />
-                  </div>
-                  <div>
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block">Foto do perfil</label>
-                      <button
-                        type="button"
-                        onClick={() => setPhotoURL(getGooglePhotoURL(user) || "")}
-                        className="text-[9px] font-black uppercase tracking-widest text-purple-400"
-                      >
-                        Usar Google
-                      </button>
-                    </div>
-                    <input
-                      type="url"
-                      placeholder="Cole uma URL de imagem"
-                      value={photoURL}
-                      onChange={(e) => setPhotoURL(e.target.value)}
                       className="w-full bg-secondary border border-input rounded-xl px-5 py-4 text-sm outline-none focus:border-purple-500 transition"
                     />
                   </div>
@@ -505,7 +530,7 @@ function EditProfileModal({
             <motion.button
               whileTap={{ scale: 0.96 }}
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || uploadingPhoto}
               className="w-full mt-4 bg-purple-600 hover:bg-purple-700 transition py-5 rounded-xl font-black tracking-widest text-sm disabled:opacity-50"
             >
               {saving ? "SALVANDO..." : "SALVAR ALTERAÇÕES"}
@@ -527,9 +552,6 @@ const Profile = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>(getStoredTheme);
   const [loading, setLoading] = useState(true);
-  const [confirmProfileDelete, setConfirmProfileDelete] = useState(false);
-  const [profileDeletingRuns, setProfileDeletingRuns] = useState(false);
-  
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [statsData, setStatsData] = useState<UserStats | null>(null);
   const [runHistory, setRunHistory] = useState<FeedActivity[]>([]);
@@ -551,22 +573,6 @@ const Profile = () => {
       setLoading(false);
     }
   }, [user]);
-
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0] && user) {
-      try {
-        const file = e.target.files[0];
-        toast.info("Fazendo upload da nova foto...");
-        const newUrl = await uploadAvatar(file, user.uid);
-        
-        // Atualiza a View imediatamente
-        setProfile(prev => prev ? { ...prev, photoURL: newUrl } : null);
-        toast.success("Avatar atualizado com sucesso! Pode demorar alguns segundos pra atualizar em todas as telas.");
-      } catch (err) {
-        toast.error("Erro ao enviar foto. Verifique as configurações de Storage do projeto.");
-      }
-    }
-  };
 
   useEffect(() => {
     fetchProfileData();
@@ -612,29 +618,6 @@ const Profile = () => {
       navigate("/login");
     } catch {
       toast.error("Erro ao fazer logout");
-    }
-  };
-
-  const handleDeleteRunsFromProfile = async () => {
-    if (!user) return;
-
-    if (!confirmProfileDelete) {
-      setConfirmProfileDelete(true);
-      toast.warning("Toque novamente para confirmar a exclusão das corridas.");
-      return;
-    }
-
-    setProfileDeletingRuns(true);
-    try {
-      const deletedCount = await deleteUserActivities(user.uid);
-      toast.success(`${deletedCount} corrida${deletedCount === 1 ? "" : "s"} apagada${deletedCount === 1 ? "" : "s"}.`);
-      setConfirmProfileDelete(false);
-      await fetchProfileData();
-    } catch (error) {
-      console.error("Erro ao apagar corridas:", error);
-      toast.error("Não foi possível apagar as corridas.");
-    } finally {
-      setProfileDeletingRuns(false);
     }
   };
 
@@ -715,27 +698,32 @@ const Profile = () => {
         <p className="mt-6 text-sm text-zinc-400 max-w-xs italic leading-relaxed">
             {profile?.bio || "Apaixonado por corrida e desafios urbanos."}
         </p>
+      </section>
+
+      {/* Progresso: numeros principais, pet, metas e nivel agrupados sob um unico titulo */}
+      <section className="px-6 mt-10">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="font-display font-black text-sm italic tracking-tighter">SEU PROGRESSO</h3>
+        </div>
 
         <button
           onClick={() => navigate("/pet")}
-          className="mt-6 flex w-full max-w-xs items-center gap-3 rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-4 text-left active:scale-[0.98] transition-transform"
+          className="mb-4 flex w-full items-center gap-3 rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-4 text-left active:scale-[0.98] transition-transform"
         >
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 border border-purple-500/20 text-3xl">
-            {petSpeciesInfo?.emoji || <PawPrint className="text-purple-500" size={22} />}
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 border border-purple-500/20 text-2xl">
+            {petSpeciesInfo?.emoji || <PawPrint className="text-purple-500" size={20} />}
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Seu pet</p>
-            <p className="mt-0.5 truncate font-display text-lg font-black italic">
+            <p className="mt-0.5 truncate font-display text-base font-black italic">
               {profile?.petName || "Adote seu pet"}
             </p>
           </div>
           <ChevronRight size={18} className="shrink-0 text-zinc-500" />
         </button>
-      </section>
 
-      {/* Momentum Cards (Stats) */}
-      <section className="px-6 mt-10 grid grid-cols-2 gap-4">
-            <motion.div 
+        <div className="grid grid-cols-2 gap-4">
+            <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ y: -3 }}
@@ -748,7 +736,7 @@ const Profile = () => {
                 </div>
             </motion.div>
 
-            <motion.div 
+            <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
@@ -761,40 +749,20 @@ const Profile = () => {
                     <span className="text-xs font-bold text-orange-500 italic uppercase">XP</span>
                 </div>
             </motion.div>
-      </section>
+        </div>
 
-      <section className="px-6 mt-6">
-        <button
-          onClick={() => navigate("/stats")}
-          className="bg-card/80 backdrop-blur-xl border border-border w-full rounded-3xl p-5 text-left transition active:scale-[0.98]"
-        >
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Status completo</p>
-              <h3 className="mt-1 font-display text-2xl font-black italic">Informacoes da corrida</h3>
-              <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-                Ritmo medio, melhor corrida, sequencia, calorias e progresso semanal.
-              </p>
-            </div>
-            <div className="bg-purple-600 text-white flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl">
-              <BarChart3 size={22} />
-            </div>
-          </div>
-        </button>
-      </section>
-
-      <section className="px-6 mt-6">
-        <div className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-5">
-          <div className="mb-4 flex items-center justify-between">
+        {/* Metas e nivel: duas barras de progresso, um card so */}
+        <div className="mt-4 bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-5">
+          <div className="flex items-center justify-between">
             <div>
               <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Meta semanal</p>
-              <h3 className="mt-1 font-display text-2xl font-black italic">
+              <h3 className="mt-1 font-display text-xl font-black italic">
                 {weeklyKm.toFixed(1)} / {weeklyGoalKm.toFixed(1)} km
               </h3>
             </div>
-            <Zap size={22} className="text-purple-500" />
+            <Zap size={20} className="text-purple-500" />
           </div>
-          <div className="h-3 rounded-full bg-background/80 p-1 border border-border">
+          <div className="mt-3 h-3 rounded-full bg-background/80 p-1 border border-border">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${weeklyProgress}%` }}
@@ -803,45 +771,58 @@ const Profile = () => {
           </div>
           <button
             onClick={() => setEditOpen(true)}
-            className="mt-4 text-[10px] font-black uppercase tracking-widest text-purple-400"
+            className="mt-3 text-[10px] font-black uppercase tracking-widest text-purple-400"
           >
             Ajustar meta
           </button>
-        </div>
-      </section>
 
-      {/* Level Progress */}
-      <section className="px-6 mt-8">
-        <motion.div
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.18 }}
-          className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-6"
-        >
-            <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xs font-black tracking-widest text-zinc-500 uppercase">Progresso do Nível</h3>
-                <span className="text-xs font-black text-purple-500 uppercase">{levelInfo.nextLevel}</span>
+          <div className="my-5 border-t border-border" />
+
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Nível</p>
+            <span className="text-xs font-black text-purple-500 uppercase">{levelInfo.currentLevel} → {levelInfo.nextLevel}</span>
+          </div>
+          <div className="mt-3 h-3 rounded-full bg-background/80 p-1 border border-border">
+            <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${levelInfo.progress}%` }}
+                className="h-full rounded-full bg-gradient-to-r from-purple-600 to-purple-400"
+            />
+          </div>
+          <p className="mt-3 text-[10px] font-bold text-zinc-600 italic">
+            {levelInfo.xpToNext > 0
+              ? `Faltam ${levelInfo.xpToNext.toLocaleString("pt-BR")} XP para se tornar ${levelInfo.nextLevel.toUpperCase()}`
+              : "Você atingiu o nível máximo!"}
+          </p>
+        </div>
+
+        {/* Entrada: status completo, mesmo padrao visual de linha com chevron */}
+        <div className="mt-4">
+          <button
+            onClick={() => navigate("/stats")}
+            className="bg-card/80 backdrop-blur-xl border border-border w-full rounded-3xl p-5 text-left transition active:scale-[0.98]"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Status completo</p>
+                <h3 className="mt-1 font-display text-xl font-black italic">Informacoes da corrida</h3>
+                <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                  Ritmo medio, melhor corrida, sequencia, calorias e progresso semanal.
+                </p>
+              </div>
+              <div className="bg-purple-600 text-white flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl">
+                <BarChart3 size={22} />
+              </div>
             </div>
-            <div className="w-full h-4 bg-background/80 rounded-full overflow-hidden p-1 border border-border shadow-inner">
-                <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${levelInfo.progress}%` }}
-                    className="h-full bg-gradient-to-r from-purple-600 to-purple-400 rounded-full shadow-[0_0_15px_rgba(147,51,234,0.5)]"
-                />
-            </div>
-            <p className="mt-3 text-[10px] text-center font-bold text-zinc-600 italic">
-              {levelInfo.xpToNext > 0 
-                ? `Faltam ${levelInfo.xpToNext.toLocaleString("pt-BR")} XP para se tornar ${levelInfo.nextLevel.toUpperCase()}`
-                : "Você atingiu o nível máximo!"}
-            </p>
-        </motion.div>
+          </button>
+        </div>
       </section>
 
       {/* Achievements Horizontal */}
       <section className="mt-10">
           <div className="px-6 flex items-center justify-between mb-4">
             <h3 className="font-display font-black text-sm italic tracking-tighter">CONQUISTAS</h3>
-            <button className="text-[10px] font-black text-purple-500 italic">VER TODAS</button>
+            <button onClick={() => navigate("/conquistas")} className="text-[10px] font-black text-purple-500 italic">VER TODAS</button>
           </div>
           <div className="flex gap-4 overflow-x-auto no-scrollbar px-6">
               {realAchievements.map((a, i) => (
@@ -886,30 +867,19 @@ const Profile = () => {
         </div>
       </section>
 
-      {/* Logout Button */}
-      <div className="px-6 mt-12 pb-6">
+      {/* Conta */}
+      <section className="px-6 mt-10 pb-6">
+        <h3 className="mb-4 font-display font-black text-sm italic tracking-tighter">CONTA</h3>
         <button
-            onClick={handleDeleteRunsFromProfile}
-            disabled={profileDeletingRuns}
-            className={`w-full mb-3 bg-card/80 backdrop-blur-xl border border-border py-4 rounded-xl text-[10px] font-black tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-60 ${
-              confirmProfileDelete
-                ? "text-red-400 border-red-500/40 bg-red-500/10"
-                : "text-zinc-500 hover:text-red-500 hover:border-red-500/30"
-            }`}
-        >
-            {profileDeletingRuns ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-            {confirmProfileDelete ? "CONFIRMAR EXCLUSÃO DAS CORRIDAS" : "APAGAR MINHAS CORRIDAS"}
-        </button>
-        <button 
             onClick={handleLogout}
             className="w-full bg-card/80 backdrop-blur-xl border border-border py-4 rounded-xl text-[10px] font-black tracking-widest text-zinc-500 hover:text-red-500 hover:border-red-500/30 transition-all flex items-center justify-center gap-2"
         >
             <LogOut size={16} />
             SAIR DA CONTA
         </button>
-      </div>
+      </section>
 
-      <EditProfileModal 
+      <EditProfileModal
         open={editOpen} 
         onClose={() => setEditOpen(false)} 
         initialData={{
