@@ -723,6 +723,22 @@ const Profile = () => {
           <h3 className="font-display font-black text-sm italic tracking-tighter">SEU PROGRESSO</h3>
         </div>
 
+        <button
+          onClick={() => navigate("/pet")}
+          className="mb-4 flex w-full items-center gap-3 rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-4 text-left active:scale-[0.98] transition-transform"
+        >
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 border border-purple-500/20 text-2xl">
+            {petSpeciesInfo?.emoji || <PawPrint className="text-purple-500" size={20} />}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Seu pet</p>
+            <p className="mt-0.5 truncate font-display text-base font-black italic">
+              {profile?.petName || "Adote seu pet"}
+            </p>
+          </div>
+          <ChevronRight size={18} className="shrink-0 text-zinc-500" />
+        </button>
+
         <div className="grid grid-cols-2 gap-4">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -797,24 +813,8 @@ const Profile = () => {
           </p>
         </div>
 
-        {/* Entradas: pet e status completo, mesmo padrao visual de linha com chevron */}
-        <div className="mt-4 space-y-3">
-          <button
-            onClick={() => navigate("/pet")}
-            className="flex w-full items-center gap-3 rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-4 text-left active:scale-[0.98] transition-transform"
-          >
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 border border-purple-500/20 text-2xl">
-              {petSpeciesInfo?.emoji || <PawPrint className="text-purple-500" size={20} />}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Seu pet</p>
-              <p className="mt-0.5 truncate font-display text-base font-black italic">
-                {profile?.petName || "Adote seu pet"}
-              </p>
-            </div>
-            <ChevronRight size={18} className="shrink-0 text-zinc-500" />
-          </button>
-
+        {/* Entrada: status completo, mesmo padrao visual de linha com chevron */}
+        <div className="mt-4">
           <button
             onClick={() => navigate("/stats")}
             className="bg-card/80 backdrop-blur-xl border border-border w-full rounded-3xl p-5 text-left transition active:scale-[0.98]"
