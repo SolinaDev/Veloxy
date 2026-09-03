@@ -44,7 +44,7 @@ const Challenges = () => {
           )}
         </div>
         
-        <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500">
+        <h1 className="font-display font-black text-2xl tracking-tighter text-purple-500">
           VELOXY CHALLENGES
         </h1>
         
@@ -68,13 +68,13 @@ const Challenges = () => {
             {loading ? (
               <Loader2 className="animate-spin text-purple-500 my-2" size={32} />
             ) : (
-              <h2 className="text-5xl font-black font-display italic tracking-tighter text-purple-500">
+              <h2 className="text-5xl font-black font-display tracking-tighter text-purple-500">
                 {userProfile?.totalXP?.toLocaleString("pt-BR") || "0"}
               </h2>
             )}
             <div className="mt-4 px-4 py-1.5 bg-background/50 border border-border rounded-full flex items-center gap-2">
                 <Zap size={10} className="text-orange-400 fill-current" />
-                <span className="text-[9px] font-black text-zinc-400 italic">
+                <span className="text-[9px] font-black text-zinc-400">
                   NÍVEL {userProfile?.level?.toUpperCase() || "INICIANTE"}
                 </span>
             </div>
@@ -87,8 +87,8 @@ const Challenges = () => {
       {/* Active Challenges List */}
       <section className="mt-10">
         <div className="px-6 flex items-center justify-between mb-4">
-          <h3 className="font-display font-black text-sm italic tracking-tighter uppercase">Desafios Ativos</h3>
-          <button className="text-[10px] font-black text-purple-500 italic">DESCOBRIR</button>
+          <h3 className="font-display font-black text-sm tracking-tighter uppercase">Desafios Ativos</h3>
+          <button className="text-[10px] font-black text-purple-500">DESCOBRIR</button>
         </div>
         <div className="flex gap-4 overflow-x-auto no-scrollbar px-6">
           <div className="min-w-[280px]">
@@ -118,7 +118,7 @@ const Challenges = () => {
 
       {/* Badges / Conquistas Grid */}
       <section className="px-6 mt-10">
-        <h3 className="font-display font-black text-sm italic tracking-tighter uppercase mb-6 flex items-center gap-2">
+        <h3 className="font-display font-black text-sm tracking-tighter uppercase mb-6 flex items-center gap-2">
             <Medal size={16} className="text-purple-500" />
             Minhas Conquistas
         </h3>
@@ -148,7 +148,7 @@ const Challenges = () => {
       {/* Monthly Ranking List */}
       <section className="px-6 mt-12 pb-10">
         <div className="flex items-center justify-between mb-6">
-            <h3 className="font-display font-black text-sm italic tracking-tighter uppercase flex items-center gap-2">
+            <h3 className="font-display font-black text-sm tracking-tighter uppercase flex items-center gap-2">
                 <Users size={16} className="text-purple-500" />
                 Ranking Global
             </h3>
@@ -196,7 +196,7 @@ const Challenges = () => {
                   </p>
                 </div>
                 <div className="text-right">
-                  <span className="font-display font-black text-sm italic">{r.totalXP?.toLocaleString("pt-BR")}</span>
+                  <span className="font-display font-black text-sm">{r.totalXP?.toLocaleString("pt-BR")}</span>
                   <span className={`text-[9px] font-bold ml-1 ${isUser ? "text-purple-200" : "text-zinc-500"}`}>XP</span>
                 </div>
               </motion.div>

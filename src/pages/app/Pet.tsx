@@ -72,7 +72,7 @@ function PetOnboarding({ onAdopt, adopting }: { onAdopt: (species: PetSpecies, n
   return (
     <div className="app-shell flex flex-col items-center px-6 pt-16 pb-10 safe-top text-center">
       <Sparkles size={36} className="text-purple-500" />
-      <h1 className="mt-4 font-display text-3xl font-black italic uppercase tracking-tighter">Adote seu pet</h1>
+      <h1 className="mt-4 font-display text-3xl font-black uppercase tracking-tighter">Adote seu pet</h1>
       <p className="mt-2 max-w-xs text-sm text-zinc-400">
         Escolha um companheiro de velocidade. Ele evolui com seu XP e fica mais feliz quanto mais você corre.
       </p>
@@ -237,7 +237,7 @@ export default function Pet() {
   if (loadError) {
     return (
       <div className="app-shell flex flex-col items-center justify-center gap-5 px-6 text-center safe-top">
-        <p className="font-display text-xl font-black italic">Erro ao carregar dados</p>
+        <p className="font-display text-xl font-black">Erro ao carregar dados</p>
         <p className="text-sm text-zinc-500">Não foi possível carregar seu pet agora.</p>
         <button
           onClick={loadPetData}
@@ -280,7 +280,7 @@ export default function Pet() {
           </button>
           <div className="min-w-0 flex-1">
             <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Seu pet</p>
-            <h1 className="truncate font-display text-xl font-black italic">{profile.petName}</h1>
+            <h1 className="truncate font-display text-xl font-black">{profile.petName}</h1>
           </div>
           <div className="flex items-center gap-1.5 rounded-full border border-purple-500/25 bg-purple-500/10 px-3 py-2 text-xs font-black text-purple-300">
             🪙 {(profile.petCoins || 0).toLocaleString("pt-BR")}
@@ -319,7 +319,7 @@ export default function Pet() {
           ))}
         </motion.div>
 
-        <p className="mt-5 font-display text-2xl font-black italic uppercase tracking-tighter">{profile.petName}</p>
+        <p className="mt-5 font-display text-2xl font-black uppercase tracking-tighter">{profile.petName}</p>
         <p className="mt-1 text-xs font-black uppercase tracking-widest text-zinc-500">{speciesInfo?.label}</p>
         <div className="mt-3 rounded-full border border-border bg-card/80 backdrop-blur-xl px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
           {PET_MOOD_LABEL[mood]}

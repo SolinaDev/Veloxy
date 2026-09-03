@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Mail, X, Loader2, KeyRound } from "lucide-react";
+import { Mail, X, Loader2, LockKeyhole } from "lucide-react";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { FirebaseError } from "firebase/app";
 import { toast } from "sonner";
@@ -124,7 +124,7 @@ export default function ForgotPasswordModal({
             transition={{
               duration: 0.2,
             }}
-            className="relative w-full max-w-md rounded-3xl border border-border bg-card p-6 shadow-2xl"
+            className="relative w-full max-w-md rounded-3xl border border-border bg-card/80 p-5 shadow-2xl backdrop-blur-xl sm:p-8"
           >
             {/* Fechar */}
             <button
@@ -137,20 +137,32 @@ export default function ForgotPasswordModal({
               <X className="h-5 w-5" />
             </button>
 
-            {/* Ícone */}
-            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-500/10">
-              <KeyRound className="h-6 w-6 text-purple-400" />
+            {/* Cabeçalho */}
+            <div className="mb-5 flex flex-col items-center text-center">
+              <motion.div
+                animate={{
+                  rotate: [0, -10, 10, -6, 0],
+                }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  repeatDelay: 1.5,
+                  ease: "easeInOut",
+                }}
+                className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-500/10"
+              >
+                <LockKeyhole className="h-7 w-7 text-purple-400" />
+              </motion.div>
+
+              <h2 className="text-3xl font-bold text-white">
+                Recuperar senha
+              </h2>
+
+              <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                Digite o email da sua conta e enviaremos um link para você
+                criar uma nova senha.
+              </p>
             </div>
-
-            {/* Título */}
-            <h2 className="text-2xl font-bold text-white">
-              Recuperar senha
-            </h2>
-
-            <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-              Digite o email da sua conta e enviaremos um link para você
-              criar uma nova senha.
-            </p>
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">

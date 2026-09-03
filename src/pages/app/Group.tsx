@@ -75,7 +75,7 @@ function StateScreen({
         {icon}
       </div>
       <div>
-        <p className="font-display text-xl font-black italic uppercase tracking-tighter">{title}</p>
+        <p className="font-display text-xl font-black uppercase tracking-tighter">{title}</p>
         <p className="mt-2 max-w-xs text-sm text-zinc-500">{description}</p>
       </div>
       <div className="flex items-center gap-3">
@@ -561,7 +561,7 @@ function GroupOptionsModal({ open, onClose, group, onLeave, leaving }: {
               className="w-full max-w-md rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5 pointer-events-auto"
             >
               <div className="mb-5 flex items-center justify-between">
-                <h2 className="font-display text-xl font-black italic text-purple-500">OPÇÕES DO GRUPO</h2>
+                <h2 className="font-display text-xl font-black text-purple-500">OPÇÕES DO GRUPO</h2>
                 <button onClick={onClose} className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center text-zinc-400" aria-label="Fechar">
                   <X size={16} />
                 </button>
@@ -722,7 +722,7 @@ export default function Group() {
         <SafeAvatar src={group.photoURL} name={group.name} className="h-24 w-24 rounded-3xl border border-purple-500/20 bg-card" fallbackClassName="text-2xl font-black text-purple-500" />
 
         <div>
-          <p className="font-display text-2xl font-black italic uppercase tracking-tighter">{group.name}</p>
+          <p className="font-display text-2xl font-black uppercase tracking-tighter">{group.name}</p>
           <p className="mt-1 text-xs font-bold uppercase tracking-widest text-zinc-500">{group.city} · {group.membersCount} membros</p>
           {group.description && <p className="mt-3 max-w-xs text-sm text-zinc-400">{group.description}</p>}
         </div>
@@ -756,7 +756,7 @@ export default function Group() {
           <SafeAvatar src={group.photoURL} name={group.name} className="h-12 w-12 shrink-0 rounded-2xl border border-purple-500/30 bg-card" imageClassName="rounded-2xl" />
 
           <div className="min-w-0 flex-1">
-            <h1 className="truncate font-display text-xl font-black italic">{group.name}</h1>
+            <h1 className="truncate font-display text-xl font-black">{group.name}</h1>
             <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
               <Users size={11} className="text-purple-500" /> {group.membersCount} membros
             </p>

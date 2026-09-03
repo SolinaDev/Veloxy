@@ -176,7 +176,7 @@ export default function Home() {
           </button>
           <div className="text-center">
             <p className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-600">Veloxy</p>
-            <h1 className="font-display text-2xl font-black italic tracking-tighter text-purple-500">
+            <h1 className="font-display text-2xl font-black tracking-tighter text-purple-500">
               INICIO
             </h1>
           </div>
@@ -205,7 +205,7 @@ export default function Home() {
         <>
           <section className="px-6 pt-8">
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">Suas corridas</p>
-            <h2 className="mt-2 font-display text-4xl font-black italic uppercase tracking-tighter">
+            <h2 className="mt-2 font-display text-4xl font-black uppercase tracking-tighter">
               Bora, {firstName}
             </h2>
 
@@ -214,7 +214,7 @@ export default function Home() {
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-[0.22em] text-purple-300">Distancia total</p>
                   <div className="mt-2 flex items-end gap-2">
-                    <span className="font-display text-6xl font-black italic leading-none text-white">{formatDistance(Number(stats.totalKm), unit)}</span>
+                    <span className="font-display text-6xl font-black leading-none text-white">{formatDistance(Number(stats.totalKm), unit)}</span>
                     <span className="mb-2 text-xs font-black uppercase text-purple-400">{unit}</span>
                   </div>
                 </div>
@@ -234,7 +234,7 @@ export default function Home() {
                   { label: "Melhor", value: stats.bestActivity ? `${formatDistance(stats.bestActivity.distance, unit)}${unit}` : `0${unit}` },
                 ].map((item) => (
                   <div key={item.label} className="rounded-2xl bg-secondary/60 border border-input p-3">
-                    <p className="font-display text-xl font-black italic leading-none">{item.value}</p>
+                    <p className="font-display text-xl font-black leading-none">{item.value}</p>
                     <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.18em] text-zinc-500">{item.label}</p>
                   </div>
                 ))}
@@ -256,7 +256,7 @@ export default function Home() {
                 </div>
                 <p className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-500">{card.label}</p>
                 <div className="mt-1 flex items-baseline gap-1">
-                  <span className="font-display text-2xl font-black italic">{card.value}</span>
+                  <span className="font-display text-2xl font-black">{card.value}</span>
                   <span className="text-[9px] font-black uppercase text-purple-500">{card.unit}</span>
                 </div>
               </motion.div>
@@ -268,7 +268,7 @@ export default function Home() {
               <div className="mb-5 flex items-center justify-between">
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">Ultimos 7 dias</p>
-                  <h3 className="mt-1 font-display text-xl font-black italic">Progresso semanal</h3>
+                  <h3 className="mt-1 font-display text-xl font-black">Progresso semanal</h3>
                 </div>
                 <div className="rounded-full bg-purple-500/10 px-3 py-1 text-[10px] font-black text-purple-400">
                   {formatDistance(stats.weeklyTotalKm, unit)} {unit}
@@ -291,7 +291,7 @@ export default function Home() {
 
           <section className="mt-8 px-6">
             <div className="flex items-center justify-between">
-              <h3 className="font-display text-lg font-black italic uppercase">Corridas recentes</h3>
+              <h3 className="font-display text-lg font-black uppercase">Corridas recentes</h3>
               <span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Somente suas</span>
             </div>
 
@@ -345,7 +345,7 @@ export default function Home() {
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
                   <Ruler size={24} />
                 </div>
-                <h2 className="mt-4 font-display text-xl font-black italic">Trocar unidade de distância?</h2>
+                <h2 className="mt-4 font-display text-xl font-black">Trocar unidade de distância?</h2>
                 <p className="mt-2 text-sm text-zinc-400">
                   Suas distâncias vão passar a ser exibidas em {unit === "km" ? "milhas (mi)" : "quilômetros (km)"}.
                 </p>
