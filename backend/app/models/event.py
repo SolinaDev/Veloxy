@@ -32,6 +32,9 @@ class Event(Base):
     status: Mapped[str] = mapped_column(String, default="open")
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     distance_km: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Data/hora real do evento (distinta de `date`, que é texto de exibição
+    # tipo "24 SET") — usada para ordenar cronologicamente.
+    event_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     participants = relationship("EventParticipant", back_populates="event", cascade="all, delete-orphan")

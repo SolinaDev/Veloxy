@@ -8,8 +8,6 @@ import {
   arrayRemove,
   setDoc,
   getDoc,
-  increment,
-  runTransaction,
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { api, ApiError } from "@/services/apiClient";
@@ -73,18 +71,20 @@ export const saveActivity = async (data: ActivityData) => {
 };
 
 // Buscar perfil do usuário — Fase 1: os campos principais (XP, nível, pet)
-// agora vêm do backend próprio (Postgres).
-// enrolledEvents continua no Firestore por enquanto — eventos ainda não
-// migraram (ver Fase 1 do plano). joinedGroupIds agora é a união de grupos
-// reais (Postgres, via /groups/joined) com grupos de demonstração
+// agora vêm do backend próprio (Postgres). joinedGroupIds/enrolledEvents são
+// a união de grupos/eventos reais (Postgres) com os de demonstração
 // (Firestore, nunca tiveram linha real no Postgres).
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
   try {
     const profile = await api.get<UserProfile>(`/users/${userId}`);
 
-    const [realGroupIds, legacyIds] = await Promise.all([
+    const [realGroupIds, realEventIds, legacyIds] = await Promise.all([
       api.get<string[]>(`/groups/joined/${userId}`).catch((groupsError) => {
         console.warn("Nao foi possivel buscar grupos reais do usuario:", groupsError);
+        return [] as string[];
+      }),
+      api.get<string[]>(`/events/enrolled/${userId}`).catch((eventsError) => {
+        console.warn("Nao foi possivel buscar eventos reais do usuario:", eventsError);
         return [] as string[];
       }),
       (async () => {
@@ -104,7 +104,7 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
     ]);
 
     profile.joinedGroupIds = [...new Set([...realGroupIds, ...legacyIds.joinedGroupIds])];
-    profile.enrolledEvents = legacyIds.enrolledEvents;
+    profile.enrolledEvents = [...new Set([...realEventIds, ...legacyIds.enrolledEvents])];
 
     return profile;
   } catch (error) {
@@ -710,44 +710,40 @@ const getFallbackEvents = (): RunningEvent[] => {
   ];
 };
 
-const normalizeEvent = (id: string, data: Partial<RunningEvent>): RunningEvent => {
-  const category = data.category || "Corrida";
+// Preenche defaults amigáveis para campos que o backend pode devolver vazios
+// (image/price/etc não são obrigatórios no schema — eventos podem ser
+// cadastrados sem essas informações). Mesma lógica que existia no
+// normalizeEvent do Firestore, só que aplicada sobre a resposta já tipada
+// da API em vez de dados brutos de documento.
+const applyEventDefaults = (event: RunningEvent): RunningEvent => {
+  const category = event.category || "Corrida";
   return {
-    id,
-    title: data.title || "Corrida oficial",
-    date: data.date || "",
-    location: data.location || "Local a confirmar",
-    city: data.city || "Brasil",
-    state: data.state,
-    country: data.country || "BR",
-    lat: typeof data.lat === "number" ? data.lat : undefined,
-    lng: typeof data.lng === "number" ? data.lng : undefined,
-    participantsCount: Number(data.participantsCount || 0),
-    participantsIds: Array.isArray(data.participantsIds) ? data.participantsIds : [],
-    category,
-    distanceOptions: Array.isArray(data.distanceOptions) && data.distanceOptions.length > 0 ? data.distanceOptions : category.split("/").map((item) => item.trim()).filter(Boolean),
-    image: data.image || "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=900&auto=format&fit=crop",
-    price: data.price || "Ver no site oficial",
-    officialUrl: data.officialUrl || data.sourceUrl || "",
-    source: data.source || "Fonte oficial",
-    sourceUrl: data.sourceUrl || data.officialUrl || "",
-    sourceType: data.sourceType || "manual",
-    verified: Boolean(data.verified),
-    status: data.status || "unknown",
-    lastSyncedAt: data.lastSyncedAt,
-    timestamp: data.timestamp || new Date(),
+    ...event,
+    title: event.title || "Corrida oficial",
+    location: event.location || "Local a confirmar",
+    city: event.city || "Brasil",
+    country: event.country || "BR",
+    distanceOptions:
+      event.distanceOptions && event.distanceOptions.length > 0
+        ? event.distanceOptions
+        : category.split("/").map((item) => item.trim()).filter(Boolean),
+    image: event.image || "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=900&auto=format&fit=crop",
+    price: event.price || "Ver no site oficial",
+    officialUrl: event.officialUrl || event.sourceUrl || "",
+    source: event.source || "Fonte oficial",
+    sourceUrl: event.sourceUrl || event.officialUrl || "",
+    sourceType: event.sourceType || "manual",
+    status: event.status || "unknown",
   };
 };
 
+// Fase 1: eventos migraram para o backend próprio. Sem endpoint de criação
+// (igual ao Firestore antes: eventos são cadastrados fora do app) — se a API
+// não retornar nenhum, caem os eventos de demonstração locais.
 export const getEvents = async (cityFilter?: string): Promise<RunningEvent[]> => {
   try {
-    const q = query(collection(db, "events"), orderBy("timestamp", "asc"));
-    const snapshot = await getDocs(q);
-    let events = snapshot.docs.map(doc => normalizeEvent(doc.id, doc.data() as Partial<RunningEvent>));
-
-    if (events.length === 0) {
-      events = getFallbackEvents();
-    }
+    const rawEvents = await api.get<RunningEvent[]>("/events");
+    let events = rawEvents.length > 0 ? rawEvents.map(applyEventDefaults) : getFallbackEvents();
 
     if (cityFilter) {
       const normalizedCity = cityFilter.toLowerCase().split(",")[0].trim();
@@ -768,30 +764,17 @@ export const getEvents = async (cityFilter?: string): Promise<RunningEvent[]> =>
   }
 };
 
-/**
- * Inscreve o usuário em um evento
- */
+// Inscreve o usuário em um evento. Eventos locais/demo (prefixo "local-",
+// nunca têm linha real no Postgres) continuam gravando enrolledEvents no
+// Firestore; eventos reais vão direto para /events/{id}/join.
 export const joinEvent = async (eventId: string, userId: string) => {
   try {
-    const userRef = doc(db, "users", userId);
-
     if (eventId.startsWith("local-")) {
-      await setDoc(userRef, { enrolledEvents: arrayUnion(eventId) }, { merge: true });
+      await setDoc(doc(db, "users", userId), { enrolledEvents: arrayUnion(eventId) }, { merge: true });
       return true;
     }
 
-    // Grava o evento e o perfil do usuário juntos: se uma escrita falhar,
-    // a outra também não é aplicada (evita participantsIds e enrolledEvents
-    // ficarem dessincronizados por falha parcial).
-    const eventRef = doc(db, "events", eventId);
-    await runTransaction(db, async (transaction) => {
-      transaction.update(eventRef, {
-        participantsIds: arrayUnion(userId),
-        participantsCount: increment(1),
-      });
-      transaction.set(userRef, { enrolledEvents: arrayUnion(eventId) }, { merge: true });
-    });
-
+    await api.post(`/events/${eventId}/join`);
     return true;
   } catch (error) {
     console.error("Erro ao se inscrever no evento:", error);
