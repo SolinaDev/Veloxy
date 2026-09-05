@@ -1,14 +1,4 @@
-import {
-  collection,
-  getDocs,
-  query,
-  orderBy,
-  doc,
-  arrayUnion,
-  arrayRemove,
-  setDoc,
-  getDoc,
-} from "firebase/firestore";
+import { doc, arrayUnion, arrayRemove, setDoc, getDoc } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { api, ApiError } from "@/services/apiClient";
 import { toDateSafe } from "@/lib/feed-utils";
@@ -341,11 +331,11 @@ export const getUserActivities = async (userId: string, limitCount = 10): Promis
   }
 };
 
+// Fase 1: products migrou para o backend próprio (catálogo somente leitura,
+// cadastrado fora do app — sem endpoint de escrita, mesma regra de antes).
 export const getProducts = async (): Promise<Product[]> => {
   try {
-    const q = query(collection(db, "products"), orderBy("category"));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+    return await api.get<Product[]>("/products");
   } catch (error) {
     console.error("Erro ao buscar produtos:", error);
     return [];
