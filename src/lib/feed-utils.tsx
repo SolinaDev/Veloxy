@@ -6,11 +6,17 @@ import { Award, Zap, Flame, TrendingUp } from "lucide-react";
 import type { FeedActivity } from "@/types";
 import type { Timestamp } from "firebase/firestore";
 
-type TimestampLike = Timestamp | Date | { seconds: number; nanoseconds?: number };
+type TimestampLike = Timestamp | Date | string | { seconds: number; nanoseconds?: number };
 
+// Aceita Timestamp do Firestore (coleções ainda não migradas), string ISO
+// vinda do backend próprio (Fase 1 em diante) e Date puro.
 export const toDateSafe = (timestamp: TimestampLike | null | undefined) => {
   if (!timestamp) return null;
   if (timestamp instanceof Date) return timestamp;
+  if (typeof timestamp === "string") {
+    const parsed = new Date(timestamp);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
   if ("toDate" in timestamp && typeof timestamp.toDate === "function") {
     return timestamp.toDate();
   }

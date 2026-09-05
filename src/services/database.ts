@@ -1,31 +1,24 @@
-import { 
-  collection, 
-  addDoc, 
-  getDocs, 
-  query, 
-  orderBy, 
-  where, 
+import {
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  orderBy,
   serverTimestamp,
-  Timestamp,
   onSnapshot,
   doc,
   updateDoc,
   arrayUnion,
   arrayRemove,
   limit,
-  startAfter,
   setDoc,
   getDoc,
   increment,
-  writeBatch,
-  deleteDoc,
-  documentId,
   runTransaction,
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
-import { calculateXP, getLevelFromXP } from "@/lib/gamification";
+import { api, ApiError } from "@/services/apiClient";
 import { toDateSafe } from "@/lib/feed-utils";
-import { calculateRunCoins } from "@/lib/pet";
 import type { UserProfile, ActivityData, FeedActivity, Product, RunningEvent, UserStats, RunningGroup, GroupPost, GroupPostComment, GroupMessage, PetSpecies, PetAccessorySlot } from "@/types";
 
 // Re-exportar types para quem já importava direto daqui
@@ -45,16 +38,6 @@ function removeUndefinedFields<T>(value: T): T {
   }
 
   return value;
-}
-
-function toFirestoreTimestamp(value: FeedActivity["timestamp"]) {
-  if (!value) return null;
-  if (value instanceof Date) return Timestamp.fromDate(value);
-  if ("toDate" in value && typeof value.toDate === "function") return value;
-  if ("seconds" in value && typeof value.seconds === "number") {
-    return Timestamp.fromMillis(value.seconds * 1000);
-  }
-  return null;
 }
 
 function normalizeActivity(docId: string, data: Record<string, unknown>): FeedActivity {
@@ -102,265 +85,117 @@ function calculateCurrentStreak(activeDays: Set<string>) {
 }
 
 // Salvar uma nova atividade (corrida)
-// Retorna { id, xpUpdateFailed }: se a criação da atividade falhar, a
-// exceção é relançada (nada foi salvo, seguro tentar de novo). Se só a
-// atualização de XP falhar, a atividade já está salva — não relançamos,
-// para não fazer o usuário pensar que a corrida inteira se perdeu; o
-// chamador decide como avisar sobre o xpUpdateFailed.
+// Fase 1 da migração: activities e XP/petCoins agora vivem no backend
+// próprio (Postgres) — ver backend/app/routers/activities.py. Grupos ainda
+// não migraram, então addDistanceToUserGroups continua no Firestore por
+// enquanto (melhor esforço: nunca bloqueia nem falha o salvamento da corrida).
 export const saveActivity = async (data: ActivityData) => {
-  const xpGained = calculateXP(data.distance, data.durationSeconds);
-  const activityData = removeUndefinedFields({
-    ...data,
-    xpGained,
-    likes: [],
-    createdAtMs: Date.now(),
-    timestamp: serverTimestamp()
-  });
-
-  let docRef;
-  try {
-    docRef = await addDoc(collection(db, "activities"), activityData);
-  } catch (error) {
-    console.error("Erro ao salvar atividade:", error);
-    throw error;
-  }
-
-  let xpUpdateFailed = false;
-  try {
-    await updateUserXP(data.userId, xpGained, data.distance, data.userName, data.userAvatar);
-  } catch (error) {
-    console.error("Corrida salva, mas falhou ao atualizar XP/estatisticas:", error);
-    xpUpdateFailed = true;
-  }
-
-  // Melhor esforço: nunca bloqueia nem falha o salvamento da corrida.
+  const result = await api.post<{ id: string; xpUpdateFailed: boolean }>("/activities", data);
   await addDistanceToUserGroups(data.userId, data.distance);
-  await addPetCoins(data.userId, calculateRunCoins(data.distance));
-
-  return { id: docRef.id, xpUpdateFailed };
+  return result;
 };
 
-// Buscar ou criar perfil do usuário
+// Buscar perfil do usuário — Fase 1: os campos principais (XP, nível, pet)
+// agora vêm do backend próprio (Postgres). joinedGroupIds/enrolledEvents
+// continuam no Firestore por enquanto — grupos e eventos ainda não migraram
+// (ver Fase 1 do plano) — então mesclamos as duas fontes aqui até lá.
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
   try {
-    const userRef = doc(db, "users", userId);
-    const userSnap = await getDoc(userRef);
-    
-    if (userSnap.exists()) {
-      return { uid: userId, ...userSnap.data() } as UserProfile;
+    const profile = await api.get<UserProfile>(`/users/${userId}`);
+
+    try {
+      const legacySnap = await getDoc(doc(db, "users", userId));
+      if (legacySnap.exists()) {
+        const legacy = legacySnap.data();
+        profile.joinedGroupIds = Array.isArray(legacy.joinedGroupIds) ? legacy.joinedGroupIds : [];
+        profile.enrolledEvents = Array.isArray(legacy.enrolledEvents) ? legacy.enrolledEvents : [];
+      }
+    } catch (legacyError) {
+      console.warn("Nao foi possivel ler joinedGroupIds/enrolledEvents do Firestore:", legacyError);
     }
-    return null;
+
+    return profile;
   } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
     console.error("Erro ao buscar perfil:", error);
     return null;
   }
 };
 
-// Cria o documento inicial do usuário no Firestore logo após o cadastro.
-// Não inclui totalXP/level: a regra validUserCreate só aceita um doc novo
-// com totalXP == 0 (ou ausente) e level == 'Iniciante' (ou ausente).
+// Cria/atualiza o perfil do usuário logo após o cadastro. Nunca envia
+// totalXP/level — o backend controla esses campos (POST /activities), evitando
+// que um create malformado zere ou sobrescreva estatísticas existentes.
 export const createUserProfile = async (
   userId: string,
   data: { displayName?: string | null; photoURL?: string | null; termsVersion?: string }
 ) => {
-  const userRef = doc(db, "users", userId);
-  await setDoc(
-    userRef,
-    {
-      displayName: data.displayName ?? null,
-      photoURL: data.photoURL ?? null,
-      ...(data.termsVersion
-        ? { termsVersion: data.termsVersion, termsAcceptedAt: serverTimestamp() }
-        : {}),
-      createdAt: serverTimestamp(),
-      lastUpdated: serverTimestamp(),
-    },
-    { merge: true }
-  );
+  await api.put(`/users/${userId}`, data);
 };
 
-// Atualizar XP e KM do usuário
-// Bug 9 Fix: monthlyKm agora inclui reset mensal automático
-export const updateUserXP = async (
-  userId: string, 
-  xpAmount: number, 
-  kmAmount: number,
-  displayName: string,
-  photoURL: string | null
-) => {
-  try {
-    const userRef = doc(db, "users", userId);
-    const userSnap = await getDoc(userRef);
-
-    // Garante que o doc de usuário exista antes de incrementar estatísticas
-    // (create com totalXP ausente, como exige validUserCreate).
-    if (!userSnap.exists()) {
-      await createUserProfile(userId, { displayName, photoURL });
-    }
-
-    let currentXP = xpAmount;
-    const currentMonth = new Date().toISOString().slice(0, 7); // "2026-04"
-
-    if (userSnap.exists()) {
-      const data = userSnap.data();
-      currentXP += (data.totalXP || 0);
-
-      // Reset mensal: se o mês gravado no Firestore é diferente do atual, zera monthlyKm
-      const savedMonth = data.monthlyKmMonth || "";
-      if (savedMonth !== currentMonth) {
-        // Mês mudou: resetar monthlyKm antes de incrementar
-        await setDoc(userRef, { monthlyKm: 0, monthlyKmMonth: currentMonth }, { merge: true });
-      }
-    }
-
-    const { currentLevel } = getLevelFromXP(currentXP);
-
-    // Escrita isolada: só os campos de estatísticas. displayName/photoURL
-    // não entram aqui — se divergirem do que já está salvo, misturá-los
-    // faria o diff sair do formato aceito por validStatsProgressUpdate e
-    // rejeitar a atualização de XP inteira.
-    await setDoc(userRef, {
-      totalXP: increment(xpAmount),
-      monthlyKm: increment(kmAmount),
-      monthlyKmMonth: currentMonth,
-      level: currentLevel,
-      lastUpdated: serverTimestamp()
-    }, { merge: true });
-  } catch (error) {
-    console.error("Erro ao atualizar XP:", error);
-    throw error;
-  }
-};
-
-// Buscar Ranking Global (Top 10 por XP)
+// Buscar Ranking Global (Top 10 por XP) — Fase 1: backend próprio.
 export const getGlobalRanking = async (limitCount = 10): Promise<UserProfile[]> => {
   try {
-    const q = query(
-      collection(db, "users"),
-      orderBy("totalXP", "desc"),
-      limit(limitCount)
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs
-      .map(d => ({ uid: d.id, ...d.data() } as UserProfile))
-      .filter((profile) => !profile.privateProfile);
+    return await api.get<UserProfile[]>(`/users/ranking/global?limit=${limitCount}`);
   } catch (error) {
     console.error("Erro ao buscar ranking:", error);
     return [];
   }
 };
 
-export const deleteUserActivities = async (userId: string) => {
-  const q = query(collection(db, "activities"), where("userId", "==", userId));
-  const snapshot = await getDocs(q);
-
-  const batch = writeBatch(db);
-  snapshot.docs.forEach((activityDoc) => {
-    batch.delete(activityDoc.ref);
-  });
-
-  batch.set(
-    doc(db, "users", userId),
-    {
-      totalXP: 0,
-      monthlyKm: 0,
-      level: "Iniciante",
-      lastUpdated: serverTimestamp(),
-    },
-    { merge: true }
+export const deleteUserActivities = async (userId: string): Promise<number> => {
+  const { deleted_count: deletedCount } = await api.delete<{ deleted_count: number }>(
+    `/activities/user/${userId}/all`
   );
-
-  await batch.commit();
-
-  return snapshot.size;
+  return deletedCount;
 };
 
 export const deleteUserActivity = async (activityId: string, userId: string) => {
-  const activityRef = doc(db, "activities", activityId);
-  const activitySnap = await getDoc(activityRef);
-
-  if (!activitySnap.exists() || activitySnap.data().userId !== userId) {
-    throw new Error("Corrida não encontrada para este usuário.");
-  }
-
-  await deleteDoc(activityRef);
-
   try {
-    const remainingSnapshot = await getDocs(
-      query(collection(db, "activities"), where("userId", "==", userId))
-    );
-    const currentMonth = new Date().toISOString().slice(0, 7);
-
-    let totalXP = 0;
-    let monthlyKm = 0;
-
-    remainingSnapshot.docs.forEach((activityDoc) => {
-      const activity = normalizeActivity(activityDoc.id, activityDoc.data());
-      const distance = Number(activity.distance || 0);
-      const durationSeconds = Number(activity.durationSeconds || 0);
-      const activityXP = Number(activity.xpGained || calculateXP(distance, durationSeconds));
-      const activityDate = toDateSafe(activity.timestamp) ?? new Date(activity.createdAtMs || 0);
-
-      totalXP += activityXP;
-      if (!Number.isNaN(activityDate.getTime()) && activityDate.toISOString().slice(0, 7) === currentMonth) {
-        monthlyKm += distance;
-      }
-    });
-
-    const { currentLevel } = getLevelFromXP(totalXP);
-
-    await setDoc(
-      doc(db, "users", userId),
-      {
-        totalXP,
-        monthlyKm: Number(monthlyKm.toFixed(2)),
-        monthlyKmMonth: currentMonth,
-        level: currentLevel,
-        lastUpdated: serverTimestamp(),
-      },
-      { merge: true }
-    );
+    await api.delete(`/activities/${activityId}`);
   } catch (error) {
-    console.warn("Corrida apagada, mas não foi possível recalcular o perfil agora:", error);
+    if (error instanceof ApiError && error.status === 404) {
+      throw new Error("Corrida não encontrada para este usuário.");
+    }
+    throw error;
   }
+  void userId; // mantido na assinatura por compatibilidade com os chamadores existentes
 };
 
-// Escutar as N atividades mais recentes em tempo real
+// Feed de atividades — Fase 1: sem onSnapshot ainda (real-time via WebSocket
+// é a Fase 2 do plano de migração). Por enquanto, poll simples a cada 15s.
+// Interface mantida igual (retorna uma função de "unsubscribe") para não
+// exigir mudanças nos componentes que já consomem isso.
 export const subscribeToFeed = (
   callback: (activities: FeedActivity[]) => void,
   limitCount = 10
 ) => {
-  const q = query(
-    collection(db, "activities"),
-    orderBy("timestamp", "desc"),
-    limit(limitCount)
-  );
+  let cancelled = false;
 
-  return onSnapshot(q, (snapshot) => {
-    const activities = snapshot.docs.map(doc => normalizeActivity(doc.id, doc.data()));
-    callback(activities);
-  }, (error) => {
-    console.error("Erro no listener do feed:", error);
-  });
+  const fetchFeed = async () => {
+    try {
+      const activities = await api.get<FeedActivity[]>(`/activities/feed?limit=${limitCount}`);
+      if (!cancelled) callback(activities);
+    } catch (error) {
+      console.error("Erro ao buscar feed:", error);
+    }
+  };
+
+  fetchFeed();
+  const intervalId = setInterval(fetchFeed, 15_000);
+
+  return () => {
+    cancelled = true;
+    clearInterval(intervalId);
+  };
 };
 
-// Buscar atividades mais antigas (paginação cursor-based)
+// Buscar atividades mais antigas (paginação cursor-based pelo id numérico)
 export const loadMoreActivities = async (
-  lastTimestamp: FeedActivity["timestamp"],
+  lastId: FeedActivity["id"],
   limitCount = 10
 ): Promise<FeedActivity[]> => {
   try {
-    const cursor = toFirestoreTimestamp(lastTimestamp);
-    if (!cursor) return [];
-
-    const q = query(
-      collection(db, "activities"),
-      orderBy("timestamp", "desc"),
-      startAfter(cursor),
-      limit(limitCount)
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((d) => normalizeActivity(d.id, d.data()));
+    return await api.get<FeedActivity[]>(`/activities/feed?limit=${limitCount}&before_id=${lastId}`);
   } catch (error) {
     console.error("Erro ao carregar mais atividades:", error);
     return [];
@@ -370,26 +205,22 @@ export const loadMoreActivities = async (
 // Curtir/Descurtir uma atividade
 export const toggleLike = async (activityId: string, userId: string, isLiked: boolean) => {
   try {
-    const activityRef = doc(db, "activities", activityId);
-    await updateDoc(activityRef, {
-      likes: isLiked ? arrayRemove(userId) : arrayUnion(userId)
-    });
+    await api.post(`/activities/${activityId}/like`, { isLiked });
   } catch (error) {
     console.error("Erro ao dar like:", error);
     throw error;
   }
+  void userId; // mantido na assinatura: quem curte é sempre o usuario autenticado no backend
 };
 
-// Buscar estatísticas completas do usuário
+// Buscar estatísticas completas do usuário — Fase 1: activities vem do
+// backend próprio. limit=100000 pede "todas" (backend não tem endpoint
+// dedicado de contagem ainda; volume de corridas por usuário é pequeno).
 export const getUserStats = async (userId: string) => {
   try {
-    const q = query(
-      collection(db, "activities"),
-      where("userId", "==", userId)
-    );
-    const querySnapshot = await getDocs(q);
-    const activities = querySnapshot.docs
-      .map((docSnap) => normalizeActivity(docSnap.id, docSnap.data()))
+    const rawActivities = await api.get<FeedActivity[]>(`/activities/user/${userId}?limit=100000`);
+    const activities = rawActivities
+      .map((activity) => normalizeActivity(activity.id, activity))
       .sort((a, b) => {
         const dateA = toDateSafe(a.timestamp)?.getTime() ?? a.createdAtMs ?? 0;
         const dateB = toDateSafe(b.timestamp)?.getTime() ?? b.createdAtMs ?? 0;
@@ -510,19 +341,8 @@ export const getUserStats = async (userId: string) => {
  */
 export const getUserActivities = async (userId: string, limitCount = 10): Promise<FeedActivity[]> => {
   try {
-    const q = query(
-      collection(db, "activities"),
-      where("userId", "==", userId)
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs
-      .map((d) => normalizeActivity(d.id, d.data()))
-      .sort((a, b) => {
-        const dateA = toDateSafe(a.timestamp)?.getTime() ?? a.createdAtMs ?? 0;
-        const dateB = toDateSafe(b.timestamp)?.getTime() ?? b.createdAtMs ?? 0;
-        return dateB - dateA;
-      })
-      .slice(0, limitCount);
+    const activities = await api.get<FeedActivity[]>(`/activities/user/${userId}?limit=${limitCount}`);
+    return activities.map((activity) => normalizeActivity(activity.id, activity));
   } catch (error) {
     console.error("Erro ao buscar corridas do usuario:", error);
     return [];
@@ -758,47 +578,32 @@ export const leaveGroup = async (groupId: string, userId: string) => {
   return true;
 };
 
+// Fase 1: activities agora vive no backend próprio, não mais no Firestore —
+// mesmo com grupos ainda não migrados, essa busca precisa ir na API nova.
 export const getGroupActivities = async (group: RunningGroup, limitCount = 12): Promise<FeedActivity[]> => {
   const memberIds = group.memberIds.slice(0, 30);
   if (memberIds.length === 0) return [];
 
   try {
-    const chunks: string[][] = [];
-    for (let i = 0; i < memberIds.length; i += 10) chunks.push(memberIds.slice(i, i + 10));
-
-    const snapshots = await Promise.all(
-      chunks.map((chunk) => getDocs(query(collection(db, "activities"), where("userId", "in", chunk))))
+    const rawActivities = await api.get<FeedActivity[]>(
+      `/activities/by-users?user_ids=${memberIds.join(",")}&limit=${limitCount}`
     );
-
-    return snapshots
-      .flatMap((snapshot) => snapshot.docs.map((activityDoc) => normalizeActivity(activityDoc.id, activityDoc.data())))
-      .sort((a, b) => {
-        const dateA = toDateSafe(a.timestamp)?.getTime() ?? a.createdAtMs ?? 0;
-        const dateB = toDateSafe(b.timestamp)?.getTime() ?? b.createdAtMs ?? 0;
-        return dateB - dateA;
-      })
-      .slice(0, limitCount);
+    return rawActivities.map((activity) => normalizeActivity(activity.id, activity));
   } catch (error) {
     console.error("Erro ao buscar feed do grupo:", error);
     return [];
   }
 };
 
+// Fase 1: perfis agora vivem no backend próprio, não mais no Firestore —
+// mesmo com grupos ainda não migrados, essa busca precisa ir na API nova.
 export const getGroupLeaderboard = async (group: RunningGroup): Promise<UserProfile[]> => {
   const memberIds = group.memberIds.slice(0, 30);
   if (memberIds.length === 0) return [];
 
   try {
-    const chunks: string[][] = [];
-    for (let i = 0; i < memberIds.length; i += 10) chunks.push(memberIds.slice(i, i + 10));
-
-    const snapshots = await Promise.all(
-      chunks.map((chunk) => getDocs(query(collection(db, "users"), where(documentId(), "in", chunk))))
-    );
-
-    return snapshots
-      .flatMap((snapshot) => snapshot.docs.map((userDoc) => ({ uid: userDoc.id, ...userDoc.data() } as UserProfile)))
-      .sort((a, b) => (b.totalXP || 0) - (a.totalXP || 0));
+    const profiles = await api.get<UserProfile[]>(`/users/by-ids?ids=${memberIds.join(",")}`);
+    return profiles.sort((a, b) => (b.totalXP || 0) - (a.totalXP || 0));
   } catch (error) {
     console.error("Erro ao buscar ranking do grupo:", error);
     return [];
@@ -1181,66 +986,32 @@ export const joinEvent = async (eventId: string, userId: string) => {
 };
 
 // ─── Pet ────────────────────────────────────────────────────────────────────
+// Fase 1: pet* já fazia parte do schema Postgres desde a Fase 0 (mesmos
+// campos do perfil migrado) — essas ações vão direto na API própria.
+// addPetCoins não existe mais como função separada: o backend credita
+// RunCoins dentro do próprio POST /activities (ver backend/app/routers/activities.py).
 
-// Escolha do pet: só pode ser feita uma vez (as regras do Firestore recusam
-// a escrita se o usuário já tiver um petSpecies salvo).
+// Escolha do pet: só pode ser feita uma vez (o backend recusa com 409 se o
+// usuário já tiver um petSpecies salvo).
 export const choosePet = async (userId: string, species: PetSpecies, name: string): Promise<void> => {
-  await setDoc(
-    doc(db, "users", userId),
-    { petSpecies: species, petName: name.trim(), petCoins: 0 },
-    { merge: true }
-  );
-};
-
-// Credita RunCoins ganhos numa corrida. Melhor esforço: nunca lança erro
-// para quem chamou, pois a corrida em si já foi salva com sucesso.
-export const addPetCoins = async (userId: string, amount: number): Promise<void> => {
-  if (!(amount > 0)) return;
-  try {
-    const userSnap = await getDoc(doc(db, "users", userId));
-    if (!userSnap.exists() || !userSnap.data().petSpecies) return;
-
-    await updateDoc(doc(db, "users", userId), {
-      petCoins: increment(amount),
-    });
-  } catch (error) {
-    console.warn("Nao foi possivel creditar RunCoins:", error);
-  }
+  await api.post(`/users/${userId}/pet/choose`, { species, name: name.trim() });
 };
 
 // Compra um acessório da loja: debita o preço e adiciona o id à lista de
-// desbloqueados, em uma única transação (nunca debita sem desbloquear).
+// desbloqueados. Atômico no backend (commit único por request).
 export const purchasePetAccessory = async (userId: string, accessoryId: string, price: number): Promise<void> => {
-  const userRef = doc(db, "users", userId);
-
-  await runTransaction(db, async (transaction) => {
-    const userSnap = await transaction.get(userRef);
-    if (!userSnap.exists()) throw new Error("Perfil nao encontrado.");
-
-    const data = userSnap.data();
-    const currentCoins = typeof data.petCoins === "number" ? data.petCoins : 0;
-    const unlocked: string[] = Array.isArray(data.petUnlockedAccessoryIds) ? data.petUnlockedAccessoryIds : [];
-
-    if (unlocked.includes(accessoryId)) return;
-    if (currentCoins < price) throw new Error("RunCoins insuficientes.");
-
-    transaction.update(userRef, {
-      petCoins: currentCoins - price,
-      petUnlockedAccessoryIds: arrayUnion(accessoryId),
-    });
-  });
-};
-
-const PET_SLOT_FIELD: Record<PetAccessorySlot, "petEquippedCabeca" | "petEquippedPescoco" | "petEquippedFundo"> = {
-  cabeca: "petEquippedCabeca",
-  pescoco: "petEquippedPescoco",
-  fundo: "petEquippedFundo",
+  try {
+    await api.post(`/users/${userId}/pet/purchase`, { accessoryId, price });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 400) {
+      throw new Error("RunCoins insuficientes.");
+    }
+    throw error;
+  }
 };
 
 // accessoryId === null desequipa o slot.
 export const equipPetAccessory = async (userId: string, slot: PetAccessorySlot, accessoryId: string | null): Promise<void> => {
-  await updateDoc(doc(db, "users", userId), {
-    [PET_SLOT_FIELD[slot]]: accessoryId,
-  });
+  await api.put(`/users/${userId}/pet/equip`, { slot, accessoryId });
 };
 
