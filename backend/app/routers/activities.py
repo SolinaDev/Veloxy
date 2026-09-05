@@ -8,6 +8,7 @@ from app.auth import FirebaseUser, get_current_user
 from app.database import get_db
 from app.gamification import calculate_run_coins, calculate_xp, get_level_from_xp
 from app.models import Activity, User
+from app.routers.groups import update_weekly_km_for_user_groups
 from app.routers.users import apply_xp_and_km
 from app.schemas import ActivityCreate, ActivityOut, SaveActivityResult, ToggleLikeIn
 
@@ -64,9 +65,10 @@ def save_activity(
         db.rollback()
         xp_update_failed = True
 
-    # Nota: addDistanceToUserGroups (km semanal por grupo) ainda nao migrou —
-    # grupos continuam no Firestore ate a Fase 1 cobrir esse dominio. O
-    # frontend chama a funcao antiga em paralelo por enquanto.
+    try:
+        update_weekly_km_for_user_groups(db, payload.user_id, payload.distance)
+    except Exception:
+        db.rollback()
 
     return SaveActivityResult(id=activity.id, xp_update_failed=xp_update_failed)
 

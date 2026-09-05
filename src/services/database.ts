@@ -1,16 +1,11 @@
 import {
   collection,
-  addDoc,
   getDocs,
   query,
   orderBy,
-  serverTimestamp,
-  onSnapshot,
   doc,
-  updateDoc,
   arrayUnion,
   arrayRemove,
-  limit,
   setDoc,
   getDoc,
   increment,
@@ -23,22 +18,6 @@ import type { UserProfile, ActivityData, FeedActivity, Product, RunningEvent, Us
 
 // Re-exportar types para quem já importava direto daqui
 export type { UserProfile, ActivityData, FeedActivity, Product, RunningEvent, UserStats, RunningGroup, GroupPost, GroupPostComment, GroupMessage };
-
-function removeUndefinedFields<T>(value: T): T {
-  if (Array.isArray(value)) {
-    return value.map(removeUndefinedFields) as T;
-  }
-
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value)
-        .filter(([, fieldValue]) => fieldValue !== undefined)
-        .map(([key, fieldValue]) => [key, removeUndefinedFields(fieldValue)])
-    ) as T;
-  }
-
-  return value;
-}
 
 function normalizeActivity(docId: string, data: Record<string, unknown>): FeedActivity {
   return {
@@ -85,34 +64,47 @@ function calculateCurrentStreak(activeDays: Set<string>) {
 }
 
 // Salvar uma nova atividade (corrida)
-// Fase 1 da migração: activities e XP/petCoins agora vivem no backend
-// próprio (Postgres) — ver backend/app/routers/activities.py. Grupos ainda
-// não migraram, então addDistanceToUserGroups continua no Firestore por
-// enquanto (melhor esforço: nunca bloqueia nem falha o salvamento da corrida).
+// Fase 1 da migração: activities, XP/petCoins e weeklyKm dos grupos do
+// usuário agora são tudo tratado dentro de POST /activities no backend
+// próprio (ver backend/app/routers/activities.py) — não precisa mais de uma
+// segunda chamada para atualizar os grupos depois de salvar a corrida.
 export const saveActivity = async (data: ActivityData) => {
-  const result = await api.post<{ id: string; xpUpdateFailed: boolean }>("/activities", data);
-  await addDistanceToUserGroups(data.userId, data.distance);
-  return result;
+  return api.post<{ id: string; xpUpdateFailed: boolean }>("/activities", data);
 };
 
 // Buscar perfil do usuário — Fase 1: os campos principais (XP, nível, pet)
-// agora vêm do backend próprio (Postgres). joinedGroupIds/enrolledEvents
-// continuam no Firestore por enquanto — grupos e eventos ainda não migraram
-// (ver Fase 1 do plano) — então mesclamos as duas fontes aqui até lá.
+// agora vêm do backend próprio (Postgres).
+// enrolledEvents continua no Firestore por enquanto — eventos ainda não
+// migraram (ver Fase 1 do plano). joinedGroupIds agora é a união de grupos
+// reais (Postgres, via /groups/joined) com grupos de demonstração
+// (Firestore, nunca tiveram linha real no Postgres).
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
   try {
     const profile = await api.get<UserProfile>(`/users/${userId}`);
 
-    try {
-      const legacySnap = await getDoc(doc(db, "users", userId));
-      if (legacySnap.exists()) {
-        const legacy = legacySnap.data();
-        profile.joinedGroupIds = Array.isArray(legacy.joinedGroupIds) ? legacy.joinedGroupIds : [];
-        profile.enrolledEvents = Array.isArray(legacy.enrolledEvents) ? legacy.enrolledEvents : [];
-      }
-    } catch (legacyError) {
-      console.warn("Nao foi possivel ler joinedGroupIds/enrolledEvents do Firestore:", legacyError);
-    }
+    const [realGroupIds, legacyIds] = await Promise.all([
+      api.get<string[]>(`/groups/joined/${userId}`).catch((groupsError) => {
+        console.warn("Nao foi possivel buscar grupos reais do usuario:", groupsError);
+        return [] as string[];
+      }),
+      (async () => {
+        try {
+          const legacySnap = await getDoc(doc(db, "users", userId));
+          if (!legacySnap.exists()) return { joinedGroupIds: [] as string[], enrolledEvents: [] as string[] };
+          const legacy = legacySnap.data();
+          return {
+            joinedGroupIds: Array.isArray(legacy.joinedGroupIds) ? legacy.joinedGroupIds : [],
+            enrolledEvents: Array.isArray(legacy.enrolledEvents) ? legacy.enrolledEvents : [],
+          };
+        } catch (legacyError) {
+          console.warn("Nao foi possivel ler joinedGroupIds/enrolledEvents do Firestore:", legacyError);
+          return { joinedGroupIds: [] as string[], enrolledEvents: [] as string[] };
+        }
+      })(),
+    ]);
+
+    profile.joinedGroupIds = [...new Set([...realGroupIds, ...legacyIds.joinedGroupIds])];
+    profile.enrolledEvents = legacyIds.enrolledEvents;
 
     return profile;
   } catch (error) {
@@ -403,29 +395,12 @@ const FALLBACK_GROUPS: RunningGroup[] = [
   },
 ];
 
-function normalizeGroup(docId: string, data: Record<string, unknown>): RunningGroup {
-  return {
-    id: docId,
-    name: typeof data.name === "string" ? data.name : "Grupo",
-    city: typeof data.city === "string" ? data.city : "Brasil",
-    description: typeof data.description === "string" ? data.description : "",
-    tag: typeof data.tag === "string" ? data.tag : "Run",
-    createdBy: typeof data.createdBy === "string" ? data.createdBy : "",
-    creatorName: typeof data.creatorName === "string" ? data.creatorName : "Veloxy",
-    memberIds: Array.isArray(data.memberIds) ? data.memberIds.filter((id): id is string => typeof id === "string") : [],
-    membersCount: typeof data.membersCount === "number" ? data.membersCount : 0,
-    weeklyKm: typeof data.weeklyKm === "number" ? data.weeklyKm : 0,
-    weeklyKmWeek: typeof data.weeklyKmWeek === "string" ? data.weeklyKmWeek : undefined,
-    createdAt: data.createdAt as RunningGroup["createdAt"],
-    updatedAt: data.updatedAt as RunningGroup["updatedAt"],
-  };
-}
-
+// Fase 1: grupos migraram para o backend próprio. Se a API não retornar
+// nenhum grupo real ainda, mantém os grupos de demonstração (mesmo
+// comportamento de quando o Firestore estava vazio).
 export const getGroups = async (): Promise<RunningGroup[]> => {
   try {
-    const q = query(collection(db, "groups"), orderBy("membersCount", "desc"), limit(50));
-    const snapshot = await getDocs(q);
-    const groups = snapshot.docs.map((groupDoc) => normalizeGroup(groupDoc.id, groupDoc.data()));
+    const groups = await api.get<RunningGroup[]>("/groups");
     return groups.length > 0 ? groups : FALLBACK_GROUPS;
   } catch (error) {
     console.error("Erro ao buscar grupos:", error);
@@ -433,74 +408,14 @@ export const getGroups = async (): Promise<RunningGroup[]> => {
   }
 };
 
-// Identificador de semana ISO (ex: "2026-W07") usado para saber quando
-// zerar o km semanal de um grupo.
-function isoWeekKey(date: Date): string {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
-}
-
-// Soma a distância de uma corrida ao km semanal de cada grupo real (não
-// fallback/demo) do qual o usuário participa, resetando automaticamente
-// quando a semana muda. É "melhor esforço": nunca lança erro para quem
-// chamou, pois a corrida em si já foi salva com sucesso a essa altura.
-export const addDistanceToUserGroups = async (userId: string, distanceKm: number): Promise<void> => {
-  if (!(distanceKm > 0)) return;
-
-  try {
-    const userSnap = await getDoc(doc(db, "users", userId));
-    if (!userSnap.exists()) return;
-
-    const joinedGroupIds: string[] = Array.isArray(userSnap.data().joinedGroupIds)
-      ? userSnap.data().joinedGroupIds
-      : [];
-    const realGroupIds = joinedGroupIds.filter(
-      (groupId) => !FALLBACK_GROUPS.some((group) => group.id === groupId)
-    );
-    if (realGroupIds.length === 0) return;
-
-    const currentWeek = isoWeekKey(new Date());
-
-    await Promise.all(realGroupIds.map(async (groupId) => {
-      try {
-        await runTransaction(db, async (transaction) => {
-          const groupRef = doc(db, "groups", groupId);
-          const groupSnap = await transaction.get(groupRef);
-          if (!groupSnap.exists()) return;
-
-          const data = groupSnap.data();
-          const sameWeek = data.weeklyKmWeek === currentWeek;
-          const previousKm = sameWeek && typeof data.weeklyKm === "number" ? data.weeklyKm : 0;
-          const nextWeeklyKm = Math.min(Number((previousKm + distanceKm).toFixed(2)), 100000);
-
-          transaction.update(groupRef, {
-            weeklyKm: nextWeeklyKm,
-            weeklyKmWeek: currentWeek,
-            updatedAt: serverTimestamp(),
-          });
-        });
-      } catch (error) {
-        console.warn(`Nao foi possivel atualizar weeklyKm do grupo ${groupId}:`, error);
-      }
-    }));
-  } catch (error) {
-    console.warn("Nao foi possivel atualizar weeklyKm dos grupos do usuario:", error);
-  }
-};
-
-//Função de Criar Grupo. #Socia>Grupos#
-
+// Criar grupo: userId/userName não são mais enviados — o backend usa o
+// usuário autenticado (token) como criador e busca o nome no perfil já
+// migrado, evitando que o client possa se declarar como outra pessoa.
 export const createGroup = async ({
   name,
   city,
   description,
   tag,
-  userId,
-  userName,
 }: {
   name: string;
   city: string;
@@ -509,51 +424,21 @@ export const createGroup = async ({
   userId: string;
   userName: string;
 }) => {
-  const groupRef = doc(collection(db, "groups"));
-  const userRef = doc(db, "users", userId);
-
-  await runTransaction(db, async (transaction) => {
-    transaction.set(groupRef, removeUndefinedFields({
-      name: name.trim(),
-      city: city.trim() || "Brasil",
-      description: description.trim(),
-      tag: tag.trim() || "Run",
-      createdBy: userId,
-      creatorName: userName,
-      memberIds: [userId],
-      membersCount: 1,
-      weeklyKm: 0,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    }));
-    transaction.set(userRef, { joinedGroupIds: arrayUnion(groupRef.id) }, { merge: true });
-  });
-
-  return groupRef.id;
+  const group = await api.post<RunningGroup>("/groups", { name, city, description, tag });
+  return group.id;
 };
 
-// joinGroup/leaveGroup gravam no documento do grupo e no perfil do usuário
-// dentro de uma única transação: se uma das duas escritas falhar, a outra
-// também não é aplicada, evitando que memberIds e joinedGroupIds fiquem
-// dessincronizados por uma falha parcial (rede caindo entre as duas chamadas).
+// joinGroup/leaveGroup: grupos de demonstração continuam gravando
+// joinedGroupIds no Firestore (não têm linha real no Postgres); grupos
+// reais vão direto para /groups/{id}/join|leave, que já cuida de
+// membro+contador numa única transação no backend.
 export const joinGroup = async (groupId: string, userId: string) => {
   if (FALLBACK_GROUPS.some((group) => group.id === groupId)) {
     await setDoc(doc(db, "users", userId), { joinedGroupIds: arrayUnion(groupId) }, { merge: true });
     return true;
   }
 
-  const groupRef = doc(db, "groups", groupId);
-  const userRef = doc(db, "users", userId);
-
-  await runTransaction(db, async (transaction) => {
-    transaction.update(groupRef, {
-      memberIds: arrayUnion(userId),
-      membersCount: increment(1),
-      updatedAt: serverTimestamp(),
-    });
-    transaction.set(userRef, { joinedGroupIds: arrayUnion(groupId) }, { merge: true });
-  });
-
+  await api.post(`/groups/${groupId}/join`);
   return true;
 };
 
@@ -563,18 +448,7 @@ export const leaveGroup = async (groupId: string, userId: string) => {
     return true;
   }
 
-  const groupRef = doc(db, "groups", groupId);
-  const userRef = doc(db, "users", userId);
-
-  await runTransaction(db, async (transaction) => {
-    transaction.update(groupRef, {
-      memberIds: arrayRemove(userId),
-      membersCount: increment(-1),
-      updatedAt: serverTimestamp(),
-    });
-    transaction.set(userRef, { joinedGroupIds: arrayRemove(groupId) }, { merge: true });
-  });
-
+  await api.post(`/groups/${groupId}/leave`);
   return true;
 };
 
@@ -617,59 +491,49 @@ export const getGroupById = async (groupId: string): Promise<RunningGroup | null
   const fallback = FALLBACK_GROUPS.find((group) => group.id === groupId);
   if (fallback) return fallback;
 
-  const snap = await getDoc(doc(db, "groups", groupId));
-  if (!snap.exists()) return null;
-  return normalizeGroup(snap.id, snap.data());
+  try {
+    return await api.get<RunningGroup>(`/groups/${groupId}`);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
 };
 
-// Grava a foto do grupo já enviada ao Storage. Restrita pelas regras do
-// Firestore a quem criou o grupo (createdBy).
+// Grava a foto do grupo já enviada ao Storage. Backend restringe a troca a
+// quem criou o grupo (mesma regra que existia em firestore.rules).
 export const updateGroupPhoto = async (groupId: string, photoURL: string): Promise<void> => {
-  await setDoc(
-    doc(db, "groups", groupId),
-    { photoURL, updatedAt: serverTimestamp() },
-    { merge: true }
-  );
+  await api.put(`/groups/${groupId}/photo`, { photoURL });
 };
 
-function normalizeGroupPost(docId: string, data: Record<string, unknown>): GroupPost {
-  return {
-    id: docId,
-    authorId: typeof data.authorId === "string" ? data.authorId : "",
-    authorName: typeof data.authorName === "string" ? data.authorName : "Corredor",
-    authorPhoto: typeof data.authorPhoto === "string" ? data.authorPhoto : null,
-    text: typeof data.text === "string" ? data.text : "",
-    imageURL: typeof data.imageURL === "string" ? data.imageURL : null,
-    likes: Array.isArray(data.likes) ? data.likes.filter((id): id is string => typeof id === "string") : [],
-    commentsCount: typeof data.commentsCount === "number" ? data.commentsCount : 0,
-    createdAt: data.createdAt as GroupPost["createdAt"],
-  };
-}
-
-// Feed do grupo em tempo real (últimas publicações primeiro).
+// Feed do grupo — Fase 1: sem onSnapshot ainda (mesma decisão do feed geral
+// de atividades: polling a cada 15s até a Fase 2 trazer WebSocket).
 export const subscribeToGroupPosts = (
   groupId: string,
   callback: (posts: GroupPost[]) => void,
   limitCount = 30
 ) => {
-  const q = query(
-    collection(db, "groups", groupId, "posts"),
-    orderBy("createdAt", "desc"),
-    limit(limitCount)
-  );
-
-  return onSnapshot(q, (snapshot) => {
-    callback(snapshot.docs.map((postDoc) => normalizeGroupPost(postDoc.id, postDoc.data())));
-  }, (error) => {
-    console.error("Erro no listener do feed do grupo:", error);
-  });
+  let cancelled = false;
+  const fetchPosts = async () => {
+    try {
+      const posts = await api.get<GroupPost[]>(`/groups/${groupId}/posts?limit=${limitCount}`);
+      if (!cancelled) callback(posts);
+    } catch (error) {
+      console.error("Erro ao buscar feed do grupo:", error);
+    }
+  };
+  fetchPosts();
+  const intervalId = setInterval(fetchPosts, 15_000);
+  return () => {
+    cancelled = true;
+    clearInterval(intervalId);
+  };
 };
 
+// authorId/authorName/authorPhoto não são mais enviados — o backend usa o
+// usuário autenticado e busca nome/foto atuais no perfil (evita que o
+// client se declare como outro autor, o que o Firestore antigo permitia).
 export const createGroupPost = async ({
   groupId,
-  authorId,
-  authorName,
-  authorPhoto,
   text,
   imageURL,
 }: {
@@ -680,116 +544,72 @@ export const createGroupPost = async ({
   text: string;
   imageURL?: string | null;
 }) => {
-  const docRef = await addDoc(collection(db, "groups", groupId, "posts"), removeUndefinedFields({
-    authorId,
-    authorName,
-    authorPhoto,
-    text: text.trim(),
-    imageURL: imageURL || undefined,
-    likes: [],
-    commentsCount: 0,
-    createdAt: serverTimestamp(),
-  }));
-  return docRef.id;
+  const post = await api.post<GroupPost>(`/groups/${groupId}/posts`, { text, imageURL });
+  return post.id;
 };
 
 export const toggleGroupPostLike = async (groupId: string, postId: string, userId: string, isLiked: boolean) => {
-  const postRef = doc(db, "groups", groupId, "posts", postId);
-  await updateDoc(postRef, {
-    likes: isLiked ? arrayRemove(userId) : arrayUnion(userId),
-  });
+  await api.post(`/groups/${groupId}/posts/${postId}/like`, { isLiked });
+  void userId; // mantido na assinatura: quem curte é sempre o usuario autenticado no backend
 };
 
-function normalizeGroupPostComment(docId: string, data: Record<string, unknown>): GroupPostComment {
-  return {
-    id: docId,
-    authorId: typeof data.authorId === "string" ? data.authorId : "",
-    authorName: typeof data.authorName === "string" ? data.authorName : "Corredor",
-    authorPhoto: typeof data.authorPhoto === "string" ? data.authorPhoto : null,
-    text: typeof data.text === "string" ? data.text : "",
-    createdAt: data.createdAt as GroupPostComment["createdAt"],
-  };
-}
-
-// Comentários de uma publicação, em tempo real (ordem cronológica).
+// Comentários de uma publicação — mesmo esquema de polling do feed do grupo.
 export const subscribeToGroupPostComments = (
   groupId: string,
   postId: string,
   callback: (comments: GroupPostComment[]) => void
 ) => {
-  const q = query(
-    collection(db, "groups", groupId, "posts", postId, "comments"),
-    orderBy("createdAt", "asc"),
-    limit(200)
-  );
-
-  return onSnapshot(q, (snapshot) => {
-    callback(snapshot.docs.map((commentDoc) => normalizeGroupPostComment(commentDoc.id, commentDoc.data())));
-  }, (error) => {
-    console.error("Erro no listener de comentarios do post:", error);
-  });
+  let cancelled = false;
+  const fetchComments = async () => {
+    try {
+      const comments = await api.get<GroupPostComment[]>(`/groups/${groupId}/posts/${postId}/comments`);
+      if (!cancelled) callback(comments);
+    } catch (error) {
+      console.error("Erro ao buscar comentarios do post:", error);
+    }
+  };
+  fetchComments();
+  const intervalId = setInterval(fetchComments, 15_000);
+  return () => {
+    cancelled = true;
+    clearInterval(intervalId);
+  };
 };
 
-// Cria o comentário e incrementa o contador da publicação em uma única
-// transação, para o contador nunca ficar dessincronizado por falha parcial.
 export const addGroupPostComment = async (
   groupId: string,
   postId: string,
-  { authorId, authorName, authorPhoto, text }: { authorId: string; authorName: string; authorPhoto: string | null; text: string }
+  { text }: { authorId: string; authorName: string; authorPhoto: string | null; text: string }
 ) => {
-  const postRef = doc(db, "groups", groupId, "posts", postId);
-  const commentRef = doc(collection(db, "groups", groupId, "posts", postId, "comments"));
-
-  await runTransaction(db, async (transaction) => {
-    transaction.set(commentRef, removeUndefinedFields({
-      authorId,
-      authorName,
-      authorPhoto,
-      text: text.trim(),
-      createdAt: serverTimestamp(),
-    }));
-    transaction.update(postRef, { commentsCount: increment(1) });
-  });
-
-  return commentRef.id;
+  const comment = await api.post<GroupPostComment>(`/groups/${groupId}/posts/${postId}/comments`, { text });
+  return comment.id;
 };
 
-function normalizeGroupMessage(docId: string, data: Record<string, unknown>): GroupMessage {
-  return {
-    id: docId,
-    senderId: typeof data.senderId === "string" ? data.senderId : "",
-    senderName: typeof data.senderName === "string" ? data.senderName : "Corredor",
-    senderPhoto: typeof data.senderPhoto === "string" ? data.senderPhoto : null,
-    text: typeof data.text === "string" ? data.text : "",
-    createdAt: data.createdAt as GroupMessage["createdAt"],
-  };
-}
-
-// Chat do grupo em tempo real (últimas mensagens, ordem cronológica).
+// Chat do grupo — mesmo esquema de polling.
 export const subscribeToGroupMessages = (
   groupId: string,
   callback: (messages: GroupMessage[]) => void,
   limitCount = 100
 ) => {
-  const q = query(
-    collection(db, "groups", groupId, "messages"),
-    orderBy("createdAt", "desc"),
-    limit(limitCount)
-  );
-
-  return onSnapshot(q, (snapshot) => {
-    const messages = snapshot.docs.map((messageDoc) => normalizeGroupMessage(messageDoc.id, messageDoc.data()));
-    callback(messages.reverse());
-  }, (error) => {
-    console.error("Erro no listener do chat do grupo:", error);
-  });
+  let cancelled = false;
+  const fetchMessages = async () => {
+    try {
+      const messages = await api.get<GroupMessage[]>(`/groups/${groupId}/messages?limit=${limitCount}`);
+      if (!cancelled) callback(messages);
+    } catch (error) {
+      console.error("Erro ao buscar mensagens do grupo:", error);
+    }
+  };
+  fetchMessages();
+  const intervalId = setInterval(fetchMessages, 15_000);
+  return () => {
+    cancelled = true;
+    clearInterval(intervalId);
+  };
 };
 
 export const sendGroupMessage = async ({
   groupId,
-  senderId,
-  senderName,
-  senderPhoto,
   text,
 }: {
   groupId: string;
@@ -798,13 +618,7 @@ export const sendGroupMessage = async ({
   senderPhoto: string | null;
   text: string;
 }) => {
-  await addDoc(collection(db, "groups", groupId, "messages"), removeUndefinedFields({
-    senderId,
-    senderName,
-    senderPhoto,
-    text: text.trim(),
-    createdAt: serverTimestamp(),
-  }));
+  await api.post(`/groups/${groupId}/messages`, { text });
 };
 
 // ─── Events Functions ───────────────────────────────────────────────────────

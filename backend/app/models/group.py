@@ -52,6 +52,7 @@ class GroupPost(Base):
     text: Mapped[str] = mapped_column(String, nullable=False)
     image_url: Mapped[str | None] = mapped_column(String, nullable=True)
     likes: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
+    comments_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     group = relationship("Group", back_populates="posts")
