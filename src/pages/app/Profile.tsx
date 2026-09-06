@@ -231,7 +231,7 @@ function SettingsModal({
             <div className="flex items-center justify-between mb-6">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500">Veloxy</p>
-                <h2 className="font-display text-2xl font-black italic text-purple-500">CONFIGURAÇÕES</h2>
+                <h2 className="font-display text-2xl font-black text-purple-500">CONFIGURAÇÕES</h2>
               </div>
               <button onClick={onClose} className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-zinc-400" aria-label="Fechar">
                 <X size={20} />
@@ -450,7 +450,7 @@ function EditProfileModal({
             className="w-full max-w-lg max-h-[82svh] overflow-hidden rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-6 shadow-2xl pointer-events-auto"
           >
             <div className="flex items-center justify-between mb-8">
-              <h2 className="font-display text-2xl font-black italic text-purple-500">EDITAR PERFIL</h2>
+              <h2 className="font-display text-2xl font-black text-purple-500">EDITAR PERFIL</h2>
               <button onClick={onClose} className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-zinc-400" aria-label="Fechar">
                 <X size={20} />
               </button>
@@ -634,7 +634,7 @@ const Profile = () => {
     <div className="app-shell pb-24 safe-top">
       {/* Header */}
       <header className="bg-card/80 backdrop-blur-xl border-b border-border px-6 py-4 flex items-center justify-between sticky top-0 z-40">
-        <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500">
+        <h1 className="font-display font-black text-2xl tracking-tighter text-purple-500">
           VELOXY PROFILE
         </h1>
         <div className="flex gap-2">
@@ -687,7 +687,7 @@ const Profile = () => {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12, duration: 0.35 }}
-          className="mt-8 font-display font-black text-3xl italic tracking-tighter uppercase"
+          className="mt-8 font-display font-black text-3xl tracking-tighter uppercase"
         >
           {displayName}
         </motion.h2>
@@ -695,7 +695,7 @@ const Profile = () => {
             <MapPin size={12} className="text-purple-500" />
             {profile?.location || "São Paulo, SP"}
         </div>
-        <p className="mt-6 text-sm text-zinc-400 max-w-xs italic leading-relaxed">
+        <p className="mt-6 text-sm text-zinc-400 max-w-xs leading-relaxed">
             {profile?.bio || "Apaixonado por corrida e desafios urbanos."}
         </p>
       </section>
@@ -703,7 +703,7 @@ const Profile = () => {
       {/* Progresso: numeros principais, pet, metas e nivel agrupados sob um unico titulo */}
       <section className="px-6 mt-10">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-display font-black text-sm italic tracking-tighter">SEU PROGRESSO</h3>
+          <h3 className="font-display font-black text-sm tracking-tighter">SEU PROGRESSO</h3>
         </div>
 
         <button
@@ -715,7 +715,7 @@ const Profile = () => {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Seu pet</p>
-            <p className="mt-0.5 truncate font-display text-base font-black italic">
+            <p className="mt-0.5 truncate font-display text-base font-black">
               {profile?.petName || "Adote seu pet"}
             </p>
           </div>
@@ -732,7 +732,7 @@ const Profile = () => {
                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Total acumulado</p>
                 <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-black font-display">{statsData?.totalKm || "0.0"}</span>
-                    <span className="text-xs font-bold text-purple-500 italic">KM</span>
+                    <span className="text-xs font-bold text-purple-500">KM</span>
                 </div>
             </motion.div>
 
@@ -746,7 +746,7 @@ const Profile = () => {
                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">XP Total</p>
                 <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-black font-display">{profile?.totalXP?.toLocaleString("pt-BR") || "0"}</span>
-                    <span className="text-xs font-bold text-orange-500 italic uppercase">XP</span>
+                    <span className="text-xs font-bold text-orange-500 uppercase">XP</span>
                 </div>
             </motion.div>
         </div>
@@ -756,7 +756,7 @@ const Profile = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Meta semanal</p>
-              <h3 className="mt-1 font-display text-xl font-black italic">
+              <h3 className="mt-1 font-display text-xl font-black">
                 {weeklyKm.toFixed(1)} / {weeklyGoalKm.toFixed(1)} km
               </h3>
             </div>
@@ -789,7 +789,7 @@ const Profile = () => {
                 className="h-full rounded-full bg-gradient-to-r from-purple-600 to-purple-400"
             />
           </div>
-          <p className="mt-3 text-[10px] font-bold text-zinc-600 italic">
+          <p className="mt-3 text-[10px] font-bold text-zinc-600">
             {levelInfo.xpToNext > 0
               ? `Faltam ${levelInfo.xpToNext.toLocaleString("pt-BR")} XP para se tornar ${levelInfo.nextLevel.toUpperCase()}`
               : "Você atingiu o nível máximo!"}
@@ -805,7 +805,7 @@ const Profile = () => {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Status completo</p>
-                <h3 className="mt-1 font-display text-xl font-black italic">Informacoes da corrida</h3>
+                <h3 className="mt-1 font-display text-xl font-black">Informacoes da corrida</h3>
                 <p className="mt-2 text-xs leading-relaxed text-zinc-500">
                   Ritmo medio, melhor corrida, sequencia, calorias e progresso semanal.
                 </p>
@@ -821,8 +821,8 @@ const Profile = () => {
       {/* Achievements Horizontal */}
       <section className="mt-10">
           <div className="px-6 flex items-center justify-between mb-4">
-            <h3 className="font-display font-black text-sm italic tracking-tighter">CONQUISTAS</h3>
-            <button onClick={() => navigate("/conquistas")} className="text-[10px] font-black text-purple-500 italic">VER TODAS</button>
+            <h3 className="font-display font-black text-sm tracking-tighter">CONQUISTAS</h3>
+            <button onClick={() => navigate("/conquistas")} className="text-[10px] font-black text-purple-500">VER TODAS</button>
           </div>
           <div className="flex gap-4 overflow-x-auto no-scrollbar px-6">
               {realAchievements.map((a, i) => (
@@ -848,7 +848,7 @@ const Profile = () => {
 
       <section className="px-6 mt-10">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-display font-black text-sm italic tracking-tighter">HISTÓRICO</h3>
+          <h3 className="font-display font-black text-sm tracking-tighter">HISTÓRICO</h3>
           <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
             {runHistory.length} corridas
           </span>
@@ -869,7 +869,7 @@ const Profile = () => {
 
       {/* Conta */}
       <section className="px-6 mt-10 pb-6">
-        <h3 className="mb-4 font-display font-black text-sm italic tracking-tighter">CONTA</h3>
+        <h3 className="mb-4 font-display font-black text-sm tracking-tighter">CONTA</h3>
         <button
             onClick={handleLogout}
             className="w-full bg-card/80 backdrop-blur-xl border border-border py-4 rounded-xl text-[10px] font-black tracking-widest text-zinc-500 hover:text-red-500 hover:border-red-500/30 transition-all flex items-center justify-center gap-2"

@@ -112,7 +112,7 @@ function GroupCreateModal({
               <div className="mb-6 flex items-center justify-between">
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500">Comunidade</p>
-                  <h2 className="font-display text-2xl font-black italic text-purple-500">CRIAR GRUPO</h2>
+                  <h2 className="font-display text-2xl font-black text-purple-500">CRIAR GRUPO</h2>
                 </div>
                 <button onClick={onClose} className="h-10 w-10 rounded-full bg-card/80 backdrop-blur-xl border border-border flex items-center justify-center text-zinc-400" aria-label="Fechar">
                   <X size={18} />
@@ -381,7 +381,7 @@ export default function Social() {
             <SafeAvatar src={userPhotoURL} name={displayName} alt="Perfil" className="h-11 w-11 rounded-full border border-purple-500/30 bg-card" />
             <div>
               <p className="text-[9px] font-black uppercase tracking-[0.24em] text-zinc-600">Veloxy</p>
-              <h1 className="font-display text-2xl font-black italic tracking-tighter text-purple-500">SOCIAL</h1>
+              <h1 className="font-display text-2xl font-black tracking-tighter text-purple-500">SOCIAL</h1>
             </div>
           </div>
 
@@ -423,7 +423,7 @@ export default function Social() {
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-[0.22em] text-purple-300">Leaderboard</p>
-                    <h2 className="mt-1 font-display text-3xl font-black italic">Top corredores</h2>
+                    <h2 className="mt-1 font-display text-3xl font-black">Top corredores</h2>
                   </div>
                   <Trophy size={28} className="text-purple-400" />
                 </div>
@@ -464,7 +464,7 @@ export default function Social() {
               <div className="mb-5 flex items-end justify-between gap-4">
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-[0.22em] text-zinc-500">Comunidades</p>
-                  <h2 className="mt-1 font-display text-3xl font-black italic">Grupos reais</h2>
+                  <h2 className="mt-1 font-display text-3xl font-black">Grupos reais</h2>
                 </div>
                 <button
                   onClick={() => setCreateOpen(true)}
@@ -490,7 +490,7 @@ export default function Social() {
                           selectedGroupId === group.id ? "border border-purple-500/50 bg-purple-500/15" : "bg-card/80 backdrop-blur-xl border border-border"
                         }`}
                       >
-                        <p className="truncate font-display text-lg font-black italic">{group.name}</p>
+                        <p className="truncate font-display text-lg font-black">{group.name}</p>
                         <p className="mt-1 flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.14em] text-zinc-500">
                           <MapPin size={10} className="text-purple-500" />
                           {group.city}
@@ -508,7 +508,7 @@ export default function Social() {
                             <div className="mb-2 inline-flex rounded-full border border-purple-500/25 bg-purple-500/10 px-3 py-1 text-[9px] font-black uppercase text-purple-300">
                               {selectedGroup.tag}
                             </div>
-                            <h3 className="font-display text-2xl font-black italic">{selectedGroup.name}</h3>
+                            <h3 className="font-display text-2xl font-black">{selectedGroup.name}</h3>
                             <p className="mt-2 text-xs leading-relaxed text-zinc-400">{selectedGroup.description || "Grupo de corrida no Veloxy."}</p>
                           </div>
                           <Users size={28} className="text-purple-500" />
@@ -516,11 +516,11 @@ export default function Social() {
 
                         <div className="mt-5 grid grid-cols-2 gap-3">
                           <div className="rounded-2xl bg-secondary/60 border border-input p-3">
-                            <p className="font-display text-2xl font-black italic">{selectedGroup.membersCount}</p>
+                            <p className="font-display text-2xl font-black">{selectedGroup.membersCount}</p>
                             <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-600">membros</p>
                           </div>
                           <div className="rounded-2xl bg-secondary/60 border border-input p-3">
-                            <p className="font-display text-2xl font-black italic">{selectedGroup.weeklyKm.toFixed(0)}</p>
+                            <p className="font-display text-2xl font-black">{selectedGroup.weeklyKm.toFixed(0)}</p>
                             <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-600">km semanais</p>
                           </div>
                         </div>
@@ -556,7 +556,7 @@ export default function Social() {
                       </div>
 
                       <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5">
-                        <h4 className="font-display text-lg font-black italic">Ranking do grupo</h4>
+                        <h4 className="font-display text-lg font-black">Ranking do grupo</h4>
                         <div className="mt-4 space-y-3">
                           {groupDetailsLoading ? (
                             <Loader2 className="mx-auto animate-spin text-purple-500" size={24} />
@@ -569,7 +569,7 @@ export default function Social() {
                       </div>
 
                       <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5">
-                        <h4 className="font-display text-lg font-black italic">Feed do grupo</h4>
+                        <h4 className="font-display text-lg font-black">Feed do grupo</h4>
                         <div className="mt-4 space-y-3">
                           {groupDetailsLoading ? (
                             <Loader2 className="mx-auto animate-spin text-purple-500" size={24} />
@@ -584,7 +584,7 @@ export default function Social() {
                                     <p className="text-[10px] text-zinc-500">{formatCardDate(activity.timestamp, activity.createdAtMs)}</p>
                                   </div>
                                   <div className="text-right">
-                                    <p className="font-display text-xl font-black italic text-purple-400">{activity.distance.toFixed(2)}</p>
+                                    <p className="font-display text-xl font-black text-purple-400">{activity.distance.toFixed(2)}</p>
                                     <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-600">km</p>
                                   </div>
                                 </div>
@@ -622,14 +622,14 @@ function AthleteRow({
 }) {
   return (
     <div className={`flex items-center gap-4 rounded-2xl ${compact ? "p-3 bg-card/80 backdrop-blur-xl border border-border" : "p-4"} ${active ? "border border-purple-500/35 bg-purple-500/10" : "bg-card/80 backdrop-blur-xl border border-border"}`}>
-      <div className="w-8 text-center font-display text-xl font-black italic text-purple-400">{index + 1}</div>
+      <div className="w-8 text-center font-display text-xl font-black text-purple-400">{index + 1}</div>
       <SafeAvatar src={athlete.photoURL} name={athlete.displayName || "Atleta"} className="h-11 w-11 rounded-2xl bg-card" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-black">{athlete.displayName || "Atleta"}</p>
         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">{athlete.level || "Iniciante"}</p>
       </div>
       <div className="text-right">
-        <p className="font-display text-lg font-black italic">{(athlete.totalXP || 0).toLocaleString("pt-BR")}</p>
+        <p className="font-display text-lg font-black">{(athlete.totalXP || 0).toLocaleString("pt-BR")}</p>
         <p className="text-[8px] font-black uppercase tracking-[0.18em] text-purple-400">XP</p>
       </div>
     </div>

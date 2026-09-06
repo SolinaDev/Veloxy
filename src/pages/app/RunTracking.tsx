@@ -625,7 +625,7 @@ const RunTracking = () => {
           initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.25 }}
-          className="font-display font-black text-xl italic tracking-tighter text-purple-500 uppercase drop-shadow-[0_0_18px_rgba(168,85,247,0.35)]"
+          className="font-display font-black text-xl tracking-tighter text-purple-500 uppercase drop-shadow-[0_0_18px_rgba(168,85,247,0.35)]"
         >
           {isRunning ? (isPaused ? "PAUSADO" : isSimulating ? "SIMULANDO..." : "MONITORANDO") : "INICIAR TREINO"}
         </motion.h1>
@@ -717,7 +717,7 @@ const RunTracking = () => {
                     </div>
                     <div>
                         <p className="text-[8px] font-black text-zinc-500 uppercase leading-none mb-1">Pace</p>
-                        <p className="text-sm font-black font-display italic leading-none">{getPace()}</p>
+                        <p className="text-sm font-black font-display leading-none">{getPace()}</p>
                     </div>
                 </div>
                 <div className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-4 flex items-center gap-3">
@@ -726,7 +726,7 @@ const RunTracking = () => {
                     </div>
                     <div>
                         <p className="text-[8px] font-black text-zinc-500 uppercase leading-none mb-1">Calorias</p>
-                        <p className="text-sm font-black font-display italic leading-none">{getCalories()} kcal</p>
+                        <p className="text-sm font-black font-display leading-none">{getCalories()} kcal</p>
                     </div>
                 </div>
             </motion.div>
@@ -749,25 +749,25 @@ const RunTracking = () => {
               initial={{ scale: 0.8 }}
               animate={{ scale: [0.96, 1.03, 1] }}
               transition={{ duration: 0.32 }}
-              className="text-7xl font-display font-black text-purple-500 italic tracking-tighter drop-shadow-[0_0_24px_rgba(168,85,247,0.35)]"
+              className="text-7xl font-display font-black text-purple-500 tracking-tighter drop-shadow-[0_0_24px_rgba(168,85,247,0.35)]"
             >
               {distance.toFixed(2)}
             </motion.p>
-            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mt-2 italic">DISTÂNCIA TOTAL (KM)</p>
+            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mt-2">DISTÂNCIA TOTAL (KM)</p>
           </div>
 
           <div className="grid grid-cols-3 divide-x divide-zinc-800">
             <div className="text-center">
               <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Tempo</p>
-              <p className="font-display font-black text-lg italic">{formatTime(seconds)}</p>
+              <p className="font-display font-black text-lg">{formatTime(seconds)}</p>
             </div>
             <div className="text-center">
               <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Ritmo</p>
-              <p className="font-display font-black text-lg italic">{getPace()}</p>
+              <p className="font-display font-black text-lg">{getPace()}</p>
             </div>
             <div className="text-center">
               <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Velocidade</p>
-              <p className="font-display font-black text-lg italic">{(distance > 0 ? (distance / (seconds / 3600)) : 0).toFixed(1)}</p>
+              <p className="font-display font-black text-lg">{(distance > 0 ? (distance / (seconds / 3600)) : 0).toFixed(1)}</p>
             </div>
           </div>
         </motion.div>
@@ -864,7 +864,7 @@ const RunTracking = () => {
                 className="bg-card/80 backdrop-blur-xl border border-border pointer-events-auto w-full max-w-md rounded-3xl p-6"
               >
                 <p className="text-[9px] font-black uppercase tracking-[0.24em] text-zinc-500">Veloxy</p>
-                <h2 className="mt-1 font-display text-xl font-black italic text-purple-500 uppercase">Corrida nao finalizada</h2>
+                <h2 className="mt-1 font-display text-xl font-black text-purple-500 uppercase">Corrida nao finalizada</h2>
                 <p className="mt-3 text-sm leading-relaxed text-zinc-400">
                   Encontramos {recoverableRun.distance.toFixed(2)} km de uma corrida que nao chegou a ser salva. Quer continuar de onde parou ou descartar?
                 </p>
@@ -908,7 +908,7 @@ const RunTracking = () => {
                 <div className="mb-5 flex items-center justify-between">
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-[0.24em] text-zinc-500">Treino</p>
-                    <h2 className="font-display text-2xl font-black italic text-purple-500">Musica</h2>
+                    <h2 className="font-display text-2xl font-black text-purple-500">Musica</h2>
                   </div>
                   <button
                     onClick={() => setIsMusicOpen(false)}

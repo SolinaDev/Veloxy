@@ -118,7 +118,7 @@ const Dashboard = () => {
           )}
         </div>
 
-        <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500">
+        <h1 className="font-display font-black text-2xl tracking-tighter text-purple-500">
           VELOXY STATS
         </h1>
 
@@ -142,7 +142,7 @@ const Dashboard = () => {
             {loading ? (
               <Skeleton className="h-10 w-32 rounded-lg" />
             ) : (
-              <h2 className="font-display font-black text-4xl italic tracking-tighter text-white uppercase">
+              <h2 className="font-display font-black text-4xl tracking-tighter text-white uppercase">
                 {displayName.split(" ")[0]}
               </h2>
             )}
@@ -161,7 +161,7 @@ const Dashboard = () => {
                      <Award size={12} className="text-white fill-current" />
                      <span className="text-[10px] font-black tracking-widest text-white">NÍVEL {levelInfo.currentLevel.toUpperCase()}</span>
                  </div>
-                 <p className="text-[10px] font-black text-purple-400 mt-2 italic tracking-tighter">
+                 <p className="text-[10px] font-black text-purple-400 mt-2 tracking-tighter">
                      {profile?.totalXP?.toLocaleString("pt-BR") || "0"} XP TOTAL
                  </p>
                </>
@@ -173,7 +173,7 @@ const Dashboard = () => {
       {/* Stats Grid */}
       <section className="px-6 mt-10">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="font-display font-black text-sm italic tracking-tighter uppercase flex items-center gap-2">
+          <h3 className="font-display font-black text-sm tracking-tighter uppercase flex items-center gap-2">
             <Activity size={16} className="text-purple-500" />
             Performance Geral
           </h3>
@@ -209,7 +209,7 @@ const Dashboard = () => {
                   <span className="text-2xl font-black font-display text-white leading-none">
                     {stat.value}
                   </span>
-                  <span className="text-[9px] font-black text-purple-500 uppercase tracking-tighter italic">
+                  <span className="text-[9px] font-black text-purple-500 uppercase tracking-tighter">
                     {stat.unit}
                   </span>
                 </div>
@@ -223,7 +223,7 @@ const Dashboard = () => {
       <section className="px-6 mt-10">
         <div className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-7">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="font-display font-black text-sm italic tracking-tighter uppercase text-white">
+            <h3 className="font-display font-black text-sm tracking-tighter uppercase text-white">
               Últimos 7 Dias
             </h3>
             <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
@@ -285,7 +285,7 @@ const Dashboard = () => {
                 <p className="text-[9px] font-black uppercase tracking-[0.22em] text-purple-300">
                   Melhor corrida
                 </p>
-                <h3 className="mt-2 font-display text-3xl font-black italic text-white">
+                <h3 className="mt-2 font-display text-3xl font-black text-white">
                   {stats.bestActivity.distance.toFixed(2)} km
                 </h3>
               </div>
@@ -300,7 +300,7 @@ const Dashboard = () => {
                 { label: "KCAL", value: (stats.bestActivity.calories ?? 0).toString() },
               ].map((item) => (
                 <div key={item.label} className="rounded-2xl bg-black/25 p-3">
-                  <p className="font-display text-lg font-black italic text-white leading-none">{item.value}</p>
+                  <p className="font-display text-lg font-black text-white leading-none">{item.value}</p>
                   <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.18em] text-purple-200/70">{item.label}</p>
                 </div>
               ))}
@@ -311,7 +311,7 @@ const Dashboard = () => {
 
       {/* Last Run Card */}
       <section className="px-6 mt-10 pb-10">
-        <h3 className="font-display font-black text-sm italic tracking-tighter uppercase mb-6 flex items-center gap-2">
+        <h3 className="font-display font-black text-sm tracking-tighter uppercase mb-6 flex items-center gap-2">
           <BarChart3 size={16} className="text-purple-500" />
           Última Atividade
         </h3>
@@ -327,7 +327,7 @@ const Dashboard = () => {
 
             <div className="relative z-10 flex items-center justify-between mb-8">
               <div>
-                <h4 className="font-display font-black text-xl italic text-white uppercase">
+                <h4 className="font-display font-black text-xl text-white uppercase">
                   {stats.lastActivity.type === "RUNNING" ? "Corrida" : stats.lastActivity.type}
                 </h4>
                 <p className="text-[10px] font-bold text-zinc-500 tracking-widest uppercase">
@@ -335,7 +335,7 @@ const Dashboard = () => {
                 </p>
               </div>
               <div className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
-                <span className="text-[9px] font-black text-purple-400 tracking-widest italic">
+                <span className="text-[9px] font-black text-purple-400 tracking-widest">
                   GPS REAL
                 </span>
               </div>
@@ -349,7 +349,7 @@ const Dashboard = () => {
                 { label: "KCAL",  value: (stats.lastActivity.calories ?? 0).toString() },
               ].map((s) => (
                 <div key={s.label} className="text-left">
-                  <p className="font-display font-black text-lg italic text-white leading-none mb-1">
+                  <p className="font-display font-black text-lg text-white leading-none mb-1">
                     {s.value}
                   </p>
                   <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-[0.2em]">

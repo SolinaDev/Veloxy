@@ -182,7 +182,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                 fallbackClassName="text-xs font-bold text-purple-500"
               />
             </button>
-            <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500">VELOXY</h1>
+            <h1 className="font-display font-black text-2xl tracking-tighter text-purple-500">VELOXY</h1>
 
             <button
               onClick={handleBellClick}
@@ -254,7 +254,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                     <p className="text-[7px] font-bold text-zinc-500 uppercase tracking-tighter mb-0.5">{s.label}</p>
                     <div className="flex items-baseline gap-0.5">
                       <span className="text-base font-black font-display">{s.value}</span>
-                      {s.unit && <span className="text-[7px] font-bold text-purple-500 italic">{s.unit}</span>}
+                      {s.unit && <span className="text-[7px] font-bold text-purple-500">{s.unit}</span>}
                     </div>
                     <div className="absolute -bottom-1 -right-1 opacity-5 text-purple-500">{s.icon}</div>
                   </motion.div>
@@ -413,7 +413,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-24 gap-4">
                   <Loader2 className="animate-spin text-purple-500" size={36} />
-                  <p className="text-zinc-500 font-display italic tracking-widest text-xs uppercase">Carregando Feed...</p>
+                  <p className="text-zinc-500 font-display tracking-widest text-xs uppercase">Carregando Feed...</p>
                 </div>
               ) : activities.length === 0 ? (
                 <motion.div
@@ -425,7 +425,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                     <Play size={32} className="text-purple-500 fill-current ml-1" />
                   </div>
                   <div>
-                    <p className="font-display font-black text-xl italic text-white uppercase tracking-tighter">Nenhuma corrida ainda</p>
+                    <p className="font-display font-black text-xl text-white uppercase tracking-tighter">Nenhuma corrida ainda</p>
                     <p className="text-zinc-500 text-xs mt-1">Seja o primeiro a registrar uma atividade!</p>
                   </div>
                   <motion.button

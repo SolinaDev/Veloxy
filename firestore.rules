@@ -289,7 +289,14 @@ service cloud.firestore {
         );
     }
 
-    function validProfileUpdate(userId) {
+    // As funções abaixo (usadas em validUserUpdate) não chamam mais
+    // validUserBase() individualmente: com 7 alternativas em OR, repetir
+    // esse bloco em cada uma estourava o limite de 1000 expressões
+    // avaliadas por escrita do Firestore, fazendo QUALQUER update em
+    // users/{userId} falhar com "Missing or insufficient permissions"
+    // mesmo quando a operação era legítima. validUserBase agora é chamado
+    // uma única vez em validUserUpdate.
+    function validProfileUpdate() {
       return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly([
             'displayName',
@@ -304,7 +311,7 @@ service cloud.firestore {
           ]);
     }
 
-    function validStatsProgressUpdate(userId) {
+    function validStatsProgressUpdate() {
       return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly([
             'displayName',
@@ -349,7 +356,7 @@ service cloud.firestore {
         );
     }
 
-    function validMonthlyKmReset(userId) {
+    function validMonthlyKmReset() {
       return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly([
             'monthlyKm',
@@ -358,7 +365,7 @@ service cloud.firestore {
         && request.resource.data.monthlyKm == 0;
     }
 
-    function validUserRunReset(userId) {
+    function validUserRunReset() {
       return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly([
             'totalXP',
@@ -382,7 +389,7 @@ service cloud.firestore {
     // já salvo. Isso fecha a brecha de um cliente chamar esta função
     // isoladamente para se colocar no topo do ranking sem nenhuma corrida
     // real por trás.
-    function validStatsRecalculation(userId) {
+    function validStatsRecalculation() {
       return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly([
             'totalXP',
@@ -411,14 +418,14 @@ service cloud.firestore {
         );
     }
 
-    function validEnrolledEventsUpdate(userId) {
+    function validEnrolledEventsUpdate() {
       return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['enrolledEvents'])
         && request.resource.data.enrolledEvents is list
         && request.resource.data.enrolledEvents.size() <= 100;
     }
 
-    function validJoinedGroupsUpdate(userId) {
+    function validJoinedGroupsUpdate() {
       return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['joinedGroupIds'])
         && request.resource.data.joinedGroupIds is list
@@ -426,17 +433,16 @@ service cloud.firestore {
     }
 
     function validUserUpdate(userId) {
-      return validProfileUpdate(userId)
-        || validStatsProgressUpdate(userId)
-        || validMonthlyKmReset(userId)
-        || validUserRunReset(userId)
-        || validStatsRecalculation(userId)
-        || validEnrolledEventsUpdate(userId)
-        || validJoinedGroupsUpdate(userId)
-        || validPetChoice(userId)
-        || validPetCoinsEarn(userId)
-        || validPetPurchase(userId)
-        || validPetEquip(userId);
+      return validUserBase(userId)
+        && (
+          validProfileUpdate()
+          || validStatsProgressUpdate()
+          || validMonthlyKmReset()
+          || validUserRunReset()
+          || validStatsRecalculation()
+          || validEnrolledEventsUpdate()
+          || validJoinedGroupsUpdate()
+        );
     }
 
     // ============================================================

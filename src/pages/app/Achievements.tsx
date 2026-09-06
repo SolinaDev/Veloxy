@@ -55,7 +55,7 @@ export default function Achievements() {
           </button>
           <div className="min-w-0 flex-1">
             <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Perfil</p>
-            <h1 className="font-display text-xl font-black italic">Conquistas</h1>
+            <h1 className="font-display text-xl font-black">Conquistas</h1>
           </div>
           {!loading && !loadError && (
             <div className="rounded-full border border-purple-500/25 bg-purple-500/10 px-3 py-2 text-xs font-black text-purple-300">
@@ -72,7 +72,7 @@ export default function Achievements() {
         </div>
       ) : loadError ? (
         <div className="flex min-h-[60vh] flex-col items-center justify-center gap-5 px-6 text-center">
-          <p className="font-display text-xl font-black italic">Erro ao carregar dados</p>
+          <p className="font-display text-xl font-black">Erro ao carregar dados</p>
           <p className="text-sm text-zinc-500">Não foi possível carregar suas conquistas agora.</p>
           <button
             onClick={loadData}

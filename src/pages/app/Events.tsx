@@ -183,7 +183,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
           )}
         </div>
         
-        <h1 className="font-display font-black text-2xl tracking-tighter italic text-purple-500">
+        <h1 className="font-display font-black text-2xl tracking-tighter text-purple-500">
           VELOXY EVENTS
         </h1>
         
@@ -275,7 +275,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
                       <div className="bg-purple-600 px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase shadow-lg shadow-purple-600/30">EM BREVE</div>
                       <div className="bg-black/50 backdrop-blur-md border border-white/10 px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase">Geral</div>
                   </div>
-                  <h2 className="font-display font-black text-2xl italic tracking-tighter uppercase mb-2 leading-none">{events[0].title}</h2>
+                  <h2 className="font-display font-black text-2xl tracking-tighter uppercase mb-2 leading-none">{events[0].title}</h2>
                   <div className="flex items-center gap-4 text-zinc-400 text-[10px] font-bold uppercase tracking-widest">
                       <span className="flex items-center gap-1.5"><Calendar size={12} className="text-purple-500" /> {events[0].date}</span>
                       <span className="flex items-center gap-1.5"><MapPin size={12} className="text-purple-500" /> {events[0].city}</span>
@@ -287,7 +287,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
       {/* All Events List */}
       <section className={`${embedded ? "mt-8 px-0 pb-2" : "mt-12 px-6 pb-10"} space-y-8`}>
         <div className="flex items-center justify-between mb-2">
-            <h3 className="font-display font-black text-sm italic tracking-tighter uppercase">Todas as Corridas</h3>
+            <h3 className="font-display font-black text-sm tracking-tighter uppercase">Todas as Corridas</h3>
             <span className="text-[10px] font-black text-zinc-500 tracking-widest">{filteredEvents.length} DISPONIVEIS</span>
         </div>
 
@@ -327,7 +327,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
                       )}
                   </div>
                   <div className="flex-1 min-w-0">
-                      <h4 className="font-display font-black text-lg italic tracking-tighter uppercase truncate leading-tight mb-1">{event.title}</h4>
+                      <h4 className="font-display font-black text-lg tracking-tighter uppercase truncate leading-tight mb-1">{event.title}</h4>
                       <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-bold tracking-widest uppercase leading-none">
                               <Clock size={10} className="text-purple-500" /> {event.date} • 07:00 AM
@@ -347,7 +347,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
                   <div className="flex items-center gap-4">
                       <div className="flex flex-col">
                           <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none mb-1">Inscrição</p>
-                          <p className="text-sm font-black text-purple-500 italic uppercase leading-none">{event.price}</p>
+                          <p className="text-sm font-black text-purple-500 uppercase leading-none">{event.price}</p>
                       </div>
                       <div className="w-[1px] h-6 bg-border/50" />
                       <div className="flex flex-col">
