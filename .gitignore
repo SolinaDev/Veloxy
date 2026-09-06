@@ -34,3 +34,10 @@ bun.lock
 
 # VITE
 .vite
+
+# Backend (Python)
+backend/__pycache__
+backend/**/__pycache__
+backend/.venv
+backend/venv
+backend/*.egg-info

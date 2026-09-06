@@ -88,10 +88,10 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
   const handleLoadMore = async () => {
     if (loadingMore || !hasMore) return;
     const lastItem = activities[activities.length - 1];
-    if (!lastItem?.timestamp) return;
+    if (!lastItem?.id) return;
     setLoadingMore(true);
     try {
-      const more = await loadMoreActivities(lastItem.timestamp, FEED_LIMIT);
+      const more = await loadMoreActivities(lastItem.id, FEED_LIMIT);
       if (more.length < FEED_LIMIT) setHasMore(false);
       setMoreActivities((prev) => [...prev, ...more]);
     } catch (e) {

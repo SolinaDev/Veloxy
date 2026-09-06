@@ -28,6 +28,7 @@ import { MapContainer, TileLayer, Polyline, useMap, Circle } from "react-leaflet
 import "leaflet/dist/leaflet.css";
 import { useAuth } from "@/hooks/useAuth";
 import { saveActivity } from "@/services/database";
+import { ApiError } from "@/services/apiClient";
 import { toast } from "sonner";
 import { getBestUserPhotoURL } from "@/lib/user-photo";
 
@@ -108,19 +109,22 @@ function clearActiveRunSnapshot() {
 }
 
 const getSaveErrorMessage = (error: unknown) => {
-  if (error instanceof FirebaseError) {
-    if (error.code === "permission-denied") {
+  // Fase 1: saveActivity agora chama o backend próprio — erros de validação
+  // vêm como ApiError (ver src/services/apiClient.ts), não mais FirebaseError.
+  if (error instanceof ApiError) {
+    if (error.status === 422 || error.status === 400) {
       return "Não foi possível salvar a corrida (dados fora dos limites permitidos). Tente novamente ou entre em contato com o suporte.";
     }
-
-    if (error.code === "invalid-argument") {
-      return "Dados da corrida inválidos para o Firestore.";
+    if (error.status === 401 || error.status === 403) {
+      return "Sessão expirada. Faça login novamente.";
     }
-
-    if (error.code === "unavailable") {
-      return "Firebase indisponível agora. Tente novamente em instantes.";
+    if (error.status >= 500) {
+      return "Servidor indisponível agora. Tente novamente em instantes.";
     }
+    return error.message || "Erro ao salvar corrida.";
+  }
 
+  if (error instanceof FirebaseError) {
     return `Erro Firebase: ${error.code}`;
   }
 
