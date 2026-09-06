@@ -25,11 +25,16 @@ bearer_scheme = HTTPBearer()
 
 
 def _get_jwks() -> dict:
+    """O endpoint retorna um JWK Set de verdade: {"keys": [{"kid": ..., ...}]}.
+    (Bug corrigido: antes o codigo assumia {kid: chave} direto no topo, que
+    nunca bate com o formato real — toda verificacao falhava com
+    "Unable to parse an RSA_JWK from key: None".)"""
     now = time.time()
     if _jwks_cache["keys"] is None or now - _jwks_cache["fetched_at"] > JWKS_CACHE_TTL_SECONDS:
         response = requests.get(GOOGLE_JWKS_URL, timeout=5)
         response.raise_for_status()
-        _jwks_cache["keys"] = response.json()
+        body = response.json()
+        _jwks_cache["keys"] = {jwk["kid"]: jwk for jwk in body.get("keys", [])}
         _jwks_cache["fetched_at"] = now
     return _jwks_cache["keys"]
 
