@@ -9,7 +9,7 @@ from app.database import get_db
 from app.gamification import calculate_run_coins, calculate_xp, get_level_from_xp
 from app.models import Activity, User
 from app.routers.groups import update_weekly_km_for_user_groups
-from app.routers.users import apply_xp_and_km
+from app.routers.users import apply_xp_and_km, get_or_create_user
 from app.schemas import ActivityCreate, ActivityOut, SaveActivityResult, ToggleLikeIn
 
 router = APIRouter(prefix="/activities", tags=["activities"])
@@ -26,6 +26,13 @@ def save_activity(
 ):
     if current_user.uid != payload.user_id:
         raise HTTPException(status_code=403, detail="userId nao corresponde ao usuario autenticado.")
+
+    # Garante que o usuario existe no Postgres antes de inserir a atividade
+    # (activities.user_id e foreign key de users.uid) — necessario porque
+    # login com Google nunca chama createUserProfile, só o cadastro por
+    # email/senha chama.
+    get_or_create_user(db, payload.user_id, payload.user_name, payload.user_avatar)
+    db.commit()
 
     xp_gained = calculate_xp(payload.distance, payload.duration_seconds)
 

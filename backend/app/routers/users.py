@@ -86,6 +86,21 @@ def create_or_update_user_profile(
     return user
 
 
+def get_or_create_user(db: Session, user_id: str, display_name: str, photo_url: str | None) -> User:
+    """Bug real encontrado em teste manual: login com Google nunca chamava
+    createUserProfile (só o cadastro por email/senha chamava) — no Firestore
+    isso nunca quebrava nada, mas activities.user_id agora é uma foreign key
+    de verdade para users.uid, e a primeira corrida de uma conta Google
+    violava a constraint antes mesmo de chegar em apply_xp_and_km. Por isso
+    isso precisa ser chamado logo no inicio de POST /activities, nao só aqui."""
+    user = db.get(User, user_id)
+    if not user:
+        user = User(uid=user_id, display_name=display_name, photo_url=photo_url)
+        db.add(user)
+        db.flush()
+    return user
+
+
 def apply_xp_and_km(
     db: Session,
     user_id: str,
@@ -96,12 +111,7 @@ def apply_xp_and_km(
 ) -> User:
     """Port de updateUserXP (database.ts) — reset mensal de monthlyKm incluso."""
 
-    user = db.get(User, user_id)
-    if not user:
-        user = User(uid=user_id, display_name=display_name, photo_url=photo_url)
-        db.add(user)
-        db.flush()
-
+    user = get_or_create_user(db, user_id, display_name, photo_url)
     current_month = _current_month()
     if user.monthly_km_month != current_month:
         user.monthly_km = 0

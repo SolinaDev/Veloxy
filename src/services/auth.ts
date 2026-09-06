@@ -12,6 +12,7 @@ import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
 
 import { auth } from "@/config/firebase";
 import { syncGoogleProfilePhoto } from "@/lib/user-photo";
+import { createUserProfile } from "@/services/database";
 
 function createGoogleProvider() {
   const provider = new GoogleAuthProvider();
@@ -63,6 +64,7 @@ export async function loginComGooglePopup() {
     );
 
     await syncGoogleProfilePhoto(webResult.user);
+    await ensureUserProfile(webResult.user);
 
     return webResult.user;
   }
@@ -74,6 +76,22 @@ export async function loginComGooglePopup() {
   );
 
   await syncGoogleProfilePhoto(result.user);
+  await ensureUserProfile(result.user);
 
   return result.user;
+}
+
+// Login com Google nunca passava pelo cadastro (createUserProfile só era
+// chamado em Register.tsx), então a primeira corrida de uma conta Google
+// quebrava no backend (activities.user_id é FK de users.uid). Best-effort:
+// nunca bloqueia o login se o backend estiver fora do ar.
+async function ensureUserProfile(user: { uid: string; displayName: string | null; photoURL: string | null }) {
+  try {
+    await createUserProfile(user.uid, {
+      displayName: user.displayName,
+      photoURL: user.photoURL,
+    });
+  } catch (error) {
+    console.warn("Nao foi possivel garantir o perfil apos login com Google:", error);
+  }
 }
