@@ -38,5 +38,10 @@ export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager(),
   }),
+  // Alguns bloqueadores de anuncios/privacidade (uBlock, Brave Shield etc.)
+  // derrubam o canal de streaming padrao do Firestore (ERR_BLOCKED_BY_CLIENT
+  // em requests "Write/channel"). Long polling automatico usa um formato de
+  // request que passa despercebido por esses filtros.
+  experimentalAutoDetectLongPolling: true,
 });
 export const storage = getStorage(app);
