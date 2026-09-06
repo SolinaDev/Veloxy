@@ -7,12 +7,15 @@ import type { UserProfile, ActivityData, FeedActivity, Product, RunningEvent, Us
 // Re-exportar types para quem já importava direto daqui
 export type { UserProfile, ActivityData, FeedActivity, Product, RunningEvent, UserStats, RunningGroup, GroupPost, GroupPostComment, GroupMessage };
 
-function normalizeActivity(docId: string, data: Record<string, unknown>): FeedActivity {
+// Fase 1: os 3 chamadores passam objetos já tipados vindos da API (não mais
+// dados brutos de documento do Firestore), por isso o parâmetro aceita
+// FeedActivity diretamente em vez de Record<string, unknown>.
+function normalizeActivity(docId: string, data: FeedActivity): FeedActivity {
   return {
-    id: docId,
     ...data,
+    id: docId,
     createdAtMs: typeof data.createdAtMs === "number" ? data.createdAtMs : undefined,
-  } as FeedActivity;
+  };
 }
 
 function formatPace(totalSeconds: number, totalKm: number) {
