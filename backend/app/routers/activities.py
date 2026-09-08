@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
-from app.auth import FirebaseUser, get_current_user
+from app.auth import FirebaseUser, get_current_user, require_verified_email
 from app.database import get_db
 from app.gamification import calculate_run_coins, calculate_xp, get_level_from_xp
 from app.models import Activity, User
@@ -20,10 +20,10 @@ router = APIRouter(prefix="/activities", tags=["activities"])
 def save_activity(
     payload: ActivityCreate,
     db: Session = Depends(get_db),
-    # TODO Fase 1.5: trocar por require_verified_email quando a tela de
-    # confirmacao de email existir no frontend — hoje contas antigas nunca
-    # verificaram email e ficariam bloqueadas sem aviso.
-    current_user: FirebaseUser = Depends(get_current_user),
+    # Fase 1.5: agora que a tela de confirmacao de email existe no frontend
+    # (PrivateRoute bloqueia antes de chegar aqui), o backend tambem exige —
+    # nunca confiar soh na checagem do client.
+    current_user: FirebaseUser = Depends(require_verified_email),
 ):
     if current_user.uid != payload.user_id:
         raise HTTPException(status_code=403, detail="userId nao corresponde ao usuario autenticado.")

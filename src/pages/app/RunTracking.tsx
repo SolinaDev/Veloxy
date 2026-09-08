@@ -115,8 +115,11 @@ const getSaveErrorMessage = (error: unknown) => {
     if (error.status === 422 || error.status === 400) {
       return "Não foi possível salvar a corrida (dados fora dos limites permitidos). Tente novamente ou entre em contato com o suporte.";
     }
-    if (error.status === 401 || error.status === 403) {
+    if (error.status === 401) {
       return "Sessão expirada. Faça login novamente.";
+    }
+    if (error.status === 403) {
+      return "Confirme seu email antes de salvar corridas. Veja a tela de verificação.";
     }
     if (error.status >= 500) {
       return "Servidor indisponível agora. Tente novamente em instantes.";

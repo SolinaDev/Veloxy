@@ -19,6 +19,7 @@ import type { Variants } from "framer-motion";
 
 import {
   createUserWithEmailAndPassword,
+  sendEmailVerification,
   updateProfile,
 } from "firebase/auth";
 
@@ -184,6 +185,15 @@ export default function Register() {
         });
       } catch (displayNameError) {
         console.warn("Nao foi possivel definir o nome de exibicao no Auth:", displayNameError);
+      }
+
+      // Fase 1.5: sem isso, qualquer um cria conta com email de terceiro
+      // sem nunca precisar confirmar que é dono dele. Best-effort: nunca
+      // bloqueia o cadastro se o envio do email falhar.
+      try {
+        await sendEmailVerification(userCredential.user);
+      } catch (verificationError) {
+        console.warn("Nao foi possivel enviar o email de verificacao:", verificationError);
       }
 
       let profileCreated = false;

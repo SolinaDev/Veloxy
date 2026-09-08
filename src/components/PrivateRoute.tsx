@@ -27,6 +27,13 @@ function PrivateRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
+  // Fase 1.5: login com Google já vem com emailVerified=true (o Firebase
+  // seta isso automaticamente para provedores federados) — só contas
+  // criadas por email/senha caem nesse bloqueio.
+  if (!currentUser.emailVerified) {
+    return <Navigate to="/verificar-email" replace />;
+  }
+
   return <>{children}</>;
 }
 

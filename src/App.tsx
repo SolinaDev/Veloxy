@@ -29,6 +29,7 @@ const Register = lazy(() => import("@/pages/auth/Register"));
 const CompleteProfile = lazy(
   () => import("@/pages/auth/CompleteProfile"),
 );
+const VerifyEmail = lazy(() => import("@/pages/auth/VerifyEmail"));
 
 /* NOVA PÁGINA */
 const Legal = lazy(() => import("@/pages/auth/Legal"));
@@ -120,6 +121,11 @@ const App = () => {
                   <Route
                     path="/complete-profile"
                     element={<CompleteProfile />}
+                  />
+
+                  <Route
+                    path="/verificar-email"
+                    element={<VerifyEmail />}
                   />
 
                   {/* TERMOS E PRIVACIDADE */}
