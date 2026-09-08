@@ -224,8 +224,12 @@ export default function Register() {
         );
       }
 
-      navigate("/complete-profile", {
+      // Fase 1.5: manda para a tela de confirmação de email antes do perfil —
+      // navegar direto para /complete-profile bypassava o gate do
+      // PrivateRoute, já que essa rota é pública.
+      navigate("/verificar-email", {
         replace: true,
+        state: { from: "register" },
       });
     } catch (error: unknown) {
       console.error("Erro completo ao criar conta:", error);

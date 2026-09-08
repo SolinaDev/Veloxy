@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Mail, Loader2, LogOut, RotateCw } from "lucide-react";
 import { sendEmailVerification, signOut } from "firebase/auth";
@@ -16,7 +16,9 @@ import logo from "@/assets/LogoNova-login.png";
 // email usado (login com Google já vem verificado, nunca cai aqui).
 export default function VerifyEmail() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
+  const cameFromRegister = (location.state as { from?: string } | null)?.from === "register";
   const [resending, setResending] = useState(false);
   const [checking, setChecking] = useState(false);
 
@@ -45,7 +47,7 @@ export default function VerifyEmail() {
       await user.reload();
       if (user.emailVerified) {
         toast.success("Email confirmado!");
-        navigate("/", { replace: true });
+        navigate(cameFromRegister ? "/complete-profile" : "/", { replace: true });
       } else {
         toast.info("Ainda não encontramos a confirmação. Verifique sua caixa de entrada.");
       }
