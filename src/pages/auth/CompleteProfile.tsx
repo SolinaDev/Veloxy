@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { updateProfile } from "firebase/auth";
@@ -8,15 +8,18 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { toast } from "sonner";
 import { User, MapPin, Pencil, Loader2, ChevronRight, Camera } from "lucide-react";
 import logo from "@/assets/LogoNova-login.png";
+import { uploadAvatar } from "@/services/storage";
 
 export default function CompleteProfile() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [username, setUsername] = useState(user?.displayName || "");
   const [location, setLocation] = useState("");
   const [bio, setBio] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoURL, setPhotoURL] = useState(user?.photoURL || "");
 
   // Rota só faz sentido para quem acabou de se cadastrar/logar; sem sessão,
@@ -64,6 +67,33 @@ export default function CompleteProfile() {
       toast.error("Erro ao salvar perfil");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePhotoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // permite escolher o mesmo arquivo de novo depois
+
+    if (!file || !user) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Escolha um arquivo de imagem.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("A imagem deve ter até 5MB.");
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      const url = await uploadAvatar(file, user.uid);
+      setPhotoURL(url);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao enviar a foto. Tente novamente.");
+    } finally {
+      setUploadingPhoto(false);
     }
   };
 
@@ -120,8 +150,20 @@ export default function CompleteProfile() {
         className="w-full max-w-sm space-y-4"
       >
         {/* Avatar preview */}
-        <div className="flex justify-center mb-2">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center ring-2 ring-purple-500/30 ring-offset-2 ring-offset-black relative overflow-hidden shadow-lg">
+        <div className="flex flex-col items-center gap-2 mb-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handlePhotoFileChange}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingPhoto}
+            className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center ring-2 ring-purple-500/30 ring-offset-2 ring-offset-black relative overflow-hidden shadow-lg group disabled:opacity-70"
+          >
             {photoURL ? (
                <img src={photoURL} alt="Avatar Preview" className="w-full h-full object-cover" />
             ) : (
@@ -129,11 +171,27 @@ export default function CompleteProfile() {
                  {username ? username.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() : "?"}
                </span>
             )}
-            
-            <div className={`absolute inset-0 bg-black/60 flex items-center justify-center transition-opacity ${photoURL ? 'opacity-0' : 'opacity-100'}`}>
-               <Camera size={24} className="text-white opacity-90" />
+
+            <div
+              className={`absolute inset-0 bg-black/60 flex items-center justify-center transition-opacity ${
+                photoURL ? "opacity-0 group-hover:opacity-100" : "opacity-100"
+              }`}
+            >
+              {uploadingPhoto ? (
+                <Loader2 size={24} className="text-white animate-spin" />
+              ) : (
+                <Camera size={24} className="text-white opacity-90" />
+              )}
             </div>
-          </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setPhotoURL(user?.photoURL || "")}
+            className="text-[10px] font-bold text-purple-400"
+          >
+            usar foto do Google
+          </button>
         </div>
 
         {/* Username */}
@@ -166,30 +224,6 @@ export default function CompleteProfile() {
           />
         </div>
 
-        {/* Foto */}
-        <div>
-          <div className="mb-1.5 flex items-center justify-between">
-            <label className="text-xs text-gray-400 font-medium flex items-center gap-1.5">
-              <Camera size={12} />
-              Foto por URL
-            </label>
-            <button
-              type="button"
-              onClick={() => setPhotoURL(user?.photoURL || "")}
-              className="text-[10px] font-bold text-purple-400"
-            >
-              usar Google
-            </button>
-          </div>
-          <input
-            type="url"
-            value={photoURL}
-            onChange={(e) => setPhotoURL(e.target.value)}
-            placeholder="https://..."
-            className="w-full bg-secondary border border-input rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none focus:border-purple-500 transition"
-          />
-        </div>
-
         {/* Bio */}
         <div>
           <label className="text-xs text-gray-400 font-medium mb-1.5 flex items-center gap-1.5">
@@ -214,7 +248,7 @@ export default function CompleteProfile() {
           whileTap={{ scale: 0.96 }}
           whileHover={{ scale: 1.02 }}
           onClick={handleComplete}
-          disabled={saving}
+          disabled={saving || uploadingPhoto}
           className="w-full bg-purple-600 hover:bg-purple-700 transition py-3.5 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {saving ? (
