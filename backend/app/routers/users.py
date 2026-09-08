@@ -80,6 +80,12 @@ def create_or_update_user_profile(
     if payload.terms_version:
         user.terms_version = payload.terms_version
         user.terms_accepted_at = datetime.now(timezone.utc)
+    if payload.bio is not None:
+        user.bio = payload.bio
+    if payload.location is not None:
+        user.location = payload.location
+    if payload.onboarded is not None:
+        user.onboarded = payload.onboarded
 
     db.commit()
     db.refresh(user)

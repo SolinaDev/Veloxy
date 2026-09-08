@@ -35,6 +35,9 @@ class UserProfileCreate(BaseModel):
     display_name: str | None = Field(default=None, validation_alias="displayName")
     photo_url: str | None = Field(default=None, validation_alias="photoURL")
     terms_version: str | None = Field(default=None, validation_alias="termsVersion")
+    bio: str | None = Field(default=None, max_length=150)
+    location: str | None = Field(default=None, max_length=120)
+    onboarded: bool | None = Field(default=None)
 
 
 class ActivityCreate(BaseModel):

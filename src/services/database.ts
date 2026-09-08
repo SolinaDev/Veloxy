@@ -112,7 +112,14 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
 // que um create malformado zere ou sobrescreva estatísticas existentes.
 export const createUserProfile = async (
   userId: string,
-  data: { displayName?: string | null; photoURL?: string | null; termsVersion?: string }
+  data: {
+    displayName?: string | null;
+    photoURL?: string | null;
+    termsVersion?: string;
+    bio?: string | null;
+    location?: string | null;
+    onboarded?: boolean;
+  }
 ) => {
   await api.put(`/users/${userId}`, data);
 };
