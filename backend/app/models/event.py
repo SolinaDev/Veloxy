@@ -4,6 +4,7 @@ from sqlalchemy import ARRAY, DateTime, Float, ForeignKey, Integer, String, Uniq
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.time_utils import utcnow
 
 
 class Event(Base):
@@ -34,8 +35,8 @@ class Event(Base):
     distance_km: Mapped[float | None] = mapped_column(Float, nullable=True)
     # Data/hora real do evento (distinta de `date`, que é texto de exibição
     # tipo "24 SET") — usada para ordenar cronologicamente.
-    event_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    event_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     participants = relationship("EventParticipant", back_populates="event", cascade="all, delete-orphan")
 
@@ -49,7 +50,7 @@ class EventParticipant(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.uid", ondelete="CASCADE"), nullable=False)
-    registered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    registered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     event = relationship("Event", back_populates="participants")
     user = relationship("User", back_populates="event_registrations")

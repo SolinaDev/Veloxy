@@ -4,6 +4,7 @@ from sqlalchemy import ARRAY, DateTime, ForeignKey, Integer, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.time_utils import utcnow
 
 
 class Activity(Base):
@@ -25,6 +26,6 @@ class Activity(Base):
     # (mesma decisão do Firestore: rota é lida/escrita inteira, nunca por ponto).
     route: Mapped[list[dict] | None] = mapped_column(JSON, nullable=True)
     xp_gained: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     user = relationship("User", back_populates="activities")
