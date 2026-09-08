@@ -45,3 +45,14 @@ export const db = initializeFirestore(app, {
   experimentalAutoDetectLongPolling: true,
 });
 export const storage = getStorage(app);
+
+// Fase 1.5: em vez de depender da tela "Personalizar URL de acao" do
+// console do Firebase (que se mostrou instavel/bugada ao salvar), passamos
+// a URL de destino direto nas chamadas de sendEmailVerification e
+// sendPasswordResetEmail via handleCodeInApp — o link do email aponta
+// direto para /auth/action com mode+oobCode na query, sem passar pela
+// pagina padrao do Firebase.
+export const actionCodeSettings = {
+  url: `${window.location.origin}/auth/action`,
+  handleCodeInApp: true,
+};

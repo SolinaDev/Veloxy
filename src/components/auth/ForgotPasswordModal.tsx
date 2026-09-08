@@ -5,7 +5,7 @@ import { sendPasswordResetEmail } from "firebase/auth";
 import { FirebaseError } from "firebase/app";
 import { toast } from "sonner";
 
-import { auth } from "@/config/firebase";
+import { actionCodeSettings, auth } from "@/config/firebase";
 
 interface ForgotPasswordModalProps {
   open: boolean;
@@ -69,7 +69,7 @@ export default function ForgotPasswordModal({
       // Deixa o email enviado pelo Firebase em português
       auth.languageCode = "pt-BR";
 
-      await sendPasswordResetEmail(auth, emailLimpo);
+      await sendPasswordResetEmail(auth, emailLimpo, actionCodeSettings);
 
       toast.success(
         "Email de recuperação enviado! Verifique sua caixa de entrada.",

@@ -6,7 +6,7 @@ import { sendEmailVerification, signOut } from "firebase/auth";
 import { FirebaseError } from "firebase/app";
 import { toast } from "sonner";
 
-import { auth } from "@/config/firebase";
+import { actionCodeSettings, auth } from "@/config/firebase";
 import { useAuth } from "@/hooks/useAuth";
 
 import logo from "@/assets/LogoNova-login.png";
@@ -26,7 +26,7 @@ export default function VerifyEmail() {
     if (!user) return;
     setResending(true);
     try {
-      await sendEmailVerification(user);
+      await sendEmailVerification(user, actionCodeSettings);
       toast.success("Email de confirmação reenviado.");
     } catch (error) {
       const code = error instanceof FirebaseError ? error.code : undefined;

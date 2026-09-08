@@ -25,7 +25,7 @@ import {
 
 import { FirebaseError } from "firebase/app";
 
-import { auth } from "@/config/firebase";
+import { actionCodeSettings, auth } from "@/config/firebase";
 import { createUserProfile } from "@/services/database";
 import { LEGAL_VERSION } from "@/content/legalContent";
 import { toast } from "sonner";
@@ -191,7 +191,7 @@ export default function Register() {
       // sem nunca precisar confirmar que é dono dele. Best-effort: nunca
       // bloqueia o cadastro se o envio do email falhar.
       try {
-        await sendEmailVerification(userCredential.user);
+        await sendEmailVerification(userCredential.user, actionCodeSettings);
       } catch (verificationError) {
         console.warn("Nao foi possivel enviar o email de verificacao:", verificationError);
       }
