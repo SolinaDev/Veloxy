@@ -119,6 +119,8 @@ export const createUserProfile = async (
     bio?: string | null;
     location?: string | null;
     onboarded?: boolean;
+    weeklyGoalKm?: number;
+    privateProfile?: boolean;
   }
 ) => {
   await api.put(`/users/${userId}`, data);

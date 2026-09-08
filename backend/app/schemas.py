@@ -38,6 +38,8 @@ class UserProfileCreate(BaseModel):
     bio: str | None = Field(default=None, max_length=150)
     location: str | None = Field(default=None, max_length=120)
     onboarded: bool | None = Field(default=None)
+    weekly_goal_km: float | None = Field(default=None, validation_alias="weeklyGoalKm", ge=0, le=500)
+    private_profile: bool | None = Field(default=None, validation_alias="privateProfile")
 
 
 class ActivityCreate(BaseModel):

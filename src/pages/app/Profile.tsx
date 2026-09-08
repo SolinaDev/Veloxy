@@ -3,9 +3,8 @@ import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { updateProfile, User } from "firebase/auth";
-import { auth, db } from "@/config/firebase";
+import { auth } from "@/config/firebase";
 import { useAuth } from "@/hooks/useAuth";
-import { doc, setDoc } from "firebase/firestore";
 import { toast } from "sonner";
 import {
   Settings,
@@ -30,7 +29,7 @@ import {
   BarChart3,
   PawPrint,
 } from "lucide-react";
-import { deleteUserActivities, getUserActivities, getUserStats, getUserProfile, UserProfile, UserStats } from "@/services/database";
+import { createUserProfile, deleteUserActivities, getUserActivities, getUserStats, getUserProfile, UserProfile, UserStats } from "@/services/database";
 import type { FeedActivity } from "@/types";
 import { getLevelFromXP } from "@/lib/gamification";
 import { toDateSafe } from "@/lib/feed-utils";
@@ -410,14 +409,12 @@ function EditProfileModal({
           displayName: displayName.trim(),
         });
 
-        // Atualizar Firestore
-        const userRef = doc(db, "users", user.uid);
-        await setDoc(userRef, {
+        await createUserProfile(user.uid, {
           displayName: displayName.trim(),
           bio: bio.trim(),
           location: location.trim(),
           weeklyGoalKm: Number.isFinite(goalValue) ? Math.max(0, Math.min(goalValue, 500)) : 10,
-        }, { merge: true });
+        });
       }
       toast.success("Perfil atualizado!");
       onSuccess();
@@ -602,7 +599,7 @@ const Profile = () => {
   const handlePrivacyChange = async (value: boolean) => {
     if (!user) return;
     try {
-      await setDoc(doc(db, "users", user.uid), { privateProfile: value }, { merge: true });
+      await createUserProfile(user.uid, { privateProfile: value });
       setProfile((prev) => prev ? { ...prev, privateProfile: value } : prev);
       toast.success(value ? "Perfil privado ativado." : "Perfil público ativado.");
     } catch (error) {

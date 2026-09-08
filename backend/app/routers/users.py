@@ -86,6 +86,10 @@ def create_or_update_user_profile(
         user.location = payload.location
     if payload.onboarded is not None:
         user.onboarded = payload.onboarded
+    if payload.weekly_goal_km is not None:
+        user.weekly_goal_km = payload.weekly_goal_km
+    if payload.private_profile is not None:
+        user.private_profile = payload.private_profile
 
     db.commit()
     db.refresh(user)
