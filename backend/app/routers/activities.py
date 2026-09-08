@@ -1,3 +1,4 @@
+import traceback
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -27,12 +28,21 @@ def save_activity(
     if current_user.uid != payload.user_id:
         raise HTTPException(status_code=403, detail="userId nao corresponde ao usuario autenticado.")
 
-    # Garante que o usuario existe no Postgres antes de inserir a atividade
-    # (activities.user_id e foreign key de users.uid) — necessario porque
-    # login com Google nunca chama createUserProfile, só o cadastro por
-    # email/senha chama.
-    get_or_create_user(db, payload.user_id, payload.user_name, payload.user_avatar)
-    db.commit()
+    # DEBUG temporario: garante que o traceback real aparece no terminal,
+    # independente da config de logging do uvicorn (que nao estava
+    # imprimindo tracebacks no ambiente onde esse bug foi reportado).
+    try:
+        # Garante que o usuario existe no Postgres antes de inserir a
+        # atividade (activities.user_id e foreign key de users.uid) —
+        # necessario porque login com Google nunca chama createUserProfile,
+        # só o cadastro por email/senha chama.
+        get_or_create_user(db, payload.user_id, payload.user_name, payload.user_avatar)
+        db.commit()
+    except Exception:
+        db.rollback()
+        print("ERRO AO CRIAR/BUSCAR USUARIO:")
+        print(traceback.format_exc(), flush=True)
+        raise HTTPException(status_code=500, detail="Erro ao verificar perfil do usuario.")
 
     xp_gained = calculate_xp(payload.distance, payload.duration_seconds)
 
@@ -57,6 +67,8 @@ def save_activity(
         db.refresh(activity)
     except Exception as exc:
         db.rollback()
+        print("ERRO AO SALVAR ATIVIDADE:")
+        print(traceback.format_exc(), flush=True)
         raise HTTPException(status_code=500, detail="Erro ao salvar atividade.") from exc
 
     xp_update_failed = False
