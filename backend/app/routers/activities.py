@@ -28,9 +28,11 @@ def save_activity(
     if current_user.uid != payload.user_id:
         raise HTTPException(status_code=403, detail="userId nao corresponde ao usuario autenticado.")
 
-    # DEBUG temporario: garante que o traceback real aparece no terminal,
-    # independente da config de logging do uvicorn (que nao estava
-    # imprimindo tracebacks no ambiente onde esse bug foi reportado).
+    # print(flush=True) em vez de logging: em pelo menos um ambiente de
+    # teste real o uvicorn nao estava imprimindo tracebacks de excecoes
+    # convertidas em HTTPException, dificultando diagnosticar bugs assim
+    # que exigiu duas rodadas de investigacao. Isso garante visibilidade
+    # do erro real independente da config de logging do processo.
     try:
         # Garante que o usuario existe no Postgres antes de inserir a
         # atividade (activities.user_id e foreign key de users.uid) —
