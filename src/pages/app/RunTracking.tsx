@@ -575,9 +575,21 @@ const RunTracking = () => {
     navigate("/");
   };
 
+  // Corrida sem distancia real (iniciou sem querer e parou logo em seguida)
+  // nao deve tentar salvar: o backend rejeita distance<=0 e isso aparecia
+  // para quem so queria cancelar como se fosse um erro de verdade.
+  const MIN_DISTANCE_TO_SAVE_KM = 0.01;
+
   const handleFinish = async () => {
     if (!user) return;
-    
+
+    if (distance < MIN_DISTANCE_TO_SAVE_KM) {
+      clearActiveRunSnapshot();
+      toast.info("Corrida cancelada — nenhuma distancia percorrida.");
+      navigate("/");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const result = await saveActivity({
