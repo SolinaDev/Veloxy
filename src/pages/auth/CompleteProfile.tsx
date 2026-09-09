@@ -6,8 +6,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { User, MapPin, Pencil, Loader2, ChevronRight, Camera } from "lucide-react";
 import logo from "@/assets/LogoNova-login.png";
-import { uploadAvatar } from "@/services/storage";
 import { createUserProfile } from "@/services/database";
+import { resizeImageToDataUrl } from "@/lib/image-resize";
 
 export default function CompleteProfile() {
   const navigate = useNavigate();
@@ -43,9 +43,12 @@ export default function CompleteProfile() {
     setSaving(true);
     try {
       const normalizedPhoto = photoURL.trim();
+      // Firebase Auth so aceita URL http(s) de verdade em photoURL — uma
+      // foto local vira base64 (data:...), que ele rejeita. O Postgres
+      // (fonte de verdade pra exibir a foto no app) aceita qualquer string.
       await updateProfile(user, {
         displayName: username.trim(),
-        photoURL: normalizedPhoto || null,
+        photoURL: normalizedPhoto.startsWith("data:") ? null : normalizedPhoto || null,
       });
 
       await createUserProfile(user.uid, {
@@ -83,11 +86,11 @@ export default function CompleteProfile() {
 
     setUploadingPhoto(true);
     try {
-      const url = await uploadAvatar(file, user.uid);
-      setPhotoURL(url);
+      const dataUrl = await resizeImageToDataUrl(file);
+      setPhotoURL(dataUrl);
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao enviar a foto. Tente novamente.");
+      toast.error("Erro ao processar a foto. Tente novamente.");
     } finally {
       setUploadingPhoto(false);
     }

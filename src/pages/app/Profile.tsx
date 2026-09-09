@@ -33,7 +33,7 @@ import { createUserProfile, deleteUserActivities, getUserActivities, getUserStat
 import type { FeedActivity } from "@/types";
 import { getLevelFromXP } from "@/lib/gamification";
 import { toDateSafe } from "@/lib/feed-utils";
-import { uploadAvatar } from "@/services/storage";
+import { resizeImageToDataUrl } from "@/lib/image-resize";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { getPetSpeciesInfo } from "@/lib/pet";
 import RunHistoryRow from "@/components/RunHistoryRow";
@@ -384,12 +384,11 @@ function EditProfileModal({
 
     setUploadingPhoto(true);
     try {
-      const newUrl = await uploadAvatar(file, user.uid);
-      setPhotoURL(newUrl);
-      toast.success("Foto atualizada!");
+      const dataUrl = await resizeImageToDataUrl(file);
+      setPhotoURL(dataUrl);
     } catch (err) {
       console.error(err);
-      toast.error("Não foi possível enviar a foto agora.");
+      toast.error("Não foi possível processar a foto agora.");
     } finally {
       setUploadingPhoto(false);
     }
@@ -404,13 +403,18 @@ function EditProfileModal({
     try {
       if (user) {
         const goalValue = Number(weeklyGoalKm);
-        // Atualizar Auth
+        const trimmedPhoto = photoURL.trim();
+        // Firebase Auth so aceita URL http(s) de verdade em photoURL — uma
+        // foto local vira base64 (data:...), que ele rejeita. O Postgres
+        // (fonte de verdade pra exibir a foto no app) aceita qualquer string.
         await updateProfile(user, {
           displayName: displayName.trim(),
+          ...(trimmedPhoto.startsWith("data:") ? {} : { photoURL: trimmedPhoto || null }),
         });
 
         await createUserProfile(user.uid, {
           displayName: displayName.trim(),
+          photoURL: trimmedPhoto || null,
           bio: bio.trim(),
           location: location.trim(),
           weeklyGoalKm: Number.isFinite(goalValue) ? Math.max(0, Math.min(goalValue, 500)) : 10,
