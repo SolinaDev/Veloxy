@@ -35,7 +35,7 @@ import {
   subscribeToGroupPosts,
   toggleGroupPostLike,
 } from "@/services/database";
-import { uploadGroupPostImage } from "@/services/storage";
+import { resizeImageToDataUrl } from "@/lib/image-resize";
 import type { GroupMessage, GroupPost, GroupPostComment, RunningGroup, UserProfile } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
 import SafeAvatar from "@/components/SafeAvatar";
@@ -382,7 +382,7 @@ function GroupFeedPanel({ group, authorName, authorPhoto, userUid }: {
     try {
       let imageURL: string | null = null;
       if (imageFile) {
-        imageURL = await uploadGroupPostImage(imageFile, group.id, userUid);
+        imageURL = await resizeImageToDataUrl(imageFile);
       }
       await createGroupPost({
         groupId: group.id,
