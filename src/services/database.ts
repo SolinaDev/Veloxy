@@ -1,6 +1,7 @@
 import { doc, arrayUnion, arrayRemove, setDoc, getDoc } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { api, ApiError } from "@/services/apiClient";
+import { subscribeToGroupEvents } from "@/services/groupSocket";
 import { toDateSafe } from "@/lib/feed-utils";
 import type { UserProfile, ActivityData, FeedActivity, Product, RunningEvent, UserStats, RunningGroup, GroupPost, GroupPostComment, GroupMessage, PetSpecies, PetAccessorySlot } from "@/types";
 
@@ -507,8 +508,11 @@ export const updateGroupPhoto = async (groupId: string, photoURL: string): Promi
   await api.put(`/groups/${groupId}/photo`, { photoURL });
 };
 
-// Feed do grupo — Fase 1: sem onSnapshot ainda (mesma decisão do feed geral
-// de atividades: polling a cada 15s até a Fase 2 trazer WebSocket).
+// Feed do grupo — Fase 2: WebSocket (subscribeToGroupEvents) substitui o
+// polling de 15s da Fase 1. O fetch inicial continua igual; a partir daí,
+// so refaz a busca quando um evento relevante chega pelo socket. O
+// setInterval longo fica so como rede de seguranca caso o WebSocket caia
+// e a reconexao demore.
 export const subscribeToGroupPosts = (
   groupId: string,
   callback: (posts: GroupPost[]) => void,
@@ -524,9 +528,15 @@ export const subscribeToGroupPosts = (
     }
   };
   fetchPosts();
-  const intervalId = setInterval(fetchPosts, 15_000);
+
+  const unsubscribeWs = subscribeToGroupEvents(groupId, (event) => {
+    if (event.type === "post_created" || event.type === "post_like") fetchPosts();
+  });
+  const intervalId = setInterval(fetchPosts, 60_000);
+
   return () => {
     cancelled = true;
+    unsubscribeWs();
     clearInterval(intervalId);
   };
 };
@@ -555,7 +565,8 @@ export const toggleGroupPostLike = async (groupId: string, postId: string, userI
   void userId; // mantido na assinatura: quem curte é sempre o usuario autenticado no backend
 };
 
-// Comentários de uma publicação — mesmo esquema de polling do feed do grupo.
+// Comentários de uma publicação — mesmo esquema via WebSocket do feed do
+// grupo, filtrando pelo postId (o evento do socket é por grupo, não por post).
 export const subscribeToGroupPostComments = (
   groupId: string,
   postId: string,
@@ -571,9 +582,15 @@ export const subscribeToGroupPostComments = (
     }
   };
   fetchComments();
-  const intervalId = setInterval(fetchComments, 15_000);
+
+  const unsubscribeWs = subscribeToGroupEvents(groupId, (event) => {
+    if (event.type === "comment_created" && event.postId === postId) fetchComments();
+  });
+  const intervalId = setInterval(fetchComments, 60_000);
+
   return () => {
     cancelled = true;
+    unsubscribeWs();
     clearInterval(intervalId);
   };
 };
@@ -587,7 +604,7 @@ export const addGroupPostComment = async (
   return comment.id;
 };
 
-// Chat do grupo — mesmo esquema de polling.
+// Chat do grupo — mesmo esquema via WebSocket.
 export const subscribeToGroupMessages = (
   groupId: string,
   callback: (messages: GroupMessage[]) => void,
@@ -603,9 +620,15 @@ export const subscribeToGroupMessages = (
     }
   };
   fetchMessages();
-  const intervalId = setInterval(fetchMessages, 15_000);
+
+  const unsubscribeWs = subscribeToGroupEvents(groupId, (event) => {
+    if (event.type === "message_created") fetchMessages();
+  });
+  const intervalId = setInterval(fetchMessages, 60_000);
+
   return () => {
     cancelled = true;
+    unsubscribeWs();
     clearInterval(intervalId);
   };
 };
