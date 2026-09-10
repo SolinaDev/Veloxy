@@ -42,3 +42,7 @@ backend/.venv
 backend/venv
 backend/*.egg-info
 backend/backups
+
+# chatbot_runnex.py (dados locais de teste, um arquivo por usuario)
+__pycache__/
+chatbot_dados_*.json
