@@ -248,6 +248,90 @@ CREATE TABLE IF NOT EXISTS event_participants (
 
 
 -- -----------------------------------------------------
+-- Tabela `chatbot_profiles`
+-- -----------------------------------------------------
+-- Estado do chatbot de corrida por usuario (pace, objetivo, estatisticas e
+-- recordes por distancia). Um registro por usuario.
+CREATE TABLE IF NOT EXISTS chatbot_profiles (
+    user_id                    VARCHAR NOT NULL,
+    pace_atual                 DOUBLE PRECISION,
+    distancia_frequente        DOUBLE PRECISION,
+    objetivo_principal         VARCHAR,
+    nivel                      VARCHAR,
+    aguardando_aprofundamento  BOOLEAN NOT NULL,
+    ultimo_topico_explicado    VARCHAR,
+    distancia_total            DOUBLE PRECISION NOT NULL,
+    tempo_total                INTEGER NOT NULL,
+    treinos_realizados         INTEGER NOT NULL,
+    calorias_total             DOUBLE PRECISION NOT NULL,
+    melhor_ritmo               DOUBLE PRECISION,
+    maior_distancia            DOUBLE PRECISION NOT NULL,
+    melhor_pace_5k             DOUBLE PRECISION,
+    melhor_pace_10k            DOUBLE PRECISION,
+    melhor_pace_21k            DOUBLE PRECISION,
+    melhor_pace_42k            DOUBLE PRECISION,
+    created_at                 TIMESTAMP WITH TIME ZONE NOT NULL,
+    last_updated               TIMESTAMP WITH TIME ZONE NOT NULL,
+    CONSTRAINT chatbot_profiles_pkey PRIMARY KEY (user_id),
+    CONSTRAINT chatbot_profiles_user_id_fkey FOREIGN KEY (user_id)
+        REFERENCES users (uid) ON DELETE CASCADE
+);
+
+
+-- -----------------------------------------------------
+-- Tabela `chatbot_treinos`
+-- -----------------------------------------------------
+-- Treinos registrados via chatbot ("registrar: distancia_km, tempo_min").
+CREATE TABLE IF NOT EXISTS chatbot_treinos (
+    id           SERIAL NOT NULL,
+    user_id      VARCHAR NOT NULL,
+    distancia_km DOUBLE PRECISION NOT NULL,
+    tempo_min    INTEGER NOT NULL,
+    ritmo        DOUBLE PRECISION NOT NULL,
+    calorias     DOUBLE PRECISION NOT NULL,
+    data         VARCHAR NOT NULL,
+    created_at   TIMESTAMP WITH TIME ZONE NOT NULL,
+    CONSTRAINT chatbot_treinos_pkey PRIMARY KEY (id),
+    CONSTRAINT chatbot_treinos_user_id_fkey FOREIGN KEY (user_id)
+        REFERENCES users (uid) ON DELETE CASCADE
+);
+
+
+-- -----------------------------------------------------
+-- Tabela `chatbot_metas`
+-- -----------------------------------------------------
+-- Meta principal de distancia/prazo definida via chatbot ("meta: ..."). Um
+-- registro por usuario.
+CREATE TABLE IF NOT EXISTS chatbot_metas (
+    user_id     VARCHAR NOT NULL,
+    distancia   DOUBLE PRECISION NOT NULL,
+    data_limite VARCHAR NOT NULL,
+    definida_em TIMESTAMP WITH TIME ZONE NOT NULL,
+    CONSTRAINT chatbot_metas_pkey PRIMARY KEY (user_id),
+    CONSTRAINT chatbot_metas_user_id_fkey FOREIGN KEY (user_id)
+        REFERENCES users (uid) ON DELETE CASCADE
+);
+
+
+-- -----------------------------------------------------
+-- Tabela `chatbot_respostas_aprendidas`
+-- -----------------------------------------------------
+-- Respostas ensinadas via "aprender: pergunta | resposta", escopadas por
+-- usuario — cada usuario so ve o que ele mesmo ensinou ao bot.
+CREATE TABLE IF NOT EXISTS chatbot_respostas_aprendidas (
+    id                   SERIAL NOT NULL,
+    user_id              VARCHAR NOT NULL,
+    pergunta_normalizada VARCHAR NOT NULL,
+    resposta             VARCHAR NOT NULL,
+    frequencia           INTEGER NOT NULL,
+    created_at           TIMESTAMP WITH TIME ZONE NOT NULL,
+    CONSTRAINT chatbot_respostas_aprendidas_pkey PRIMARY KEY (id),
+    CONSTRAINT chatbot_respostas_aprendidas_user_id_fkey FOREIGN KEY (user_id)
+        REFERENCES users (uid) ON DELETE CASCADE
+);
+
+
+-- -----------------------------------------------------
 -- Fim do script
 -- -----------------------------------------------------
 -- Nota: em uso normal, esse schema e criado pelo Alembic
