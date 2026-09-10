@@ -1,11 +1,11 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy import desc
 from sqlalchemy.orm import Session, selectinload
 
-from app.auth import FirebaseUser, get_current_user
-from app.database import get_db
+from app.auth import FirebaseUser, decode_firebase_token, get_current_user
+from app.database import SessionLocal, get_db
 from app.models import Group, GroupMember, GroupMessage, GroupPost, GroupPostComment, User
 from app.schemas_group import (
     GroupCommentCreate,
@@ -19,6 +19,7 @@ from app.schemas_group import (
     ToggleLikeIn,
     UpdateGroupPhotoIn,
 )
+from app.ws_manager import manager
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
@@ -99,6 +100,45 @@ def create_group(
     group = _get_group_or_404(db, group.id)
     users = _load_users(db, [group.created_by])
     return _serialize_group(group, users)
+
+
+@router.websocket("/{group_id}/ws")
+async def group_websocket(group_id: int, websocket: WebSocket, token: str = ""):
+    """Substitui o polling de 15s do chat/feed/comentarios do grupo. O
+    browser nao consegue mandar header Authorization no handshake do
+    WebSocket, entao o ID token do Firebase chega via query param
+    (?token=...) em vez do Bearer normal."""
+    try:
+        user = decode_firebase_token(token)
+    except HTTPException:
+        await websocket.close(code=4401)
+        return
+
+    db = SessionLocal()
+    try:
+        is_member = (
+            db.query(GroupMember)
+            .filter(GroupMember.group_id == group_id, GroupMember.user_id == user.uid)
+            .first()
+            is not None
+        )
+    finally:
+        db.close()
+
+    if not is_member:
+        await websocket.close(code=4403)
+        return
+
+    await manager.connect(group_id, websocket)
+    try:
+        while True:
+            # Conexao e so push (servidor -> cliente); ainda precisamos
+            # aguardar aqui pra detectar quando o cliente desconecta.
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        pass
+    finally:
+        manager.disconnect(group_id, websocket)
 
 
 @router.get("/{group_id}", response_model=GroupOut)
@@ -196,7 +236,7 @@ def list_group_posts(
 
 
 @router.post("/{group_id}/posts", response_model=GroupPostOut)
-def create_group_post(
+async def create_group_post(
     group_id: int,
     payload: GroupPostCreate,
     db: Session = Depends(get_db),
@@ -213,11 +253,13 @@ def create_group_post(
     db.add(post)
     db.commit()
     db.refresh(post)
-    return _serialize_post(post, author)
+    result = _serialize_post(post, author)
+    await manager.broadcast(group_id, {"type": "post_created"})
+    return result
 
 
 @router.post("/{group_id}/posts/{post_id}/like")
-def toggle_group_post_like(
+async def toggle_group_post_like(
     group_id: int,
     post_id: int,
     payload: ToggleLikeIn,
@@ -237,6 +279,7 @@ def toggle_group_post_like(
             likes.append(current_user.uid)
     post.likes = likes
     db.commit()
+    await manager.broadcast(group_id, {"type": "post_like", "postId": str(post_id)})
     return {"likes": likes}
 
 
@@ -273,7 +316,7 @@ def list_group_post_comments(
 
 
 @router.post("/{group_id}/posts/{post_id}/comments", response_model=GroupCommentOut)
-def add_group_post_comment(
+async def add_group_post_comment(
     group_id: int,
     post_id: int,
     payload: GroupCommentCreate,
@@ -290,7 +333,9 @@ def add_group_post_comment(
     post.comments_count = (post.comments_count or 0) + 1
     db.commit()
     db.refresh(comment)
-    return _serialize_comment(comment, author)
+    result = _serialize_comment(comment, author)
+    await manager.broadcast(group_id, {"type": "comment_created", "postId": str(post_id)})
+    return result
 
 
 # ─── Chat ───────────────────────────────────────────────────────────────────
@@ -327,7 +372,7 @@ def list_group_messages(
 
 
 @router.post("/{group_id}/messages", response_model=GroupMessageOut)
-def send_group_message(
+async def send_group_message(
     group_id: int,
     payload: GroupMessageCreate,
     db: Session = Depends(get_db),
@@ -338,7 +383,9 @@ def send_group_message(
     db.add(message)
     db.commit()
     db.refresh(message)
-    return _serialize_message(message, sender)
+    result = _serialize_message(message, sender)
+    await manager.broadcast(group_id, {"type": "message_created"})
+    return result
 
 
 # ─── Usado por outros dominios ──────────────────────────────────────────────

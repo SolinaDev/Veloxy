@@ -5,7 +5,6 @@ import {
   persistentLocalCache,
   persistentMultipleTabManager,
 } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
 
 const requiredEnvVars = [
   "VITE_FIREBASE_API_KEY",
@@ -44,8 +43,6 @@ export const db = initializeFirestore(app, {
   // request que passa despercebido por esses filtros.
   experimentalAutoDetectLongPolling: true,
 });
-export const storage = getStorage(app);
-
 // Fase 1.5: em vez de depender da tela "Personalizar URL de acao" do
 // console do Firebase (que se mostrou instavel/bugada ao salvar), passamos
 // a URL de destino direto nas chamadas de sendEmailVerification e

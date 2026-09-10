@@ -25,8 +25,9 @@ import {
   getUserProfile,
   joinGroup,
   leaveGroup,
+  updateGroupPhoto,
 } from "@/services/database";
-import { uploadGroupAvatar } from "@/services/storage";
+import { resizeImageToDataUrl } from "@/lib/image-resize";
 import type { FeedActivity, RunningGroup, UserProfile } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
 import SafeAvatar from "@/components/SafeAvatar";
@@ -354,7 +355,8 @@ export default function Social() {
 
       if (avatarFile) {
         try {
-          await uploadGroupAvatar(avatarFile, groupId, user.uid);
+          const dataUrl = await resizeImageToDataUrl(avatarFile);
+          await updateGroupPhoto(groupId, dataUrl);
         } catch (avatarError) {
           console.warn("Nao foi possivel enviar a foto do grupo:", avatarError);
           toast.warning("Grupo criado, mas a foto nao pode ser enviada agora.");

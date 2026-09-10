@@ -2,13 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { updateProfile } from "firebase/auth";
-import { db } from "@/config/firebase";
 import { useAuth } from "@/hooks/useAuth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { toast } from "sonner";
 import { User, MapPin, Pencil, Loader2, ChevronRight, Camera } from "lucide-react";
 import logo from "@/assets/LogoNova-login.png";
-import { uploadAvatar } from "@/services/storage";
+import { createUserProfile } from "@/services/database";
+import { resizeImageToDataUrl } from "@/lib/image-resize";
 
 export default function CompleteProfile() {
   const navigate = useNavigate();
@@ -44,21 +43,21 @@ export default function CompleteProfile() {
     setSaving(true);
     try {
       const normalizedPhoto = photoURL.trim();
+      // Firebase Auth so aceita URL http(s) de verdade em photoURL — uma
+      // foto local vira base64 (data:...), que ele rejeita. O Postgres
+      // (fonte de verdade pra exibir a foto no app) aceita qualquer string.
       await updateProfile(user, {
         displayName: username.trim(),
-        photoURL: normalizedPhoto || null,
+        photoURL: normalizedPhoto.startsWith("data:") ? null : normalizedPhoto || null,
       });
 
-      // Salvar dados do perfil no Firestore (não mais em localStorage)
-      const userRef = doc(db, "users", user.uid);
-      await setDoc(userRef, {
+      await createUserProfile(user.uid, {
         displayName: username.trim(),
         photoURL: normalizedPhoto || null,
         location: location.trim(),
         bio: bio.trim(),
         onboarded: true,
-        lastUpdated: serverTimestamp(),
-      }, { merge: true });
+      });
 
       toast.success(`Bem-vindo ao Veloxy, ${username}! 🏃‍♂️`);
       navigate("/");
@@ -87,11 +86,11 @@ export default function CompleteProfile() {
 
     setUploadingPhoto(true);
     try {
-      const url = await uploadAvatar(file, user.uid);
-      setPhotoURL(url);
+      const dataUrl = await resizeImageToDataUrl(file);
+      setPhotoURL(dataUrl);
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao enviar a foto. Tente novamente.");
+      toast.error("Erro ao processar a foto. Tente novamente.");
     } finally {
       setUploadingPhoto(false);
     }
@@ -104,12 +103,7 @@ export default function CompleteProfile() {
     }
 
     try {
-      // Marcar como onboarded no Firestore mesmo pulando
-      const userRef = doc(db, "users", user.uid);
-      await setDoc(userRef, {
-        onboarded: true,
-        lastUpdated: serverTimestamp(),
-      }, { merge: true });
+      await createUserProfile(user.uid, { onboarded: true });
     } catch (err) {
       console.error(err);
     }

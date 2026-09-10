@@ -46,10 +46,10 @@ class FirebaseUser:
         self.email_verified = email_verified
 
 
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
-) -> FirebaseUser:
-    token = credentials.credentials
+def decode_firebase_token(token: str) -> FirebaseUser:
+    """Nucleo da verificacao, sem depender do HTTPBearer — reaproveitado pelo
+    WebSocket, que nao consegue mandar header Authorization no handshake do
+    navegador (o token chega via query param nesse caso)."""
     try:
         header = jwt.get_unverified_header(token)
         jwks = _get_jwks()
@@ -73,6 +73,12 @@ def get_current_user(
         email=payload.get("email"),
         email_verified=payload.get("email_verified", False),
     )
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+) -> FirebaseUser:
+    return decode_firebase_token(credentials.credentials)
 
 
 def require_verified_email(user: FirebaseUser = Depends(get_current_user)) -> FirebaseUser:

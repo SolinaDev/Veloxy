@@ -41,3 +41,4 @@ backend/**/__pycache__
 backend/.venv
 backend/venv
 backend/*.egg-info
+backend/backups

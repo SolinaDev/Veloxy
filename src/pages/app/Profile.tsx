@@ -3,9 +3,8 @@ import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { updateProfile, User } from "firebase/auth";
-import { auth, db } from "@/config/firebase";
+import { auth } from "@/config/firebase";
 import { useAuth } from "@/hooks/useAuth";
-import { doc, setDoc } from "firebase/firestore";
 import { toast } from "sonner";
 import {
   Settings,
@@ -30,11 +29,11 @@ import {
   BarChart3,
   PawPrint,
 } from "lucide-react";
-import { deleteUserActivities, getUserActivities, getUserStats, getUserProfile, UserProfile, UserStats } from "@/services/database";
+import { createUserProfile, deleteUserActivities, getUserActivities, getUserStats, getUserProfile, UserProfile, UserStats } from "@/services/database";
 import type { FeedActivity } from "@/types";
 import { getLevelFromXP } from "@/lib/gamification";
 import { toDateSafe } from "@/lib/feed-utils";
-import { uploadAvatar } from "@/services/storage";
+import { resizeImageToDataUrl } from "@/lib/image-resize";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { getPetSpeciesInfo } from "@/lib/pet";
 import RunHistoryRow from "@/components/RunHistoryRow";
@@ -385,12 +384,11 @@ function EditProfileModal({
 
     setUploadingPhoto(true);
     try {
-      const newUrl = await uploadAvatar(file, user.uid);
-      setPhotoURL(newUrl);
-      toast.success("Foto atualizada!");
+      const dataUrl = await resizeImageToDataUrl(file);
+      setPhotoURL(dataUrl);
     } catch (err) {
       console.error(err);
-      toast.error("Não foi possível enviar a foto agora.");
+      toast.error("Não foi possível processar a foto agora.");
     } finally {
       setUploadingPhoto(false);
     }
@@ -405,19 +403,22 @@ function EditProfileModal({
     try {
       if (user) {
         const goalValue = Number(weeklyGoalKm);
-        // Atualizar Auth
+        const trimmedPhoto = photoURL.trim();
+        // Firebase Auth so aceita URL http(s) de verdade em photoURL — uma
+        // foto local vira base64 (data:...), que ele rejeita. O Postgres
+        // (fonte de verdade pra exibir a foto no app) aceita qualquer string.
         await updateProfile(user, {
           displayName: displayName.trim(),
+          ...(trimmedPhoto.startsWith("data:") ? {} : { photoURL: trimmedPhoto || null }),
         });
 
-        // Atualizar Firestore
-        const userRef = doc(db, "users", user.uid);
-        await setDoc(userRef, {
+        await createUserProfile(user.uid, {
           displayName: displayName.trim(),
+          photoURL: trimmedPhoto || null,
           bio: bio.trim(),
           location: location.trim(),
           weeklyGoalKm: Number.isFinite(goalValue) ? Math.max(0, Math.min(goalValue, 500)) : 10,
-        }, { merge: true });
+        });
       }
       toast.success("Perfil atualizado!");
       onSuccess();
@@ -602,7 +603,7 @@ const Profile = () => {
   const handlePrivacyChange = async (value: boolean) => {
     if (!user) return;
     try {
-      await setDoc(doc(db, "users", user.uid), { privateProfile: value }, { merge: true });
+      await createUserProfile(user.uid, { privateProfile: value });
       setProfile((prev) => prev ? { ...prev, privateProfile: value } : prev);
       toast.success(value ? "Perfil privado ativado." : "Perfil público ativado.");
     } catch (error) {
