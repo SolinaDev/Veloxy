@@ -7,4 +7,3 @@ pydantic>=2.10
 pydantic-settings>=2.7
 python-jose[cryptography]==3.3.0
 requests==2.32.3
-httpx==0.28.1  # exigido por fastapi.testclient (test_smoke*.py), nao usado em runtime
