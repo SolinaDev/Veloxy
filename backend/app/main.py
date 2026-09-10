@@ -7,7 +7,11 @@ app = FastAPI(title="Veloxy API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # restringir ao domínio do Hosting antes de ir para produção
+    allow_origins=[
+        "https://veloxy-run.web.app",
+        "https://veloxy-run.firebaseapp.com",
+        "http://localhost:5173",
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
