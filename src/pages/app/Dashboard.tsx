@@ -18,6 +18,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { getUserStats, ActivityData, getUserProfile, UserProfile } from "@/services/database";
 import { getLevelFromXP } from "@/lib/gamification";
 import { toDateSafe } from "@/lib/feed-utils";
+import { GLASS_CARD_CLASS } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 
 type StatsResult = {
   totalKm: string;
@@ -191,7 +193,7 @@ const Dashboard = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.08 }}
-                className="bg-card/80 backdrop-blur-xl border border-border p-6 rounded-3xl relative group"
+                className={cn(GLASS_CARD_CLASS, "p-6 relative group")}
               >
                 <div
                   className={`w-8 h-8 rounded-xl flex items-center justify-center mb-3 ${
@@ -221,7 +223,7 @@ const Dashboard = () => {
 
       {/* Weekly Chart */}
       <section className="px-6 mt-10">
-        <div className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-7">
+        <div className={cn(GLASS_CARD_CLASS, "p-7")}>
           <div className="flex items-center justify-between mb-8">
             <h3 className="font-display font-black text-sm tracking-tighter uppercase text-white">
               Últimos 7 Dias
@@ -321,7 +323,7 @@ const Dashboard = () => {
             <Loader2 className="animate-spin text-purple-500" size={24} />
           </div>
         ) : stats.lastActivity ? (
-          <div className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-8 relative overflow-hidden">
+          <div className={cn(GLASS_CARD_CLASS, "p-8 relative overflow-hidden")}>
             {/* purple glow blob */}
             <div className="absolute -top-10 -right-10 w-40 h-40 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -364,7 +366,7 @@ const Dashboard = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-10 flex flex-col items-center gap-4"
+            className={cn(GLASS_CARD_CLASS, "p-10 flex flex-col items-center gap-4")}
           >
             <div className="w-16 h-16 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
               <Play size={28} className="text-purple-500 fill-current ml-1" />

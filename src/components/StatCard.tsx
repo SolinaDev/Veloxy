@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import { ReactNode } from "react";
+import { GLASS_CARD_CLASS } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 
 interface StatCardProps {
   icon: ReactNode;
@@ -22,7 +24,7 @@ const StatCard = ({ icon, label, value, unit, color = "lime" }: StatCardProps) =
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card/80 backdrop-blur-xl rounded-2xl p-4 border border-border"
+      className={cn(GLASS_CARD_CLASS, "rounded-2xl p-4")}
     >
       <div className="flex items-center gap-2 mb-2">
         <span className={colorMap[color]}>{icon}</span>

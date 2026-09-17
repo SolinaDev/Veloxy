@@ -10,6 +10,8 @@ import {
 } from "@/services/database";
 import { toast } from "sonner";
 import { toDateSafe } from "@/lib/feed-utils";
+import { GLASS_CARD_CLASS } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 
 const categories = ["Proximos", "Perto", "Inscrito", "Passados"];
 const distanceFilters = ["Todos", "5K", "10K", "21K", "42K"];
@@ -310,9 +312,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className={`bg-card/80 backdrop-blur-xl border rounded-3xl p-5 flex flex-col gap-6 transition-all ${
-                isLocal ? "border-purple-500/30 bg-purple-500/5" : "border-border"
-              }`}
+              className={cn(GLASS_CARD_CLASS, "p-5 flex flex-col gap-6 transition-all", isLocal && "border-purple-500/30 bg-purple-500/5")}
             >
                <div className="flex items-center gap-5">
                   <div className="w-24 h-24 rounded-2xl overflow-hidden border border-border relative flex-shrink-0">

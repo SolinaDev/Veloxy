@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import { Trophy, ChevronRight } from "lucide-react";
+import { GLASS_CARD_CLASS } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 
 interface ChallengeCardProps {
   title: string;
@@ -26,7 +28,7 @@ const ChallengeCard = ({
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="bg-card/80 backdrop-blur-xl border border-border rounded-2xl p-4 min-w-[280px] snap-start"
+      className={cn(GLASS_CARD_CLASS, "rounded-2xl p-4 min-w-[280px] snap-start")}
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">

@@ -24,6 +24,8 @@ import type { Variants } from "framer-motion";
 import { auth } from "@/config/firebase";
 import { useAuth } from "@/hooks/useAuth";
 import { getFirebaseAuthErrorMessage } from "@/lib/firebaseAuthErrors";
+import { GLASS_CARD_CLASS } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 
 import {
   loginComGooglePopup,
@@ -266,7 +268,7 @@ export default function Login() {
 
         <motion.div
           variants={itemVariants}
-          className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-5 sm:p-8 shadow-2xl"
+          className={cn(GLASS_CARD_CLASS, "p-5 sm:p-8 shadow-2xl")}
         >
 
           {/* LOGO */}

@@ -41,6 +41,8 @@ import { useAuth } from "@/hooks/useAuth";
 import SafeAvatar from "@/components/SafeAvatar";
 import { getBestUserPhotoURL } from "@/lib/user-photo";
 import { formatCardDate, toDateSafe } from "@/lib/feed-utils";
+import { GLASS_CARD_CLASS } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 
 type GroupTab = "feed" | "chat";
 
@@ -160,7 +162,7 @@ function PostComposer({
     <motion.div
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-4 rounded-2xl bg-card/80 backdrop-blur-xl border border-border p-4"
+      className={cn(GLASS_CARD_CLASS, "mb-4 rounded-2xl p-4")}
     >
       <div className="flex items-start gap-3">
         <SafeAvatar src={authorPhoto} name={authorName} className="h-9 w-9 rounded-full bg-secondary shrink-0" />
@@ -317,7 +319,7 @@ function PostCard({ post, groupId, userUid }: { post: GroupPost; groupId: string
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-4 rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-4"
+      className={cn(GLASS_CARD_CLASS, "mb-4 p-4")}
     >
       <div className="flex items-center gap-3">
         <SafeAvatar src={post.authorPhoto} name={post.authorName} className="h-10 w-10 rounded-full bg-secondary shrink-0" />
@@ -409,7 +411,7 @@ function GroupFeedPanel({ group, authorName, authorPhoto, userUid }: {
           <Loader2 className="animate-spin text-purple-500" size={30} />
         </div>
       ) : posts.length === 0 ? (
-        <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-10 text-center">
+        <div className={cn(GLASS_CARD_CLASS, "p-10 text-center")}>
           <Rss className="mx-auto text-zinc-700" size={32} />
           <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
             Nenhuma publicação ainda. Seja o primeiro a compartilhar!
@@ -490,7 +492,7 @@ function GroupChatPanel({ group, senderName, senderPhoto, userUid }: {
   };
 
   return (
-    <div className="flex h-[calc(100svh-15.5rem)] lg:h-[calc(100svh-11rem)] flex-col rounded-3xl bg-card/80 backdrop-blur-xl border border-border overflow-hidden">
+    <div className={cn(GLASS_CARD_CLASS, "flex h-[calc(100svh-15.5rem)] lg:h-[calc(100svh-11rem)] flex-col overflow-hidden")}>
       <div className="flex-1 overflow-y-auto no-scrollbar px-4 py-4 space-y-3">
         {loading ? (
           <div className="flex h-full items-center justify-center">
@@ -558,7 +560,7 @@ function GroupOptionsModal({ open, onClose, group, onLeave, leaving }: {
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 40 }}
-              className="w-full max-w-md rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5 pointer-events-auto"
+              className={cn(GLASS_CARD_CLASS, "w-full max-w-md p-5 pointer-events-auto")}
             >
               <div className="mb-5 flex items-center justify-between">
                 <h2 className="font-display text-xl font-black text-purple-500">OPÇÕES DO GRUPO</h2>
@@ -796,7 +798,7 @@ export default function Group() {
 
       {isDemoGroup ? (
         <div className="px-5 pt-8">
-          <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-8 text-center">
+          <div className={cn(GLASS_CARD_CLASS, "p-8 text-center")}>
             <RefreshCw className="mx-auto text-zinc-700" size={30} />
             <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
               Este é um grupo de demonstração

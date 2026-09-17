@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 
 import logo from "@/assets/LogoNova-login.png";
 import { legalContent } from "@/content/legalContent";
+import { GLASS_CARD_CLASS } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 
 export default function Legal() {
     const navigate = useNavigate();
@@ -71,7 +73,7 @@ export default function Legal() {
                     transition={{
                         duration: 0.4,
                     }}
-                    className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl shadow-2xl overflow-hidden"
+                    className={cn(GLASS_CARD_CLASS, "shadow-2xl overflow-hidden")}
                 >
                     {/* HEADER */}
                     <div className="px-5 sm:px-8 pt-7 pb-6 border-b border-border">

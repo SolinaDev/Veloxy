@@ -31,6 +31,8 @@ import { saveActivity } from "@/services/database";
 import { ApiError } from "@/services/apiClient";
 import { toast } from "sonner";
 import { getBestUserPhotoURL } from "@/lib/user-photo";
+import { GLASS_CARD_CLASS } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 
 const BackgroundGeolocation =
   registerPlugin<BackgroundGeolocationPlugin>("BackgroundGeolocation");
@@ -661,7 +663,7 @@ const RunTracking = () => {
         initial={{ opacity: 0, y: 18, scale: 0.985 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.55, ease: [0.2, 0.8, 0.2, 1], delay: 0.08 }}
-        className="flex-1 relative mx-6 mt-6 rounded-3xl overflow-hidden bg-card/80 backdrop-blur-xl border border-border shadow-inner group"
+        className={cn(GLASS_CARD_CLASS, "flex-1 relative mx-6 mt-6 overflow-hidden shadow-inner group")}
         style={{ minHeight: '350px' }}
       >
         <MapContainer 
@@ -726,7 +728,7 @@ const RunTracking = () => {
               exit={{ opacity: 0, y: -20 }}
               className="absolute top-6 left-6 right-6 grid grid-cols-2 gap-3 z-[1002]"
             >
-                <div className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-4 flex items-center gap-3">
+                <div className={cn(GLASS_CARD_CLASS, "p-4 flex items-center gap-3")}>
                     <div className="w-10 h-10 rounded-2xl bg-purple-500/20 flex items-center justify-center text-purple-400">
                         <MapIcon size={18} />
                     </div>
@@ -735,7 +737,7 @@ const RunTracking = () => {
                         <p className="text-sm font-black font-display leading-none">{getPace()}</p>
                     </div>
                 </div>
-                <div className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-4 flex items-center gap-3">
+                <div className={cn(GLASS_CARD_CLASS, "p-4 flex items-center gap-3")}>
                     <div className="w-10 h-10 rounded-2xl bg-orange-500/20 flex items-center justify-center text-orange-400">
                         <Zap size={18} />
                     </div>
@@ -756,7 +758,7 @@ const RunTracking = () => {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.14 }}
-            className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-8"
+            className={cn(GLASS_CARD_CLASS, "p-8")}
         >
           <div className="text-center mb-10">
             <motion.p
@@ -876,7 +878,7 @@ const RunTracking = () => {
                 initial={{ opacity: 0, y: 28, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 28, scale: 0.96 }}
-                className="bg-card/80 backdrop-blur-xl border border-border pointer-events-auto w-full max-w-md rounded-3xl p-6"
+                className={cn(GLASS_CARD_CLASS, "pointer-events-auto w-full max-w-md p-6")}
               >
                 <p className="text-[9px] font-black uppercase tracking-[0.24em] text-zinc-500">Veloxy</p>
                 <h2 className="mt-1 font-display text-xl font-black text-purple-500 uppercase">Corrida nao finalizada</h2>
@@ -918,7 +920,7 @@ const RunTracking = () => {
                 initial={{ opacity: 0, y: 28, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 28, scale: 0.96 }}
-                className="bg-card/80 backdrop-blur-xl border border-border pointer-events-auto w-full max-w-md rounded-3xl p-5"
+                className={cn(GLASS_CARD_CLASS, "pointer-events-auto w-full max-w-md p-5")}
               >
                 <div className="mb-5 flex items-center justify-between">
                   <div>

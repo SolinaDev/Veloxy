@@ -38,6 +38,8 @@ import { ACHIEVEMENTS } from "@/lib/achievements";
 import { getPetSpeciesInfo } from "@/lib/pet";
 import { getStoredSettings, updateStoredSettings } from "@/lib/settings";
 import type { SettingsState } from "@/lib/settings";
+import { GLASS_CARD_CLASS } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 import RunHistoryRow from "@/components/RunHistoryRow";
 
 type Theme = "dark" | "light";
@@ -199,7 +201,7 @@ function SettingsModal({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.94 }}
             transition={{ type: "spring", damping: 30, stiffness: 400 }}
-            className="w-full max-w-lg max-h-[82svh] overflow-hidden rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5 shadow-2xl pointer-events-auto"
+            className={cn(GLASS_CARD_CLASS, "w-full max-w-lg max-h-[82svh] overflow-hidden p-5 shadow-2xl pointer-events-auto")}
           >
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -422,7 +424,7 @@ function EditProfileModal({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.94 }}
             transition={{ type: "spring", damping: 30, stiffness: 400 }}
-            className="w-full max-w-lg max-h-[82svh] overflow-hidden rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-6 shadow-2xl pointer-events-auto"
+            className={cn(GLASS_CARD_CLASS, "w-full max-w-lg max-h-[82svh] overflow-hidden p-6 shadow-2xl pointer-events-auto")}
           >
             <div className="flex items-center justify-between mb-8">
               <h2 className="font-display text-2xl font-black text-purple-500">EDITAR PERFIL</h2>
@@ -702,7 +704,7 @@ const Profile = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ y: -3 }}
-                className="bg-card/80 backdrop-blur-xl border border-border p-6 rounded-3xl relative overflow-hidden"
+                className={cn(GLASS_CARD_CLASS, "p-6 relative overflow-hidden")}
             >
                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Total acumulado</p>
                 <div className="flex items-baseline gap-1">
@@ -716,7 +718,7 @@ const Profile = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
                 whileHover={{ y: -3 }}
-                className="bg-card/80 backdrop-blur-xl border border-border p-6 rounded-3xl relative overflow-hidden"
+                className={cn(GLASS_CARD_CLASS, "p-6 relative overflow-hidden")}
             >
                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">XP Total</p>
                 <div className="flex items-baseline gap-1">
@@ -727,7 +729,7 @@ const Profile = () => {
         </div>
 
         {/* Metas e nivel: duas barras de progresso, um card so */}
-        <div className="mt-4 bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-5">
+        <div className={cn(GLASS_CARD_CLASS, "mt-4 p-5")}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Meta semanal</p>
@@ -807,7 +809,7 @@ const Profile = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.35, delay: i * 0.08 }}
                   whileHover={{ y: -4, scale: 1.02 }}
-                  className={`min-w-[150px] bg-card/80 backdrop-blur-xl border border-border p-5 rounded-3xl flex flex-col items-center gap-3 ${a.unlocked ? "" : "opacity-45"}`}
+                  className={cn(GLASS_CARD_CLASS, "min-w-[150px] p-5 flex flex-col items-center gap-3", !a.unlocked && "opacity-45")}
                 >
                     <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/15 flex items-center justify-center text-purple-500 shadow-[0_0_18px_rgba(147,51,234,0.14)]">
                         {a.icon}
@@ -830,7 +832,7 @@ const Profile = () => {
         </div>
         <div className="space-y-3">
           {runHistory.length === 0 ? (
-            <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-8 text-center">
+            <div className={cn(GLASS_CARD_CLASS, "p-8 text-center")}>
               <Calendar size={32} className="mx-auto text-zinc-700" />
               <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Nenhuma corrida no histórico</p>
             </div>

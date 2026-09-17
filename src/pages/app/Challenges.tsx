@@ -4,6 +4,8 @@ import ChallengeCard from "@/components/ChallengeCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { getGlobalRanking, getUserProfile, UserProfile } from "@/services/database";
+import { GLASS_CARD_CLASS } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 
 const Challenges = () => {
     const { user } = useAuth();
@@ -58,7 +60,7 @@ const Challenges = () => {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-card/80 backdrop-blur-xl border border-border p-8 rounded-3xl text-center relative overflow-hidden group"
+          className={cn(GLASS_CARD_CLASS, "p-8 text-center relative overflow-hidden group")}
         >
           <div className="relative z-10 flex flex-col items-center">
             <div className="bg-purple-600/10 p-3 rounded-2xl mb-2 text-purple-500 border border-purple-500/20">

@@ -10,6 +10,8 @@ import { CheckCircle2, Loader2, Lock, XCircle } from "lucide-react";
 
 import { auth } from "@/config/firebase";
 import { getFirebaseAuthErrorMessage } from "@/lib/firebaseAuthErrors";
+import { GLASS_CARD_CLASS } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 import logo from "@/assets/LogoNova-login.png";
 
 // Substitui a pagina padrao (branca, sem estilo) que o Firebase abre a
@@ -27,7 +29,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
-        className="w-full max-w-[440px] bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-6 sm:p-8 text-center"
+        className={cn(GLASS_CARD_CLASS, "w-full max-w-[440px] p-6 sm:p-8 text-center")}
       >
         <img src={logo} alt="Logo Veloxy" className="w-20 h-20 object-contain mx-auto mb-4" />
         {children}

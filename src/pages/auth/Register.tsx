@@ -27,6 +27,8 @@ import { actionCodeSettings, auth } from "@/config/firebase";
 import { createUserProfile } from "@/services/database";
 import { LEGAL_VERSION } from "@/content/legalContent";
 import { getFirebaseAuthErrorMessage } from "@/lib/firebaseAuthErrors";
+import { GLASS_CARD_CLASS } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 import logo from "@/assets/LogoNova-login.png";
@@ -248,7 +250,7 @@ export default function Register() {
         >
           <motion.div
             variants={itemVariants}
-            className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-5 sm:p-8 shadow-2xl"
+            className={cn(GLASS_CARD_CLASS, "p-5 sm:p-8 shadow-2xl")}
           >
             {/* Voltar */}
             <motion.button

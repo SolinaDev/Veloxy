@@ -7,6 +7,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { getUserProfile, getUserStats } from "@/services/database";
 import type { UserProfile, UserStats } from "@/types";
 import { ACHIEVEMENTS } from "@/lib/achievements";
+import { GLASS_CARD_CLASS } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 
 export default function Achievements() {
   const navigate = useNavigate();
@@ -93,7 +95,7 @@ export default function Achievements() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.4) }}
-                className={`flex flex-col items-center gap-3 rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5 text-center ${unlocked ? "" : "opacity-45"}`}
+                className={cn("flex flex-col items-center gap-3 p-5 text-center", GLASS_CARD_CLASS, !unlocked && "opacity-45")}
               >
                 <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-500/10 border border-purple-500/15 text-purple-500 shadow-[0_0_18px_rgba(147,51,234,0.14)]">
                   {unlocked ? <achievement.icon size={24} /> : <Lock size={20} />}

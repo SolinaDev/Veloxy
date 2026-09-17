@@ -6,6 +6,8 @@ import { toast } from "sonner";
 
 import { actionCodeSettings, auth } from "@/config/firebase";
 import { getFirebaseAuthErrorMessage } from "@/lib/firebaseAuthErrors";
+import { GLASS_CARD_CLASS } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 
 interface ForgotPasswordModalProps {
   open: boolean;
@@ -98,7 +100,7 @@ export default function ForgotPasswordModal({
             transition={{
               duration: 0.2,
             }}
-            className="relative w-full max-w-md rounded-3xl border border-border bg-card/80 p-5 shadow-2xl backdrop-blur-xl sm:p-8"
+            className={cn(GLASS_CARD_CLASS, "relative w-full max-w-md p-5 shadow-2xl sm:p-8")}
           >
             {/* Fechar */}
             <button

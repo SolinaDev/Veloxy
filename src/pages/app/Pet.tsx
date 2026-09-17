@@ -25,6 +25,8 @@ import {
   getPetSpeciesInfo,
   type PetMood,
 } from "@/lib/pet";
+import { GLASS_CARD_CLASS } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 
 // Animacao de "vivo" do pet, uma por humor: feliz pula mais e mais rapido,
 // cansado balanca devagar, triste quase nao se mexe (cabisbaixo).
@@ -325,7 +327,7 @@ export default function Pet() {
           {PET_MOOD_LABEL[mood]}
         </div>
 
-        <div className="mt-6 w-full max-w-sm rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5">
+        <div className={cn(GLASS_CARD_CLASS, "mt-6 w-full max-w-sm p-5")}>
           <div className="flex items-center justify-between">
             <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Nível</p>
             <span className="text-xs font-black text-purple-400">{levelInfo.currentLevel}</span>
@@ -406,7 +408,7 @@ export default function Pet() {
             className="px-6 mt-5 space-y-3"
           >
             {storeAccessories.length === 0 ? (
-              <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-8 text-center">
+              <div className={cn(GLASS_CARD_CLASS, "p-8 text-center")}>
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Você já tem todos os itens da loja!</p>
               </div>
             ) : (

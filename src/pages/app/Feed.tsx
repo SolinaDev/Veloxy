@@ -20,6 +20,8 @@ import ActivityCard from "@/components/ActivityCard";
 import SafeAvatar from "@/components/SafeAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getBestUserPhotoURL } from "@/lib/user-photo";
+import { GLASS_CARD_CLASS } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 
 const FEED_LIMIT = 10;
 const PULL_THRESHOLD = 70;
@@ -249,7 +251,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.06 }}
-                    className="bg-card/80 backdrop-blur-xl border border-border p-3 rounded-2xl relative overflow-hidden"
+                    className={cn(GLASS_CARD_CLASS, "p-3 rounded-2xl relative overflow-hidden")}
                   >
                     <p className="text-[7px] font-bold text-zinc-500 uppercase tracking-tighter mb-0.5">{s.label}</p>
                     <div className="flex items-baseline gap-0.5">

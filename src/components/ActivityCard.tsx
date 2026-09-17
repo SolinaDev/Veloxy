@@ -5,6 +5,8 @@ import { RouteSVGPreview } from "./RouteSVGPreview";
 import { getActivityBadge, formatCardDate, shareActivity } from "@/lib/feed-utils";
 import SafeAvatar from "@/components/SafeAvatar";
 import type { FeedActivity } from "@/types";
+import { GLASS_CARD_CLASS } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 
 export interface ActivityCardProps {
   item: FeedActivity;
@@ -23,7 +25,7 @@ const ActivityCard = ({ item, userUid, idx, onLike }: ActivityCardProps) => {
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -3 }}
       transition={{ delay: Math.min(idx * 0.08, 0.4), type: "spring", stiffness: 260, damping: 24 }}
-      className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl overflow-hidden"
+      className={cn(GLASS_CARD_CLASS, "overflow-hidden")}
     >
       <div className="flex items-center justify-between px-5 pt-5 pb-3">
         <div className="flex items-center gap-3">

@@ -34,6 +34,8 @@ import SafeAvatar from "@/components/SafeAvatar";
 import { getBestUserPhotoURL } from "@/lib/user-photo";
 import { toast } from "sonner";
 import { formatCardDate } from "@/lib/feed-utils";
+import { GLASS_CARD_CLASS } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 
 type SocialTab = "feed" | "leaderboard" | "groups" | "events";
 
@@ -108,7 +110,7 @@ function GroupCreateModal({
               initial={{ opacity: 0, scale: 0.94 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.94 }}
-              className="w-full max-w-lg max-h-[86svh] overflow-y-auto no-scrollbar rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5 pointer-events-auto"
+              className={cn(GLASS_CARD_CLASS, "w-full max-w-lg max-h-[86svh] overflow-y-auto no-scrollbar p-5 pointer-events-auto")}
             >
               <div className="mb-6 flex items-center justify-between">
                 <div>
@@ -421,7 +423,7 @@ export default function Social() {
           {activeTab === "feed" && <Feed embedded />}
           {activeTab === "leaderboard" && (
             <section>
-              <div className="bg-card/80 backdrop-blur-xl border border-border mb-5 rounded-3xl p-5">
+              <div className={cn(GLASS_CARD_CLASS, "mb-5 p-5")}>
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-[0.22em] text-purple-300">Leaderboard</p>
@@ -437,7 +439,7 @@ export default function Social() {
                     <Loader2 className="animate-spin text-purple-500" size={32} />
                   </div>
                 ) : ranking.length === 0 ? (
-                  <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-10 text-center">
+                  <div className={cn(GLASS_CARD_CLASS, "p-10 text-center")}>
                     <Trophy className="mx-auto text-zinc-700" size={36} />
                     <p className="mt-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Ranking vazio por enquanto</p>
                   </div>
@@ -504,7 +506,7 @@ export default function Social() {
 
                   {selectedGroup && (
                     <div className="space-y-5">
-                      <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5">
+                      <div className={cn(GLASS_CARD_CLASS, "p-5")}>
                         <div className="flex items-start justify-between gap-4">
                           <div>
                             <div className="mb-2 inline-flex rounded-full border border-purple-500/25 bg-purple-500/10 px-3 py-1 text-[9px] font-black uppercase text-purple-300">
@@ -557,7 +559,7 @@ export default function Social() {
                         )}
                       </div>
 
-                      <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5">
+                      <div className={cn(GLASS_CARD_CLASS, "p-5")}>
                         <h4 className="font-display text-lg font-black">Ranking do grupo</h4>
                         <div className="mt-4 space-y-3">
                           {groupDetailsLoading ? (
@@ -570,7 +572,7 @@ export default function Social() {
                         </div>
                       </div>
 
-                      <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5">
+                      <div className={cn(GLASS_CARD_CLASS, "p-5")}>
                         <h4 className="font-display text-lg font-black">Feed do grupo</h4>
                         <div className="mt-4 space-y-3">
                           {groupDetailsLoading ? (
@@ -579,7 +581,7 @@ export default function Social() {
                             <p className="py-5 text-center text-xs font-black uppercase tracking-[0.16em] text-zinc-600">Sem corridas recentes neste grupo</p>
                           ) : (
                             groupFeed.map((activity) => (
-                              <div key={activity.id} className="rounded-2xl bg-card/80 backdrop-blur-xl border border-border p-4">
+                              <div key={activity.id} className={cn(GLASS_CARD_CLASS, "rounded-2xl p-4")}>
                                 <div className="flex items-center justify-between gap-4">
                                   <div className="min-w-0">
                                     <p className="truncate text-sm font-black">{activity.userName}</p>

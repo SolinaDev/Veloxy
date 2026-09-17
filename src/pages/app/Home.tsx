@@ -22,6 +22,8 @@ import { getBestUserPhotoURL } from "@/lib/user-photo";
 import { getPetMood, getPetSpeciesInfo } from "@/lib/pet";
 import { getStoredSettings, updateStoredSettings } from "@/lib/settings";
 import type { DistanceUnit } from "@/lib/settings";
+import { GLASS_CARD_CLASS } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 const KM_TO_MI = 0.621371;
@@ -186,7 +188,7 @@ export default function Home() {
               Bora, {firstName}
             </h2>
 
-            <div className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl shadow-2xl mt-6 p-6">
+            <div className={cn(GLASS_CARD_CLASS, "shadow-2xl mt-6 p-6")}>
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-[0.22em] text-purple-300">Distancia total</p>
@@ -226,7 +228,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="rounded-2xl bg-card/80 backdrop-blur-xl border border-border p-4"
+                className={cn(GLASS_CARD_CLASS, "rounded-2xl p-4")}
               >
                 <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
                   <card.icon size={17} />
@@ -241,7 +243,7 @@ export default function Home() {
           </section>
 
           <section className="mt-8 px-6">
-            <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-5">
+            <div className={cn(GLASS_CARD_CLASS, "p-5")}>
               <div className="mb-5 flex items-center justify-between">
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">Ultimos 7 dias</p>
@@ -274,7 +276,7 @@ export default function Home() {
 
             <div className="mt-4 space-y-3">
               {activities.length === 0 ? (
-                <div className="rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-8 text-center">
+                <div className={cn(GLASS_CARD_CLASS, "p-8 text-center")}>
                   <Trophy size={34} className="mx-auto text-zinc-700" />
                   <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Nenhuma corrida salva ainda</p>
                   <button
@@ -317,7 +319,7 @@ export default function Home() {
                 initial={{ opacity: 0, scale: 0.94 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.94 }}
-                className="w-full max-w-sm rounded-3xl bg-card/80 backdrop-blur-xl border border-border p-6 text-center pointer-events-auto"
+                className={cn(GLASS_CARD_CLASS, "w-full max-w-sm p-6 text-center pointer-events-auto")}
               >
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
                   <Ruler size={24} />
