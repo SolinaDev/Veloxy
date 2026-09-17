@@ -410,28 +410,3 @@ def get_joined_group_ids(
     (grupos demo/fallback, que nao tem linha correspondente aqui)."""
     rows = db.query(GroupMember.group_id).filter(GroupMember.user_id == user_id).all()
     return [str(group_id) for (group_id,) in rows]
-
-
-def update_weekly_km_for_user_groups(db: Session, user_id: str, distance_km: float) -> None:
-    """Port de addDistanceToUserGroups: soma a distancia ao km semanal de
-    cada grupo do qual o usuario participa, resetando quando a semana muda.
-    Chamado direto por POST /activities — nao precisa mais filtrar grupos
-    fallback, pois esses nunca tem linha em group_members."""
-    if distance_km <= 0:
-        return
-
-    now = datetime.now(timezone.utc)
-    iso_year, iso_week, _ = now.isocalendar()
-    current_week = f"{iso_year}-W{iso_week:02d}"
-
-    group_ids = [gm.group_id for gm in db.query(GroupMember).filter(GroupMember.user_id == user_id).all()]
-    if not group_ids:
-        return
-
-    for group in db.query(Group).filter(Group.id.in_(group_ids)).all():
-        same_week = group.weekly_km_week == current_week
-        previous_km = group.weekly_km if same_week else 0
-        group.weekly_km = min(round(previous_km + distance_km, 2), 100000)
-        group.weekly_km_week = current_week
-        group.updated_at = now
-    db.commit()

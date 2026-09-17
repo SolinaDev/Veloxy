@@ -9,9 +9,12 @@ from app.auth import FirebaseUser, get_current_user, require_verified_email
 from app.database import get_db
 from app.gamification import calculate_run_coins, calculate_xp, get_level_from_xp
 from app.models import Activity, User
-from app.routers.groups import update_weekly_km_for_user_groups
-from app.routers.users import apply_xp_and_km, get_or_create_user
 from app.schemas import ActivityCreate, ActivityOut, SaveActivityResult, ToggleLikeIn
+from app.services.activity_effects import (
+    apply_xp_and_km,
+    get_or_create_user,
+    update_weekly_km_for_user_groups,
+)
 
 router = APIRouter(prefix="/activities", tags=["activities"])
 
