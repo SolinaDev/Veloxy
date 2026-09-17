@@ -50,6 +50,110 @@ function calculateCurrentStreak(activeDays: Set<string>) {
   return streak;
 }
 
+function buildEmptyWeekMap(): Record<string, number> {
+  const weekMap: Record<string, number> = {};
+  const today = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    weekMap[dayKeyFromDate(d)] = 0;
+  }
+  return weekMap;
+}
+
+function buildWeeklyData(weekMap: Record<string, number>) {
+  const DAY_LABELS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
+  return Object.entries(weekMap).map(([dateStr, km]) => {
+    const d = new Date(dateStr + "T12:00:00");
+    return { day: DAY_LABELS[d.getDay()], km: Number(km.toFixed(2)) };
+  });
+}
+
+function formatTotalTime(totalSeconds: number): string {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+}
+
+type ActivityTotals = {
+  totalKm: number;
+  runsCount: number;
+  totalSeconds: number;
+  totalCalories: number;
+  lastActivity: (ActivityData & { id: string }) | null;
+  bestActivity: FeedActivity | null;
+  hasHourLongRun: boolean;
+  hasSub10kRun: boolean;
+};
+
+// Uma unica passada pelas atividades (ja ordenadas da mais recente para a
+// mais antiga) para os totais simples e os flags de conquista baseados em
+// uma corrida so (1h+, sub-10K).
+function computeActivityTotals(activities: FeedActivity[]): ActivityTotals {
+  let totalKm = 0;
+  let runsCount = 0;
+  let totalSeconds = 0;
+  let totalCalories = 0;
+  let lastActivity: (ActivityData & { id: string }) | null = null;
+  let bestActivity: FeedActivity | null = null;
+  let hasHourLongRun = false;
+  let hasSub10kRun = false;
+
+  activities.forEach((activity) => {
+    const distance = Number(activity.distance || 0);
+    const durationSeconds = Number(activity.durationSeconds || 0);
+
+    totalKm += distance;
+    totalSeconds += durationSeconds;
+    totalCalories += Number(activity.calories || 0);
+    runsCount += 1;
+
+    // Primeira iteração = mais recente (ordenado desc)
+    if (!lastActivity) lastActivity = activity;
+    if (!bestActivity || distance > bestActivity.distance) bestActivity = activity;
+
+    if (durationSeconds >= 3600) hasHourLongRun = true;
+    if (distance >= 10 && durationSeconds > 0 && durationSeconds <= 3600) hasSub10kRun = true;
+  });
+
+  return { totalKm, runsCount, totalSeconds, totalCalories, lastActivity, bestActivity, hasHourLongRun, hasSub10kRun };
+}
+
+type CalendarStats = {
+  activeDays: Set<string>;
+  weekMap: Record<string, number>;
+  dawnRunsCount: number;
+  nightRunsCount: number;
+};
+
+// Segunda passada, separada da de totais simples porque depende de
+// data/hora de cada atividade (streak, grafico semanal, conquistas de
+// amanhecer/noite) em vez de so somar valores.
+function computeCalendarStats(activities: FeedActivity[]): CalendarStats {
+  const activeDays = new Set<string>();
+  const weekMap = buildEmptyWeekMap();
+  let dawnRunsCount = 0;
+  let nightRunsCount = 0;
+
+  activities.forEach((activity) => {
+    if (!activity.timestamp && typeof activity.createdAtMs !== "number") return;
+
+    const activityDate = toDateSafe(activity.timestamp) ?? new Date(activity.createdAtMs || 0);
+    const dateKey = dayKeyFromDate(activityDate);
+    activeDays.add(dateKey);
+    if (dateKey in weekMap) {
+      weekMap[dateKey] += Number(activity.distance || 0);
+    }
+
+    // Amanhecer: 4h-7h. Noite: 20h-4h. Usado pelas conquistas "10 amanheceres"/"10 noites".
+    const hour = activityDate.getHours();
+    if (hour >= 4 && hour < 7) dawnRunsCount += 1;
+    else if (hour >= 20 || hour < 4) nightRunsCount += 1;
+  });
+
+  return { activeDays, weekMap, dawnRunsCount, nightRunsCount };
+}
+
 // Salvar uma nova atividade (corrida)
 // Fase 1 da migração: activities, XP/petCoins e weeklyKm dos grupos do
 // usuário agora são tudo tratado dentro de POST /activities no backend
@@ -144,91 +248,26 @@ export const getUserStats = async (userId: string) => {
         return dateB - dateA;
       });
 
-    let totalKm = 0;
-    let runsCount = 0;
-    let totalSeconds = 0;
-    let totalCalories = 0;
-    let lastActivity: (ActivityData & { id: string }) | null = null;
-    let bestActivity: FeedActivity | null = null;
-    let hasHourLongRun = false;
-    let hasSub10kRun = false;
-    let dawnRunsCount = 0;
-    let nightRunsCount = 0;
-    const activeDays = new Set<string>();
-
-    // Montar mapa dos últimos 7 dias (YYYY-MM-DD -> km)
-    const weekMap: Record<string, number> = {};
-    const today = new Date();
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      weekMap[dayKeyFromDate(d)] = 0;
-    }
-
-    activities.forEach((activity) => {
-      const distance = Number(activity.distance || 0);
-      totalKm += distance;
-      totalSeconds += Number(activity.durationSeconds || 0);
-      totalCalories += Number(activity.calories || 0);
-      runsCount += 1;
-
-      // Primeira iteração = mais recente (ordenado desc)
-      if (!lastActivity) {
-        lastActivity = activity;
-      }
-
-      if (!bestActivity || distance > bestActivity.distance) {
-        bestActivity = activity;
-      }
-
-      const durationSeconds = Number(activity.durationSeconds || 0);
-      if (durationSeconds >= 3600) hasHourLongRun = true;
-      if (distance >= 10 && durationSeconds > 0 && durationSeconds <= 3600) hasSub10kRun = true;
-
-      // Acumular km no dia correto para o gráfico semanal
-      if (activity.timestamp || typeof activity.createdAtMs === "number") {
-        const activityDate = toDateSafe(activity.timestamp) ?? new Date(activity.createdAtMs || 0);
-        const dateKey = dayKeyFromDate(activityDate);
-        activeDays.add(dateKey);
-        if (dateKey in weekMap) {
-          weekMap[dateKey] += distance;
-        }
-
-        // Amanhecer: 4h-7h. Noite: 20h-4h. Usado pelas conquistas "10 amanheceres"/"10 noites".
-        const hour = activityDate.getHours();
-        if (hour >= 4 && hour < 7) dawnRunsCount += 1;
-        else if (hour >= 20 || hour < 4) nightRunsCount += 1;
-      }
-    });
-
-    // Formatar tempo total (ex: 4h 12m)
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const formattedTime = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-
-    // Converter weekMap para array ordenado por dia
-    const DAY_LABELS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
-    const weeklyData = Object.entries(weekMap).map(([dateStr, km]) => {
-      const d = new Date(dateStr + "T12:00:00");
-      return { day: DAY_LABELS[d.getDay()], km: Number(km.toFixed(2)) };
-    });
+    const totals = computeActivityTotals(activities);
+    const calendar = computeCalendarStats(activities);
+    const weeklyData = buildWeeklyData(calendar.weekMap);
     const weeklyTotalKm = weeklyData.reduce((sum, day) => sum + day.km, 0);
 
     return {
-      totalKm: totalKm.toFixed(1),
-      runsCount,
-      totalTime: formattedTime,
-      totalCalories: Math.round(totalCalories),
-      averagePace: formatPace(totalSeconds, totalKm),
-      currentStreak: calculateCurrentStreak(activeDays),
+      totalKm: totals.totalKm.toFixed(1),
+      runsCount: totals.runsCount,
+      totalTime: formatTotalTime(totals.totalSeconds),
+      totalCalories: Math.round(totals.totalCalories),
+      averagePace: formatPace(totals.totalSeconds, totals.totalKm),
+      currentStreak: calculateCurrentStreak(calendar.activeDays),
       weeklyTotalKm: Number(weeklyTotalKm.toFixed(2)),
-      bestActivity,
-      lastActivity,
+      bestActivity: totals.bestActivity,
+      lastActivity: totals.lastActivity,
       weeklyData,
-      hasHourLongRun,
-      hasSub10kRun,
-      dawnRunsCount,
-      nightRunsCount,
+      hasHourLongRun: totals.hasHourLongRun,
+      hasSub10kRun: totals.hasSub10kRun,
+      dawnRunsCount: calendar.dawnRunsCount,
+      nightRunsCount: calendar.nightRunsCount,
     };
   } catch (error) {
     console.error("Erro ao buscar estatísticas:", error);
