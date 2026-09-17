@@ -2,7 +2,6 @@ import {
   browserLocalPersistence,
   GoogleAuthProvider,
   setPersistence,
-  signInWithEmailAndPassword,
   signInWithCredential,
   signInWithPopup,
 } from "firebase/auth";
@@ -22,18 +21,6 @@ function createGoogleProvider() {
   });
 
   return provider;
-}
-
-export async function login(email: string, senha: string) {
-  await setPersistence(auth, browserLocalPersistence);
-
-  const result = await signInWithEmailAndPassword(
-    auth,
-    email,
-    senha,
-  );
-
-  return result.user;
 }
 
 export async function loginComGooglePopup() {

@@ -66,15 +66,6 @@ export function getAccessoryById(id: string | null | undefined): PetAccessory | 
   return PET_ACCESSORIES.find((accessory) => accessory.id === id) || null;
 }
 
-export const STORE_ACCESSORIES = PET_ACCESSORIES.filter((accessory) => accessory.source === "store");
-
-// 1 RunCoin por km corrido.
-const KM_PER_RUNCOIN = 1;
-
-export function calculateRunCoins(distanceKm: number): number {
-  return Math.max(0, Math.round(distanceKm * KM_PER_RUNCOIN));
-}
-
 export type PetMood = "feliz" | "cansado" | "triste";
 
 // Humor do pet reflete a sequência de dias correndo (mesma streak do resto do app).
