@@ -4,11 +4,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import {
-  QueryClient,
-  QueryClientProvider,
-} from "@tanstack/react-query";
-
-import {
   BrowserRouter,
   Routes,
   Route,
@@ -51,8 +46,6 @@ const Pet = lazy(() => import("@/pages/app/Pet"));
 const Achievements = lazy(() => import("@/pages/app/Achievements"));
 
 const NotFound = lazy(() => import("@/pages/NotFound"));
-
-const queryClient = new QueryClient();
 
 function applySavedTheme() {
   const theme =
@@ -97,134 +90,132 @@ const App = () => {
 
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Sonner />
+      <TooltipProvider>
+        <Sonner />
 
-          <AuthProvider>
-            <BrowserRouter>
-              <Suspense fallback={<AppLoading />}>
-                <Routes>
-                  {/* =========================
-                      ROTAS PÚBLICAS
-                  ========================= */}
+        <AuthProvider>
+          <BrowserRouter>
+            <Suspense fallback={<AppLoading />}>
+              <Routes>
+                {/* =========================
+                    ROTAS PÚBLICAS
+                ========================= */}
 
+                <Route
+                  path="/login"
+                  element={<Login />}
+                />
+
+                <Route
+                  path="/register"
+                  element={<Register />}
+                />
+
+                <Route
+                  path="/complete-profile"
+                  element={<CompleteProfile />}
+                />
+
+                <Route
+                  path="/verificar-email"
+                  element={<VerifyEmail />}
+                />
+
+                <Route
+                  path="/auth/action"
+                  element={<AuthAction />}
+                />
+
+                {/* TERMOS E PRIVACIDADE */}
+                <Route
+                  path="/termos-e-privacidade"
+                  element={<Legal />}
+                />
+
+                {/* =========================
+                    ROTAS PROTEGIDAS
+                ========================= */}
+
+                <Route element={<ProtectedLayout />}>
                   <Route
-                    path="/login"
-                    element={<Login />}
+                    index
+                    element={<Home />}
                   />
 
                   <Route
-                    path="/register"
-                    element={<Register />}
+                    path="home"
+                    element={<Home />}
                   />
 
                   <Route
-                    path="/complete-profile"
-                    element={<CompleteProfile />}
+                    path="feed"
+                    element={<Social />}
                   />
 
                   <Route
-                    path="/verificar-email"
-                    element={<VerifyEmail />}
+                    path="social"
+                    element={<Social />}
                   />
 
                   <Route
-                    path="/auth/action"
-                    element={<AuthAction />}
+                    path="dashboard"
+                    element={<Dashboard />}
                   />
-
-                  {/* TERMOS E PRIVACIDADE */}
-                  <Route
-                    path="/termos-e-privacidade"
-                    element={<Legal />}
-                  />
-
-                  {/* =========================
-                      ROTAS PROTEGIDAS
-                  ========================= */}
-
-                  <Route element={<ProtectedLayout />}>
-                    <Route
-                      index
-                      element={<Home />}
-                    />
-
-                    <Route
-                      path="home"
-                      element={<Home />}
-                    />
-
-                    <Route
-                      path="feed"
-                      element={<Social />}
-                    />
-
-                    <Route
-                      path="social"
-                      element={<Social />}
-                    />
-
-                    <Route
-                      path="dashboard"
-                      element={<Dashboard />}
-                    />
-
-                    <Route
-                      path="stats"
-                      element={<Dashboard />}
-                    />
-
-                    <Route
-                      path="run"
-                      element={<RunTracking />}
-                    />
-
-                    <Route
-                      path="challenges"
-                      element={<Challenges />}
-                    />
-
-                    <Route
-                      path="events"
-                      element={<Events />}
-                    />
-
-                    <Route
-                      path="profile"
-                      element={<Profile />}
-                    />
-
-                    <Route
-                      path="grupo/:groupId"
-                      element={<Group />}
-                    />
-
-                    <Route
-                      path="pet"
-                      element={<Pet />}
-                    />
-
-                    <Route
-                      path="conquistas"
-                      element={<Achievements />}
-                    />
-                  </Route>
-
-                  {/* =========================
-                      404
-                  ========================= */}
 
                   <Route
-                    path="*"
-                    element={<NotFound />}
+                    path="stats"
+                    element={<Dashboard />}
                   />
-                </Routes>
-              </Suspense>
-            </BrowserRouter>
-          </AuthProvider>
-        </TooltipProvider>
-      </QueryClientProvider>
+
+                  <Route
+                    path="run"
+                    element={<RunTracking />}
+                  />
+
+                  <Route
+                    path="challenges"
+                    element={<Challenges />}
+                  />
+
+                  <Route
+                    path="events"
+                    element={<Events />}
+                  />
+
+                  <Route
+                    path="profile"
+                    element={<Profile />}
+                  />
+
+                  <Route
+                    path="grupo/:groupId"
+                    element={<Group />}
+                  />
+
+                  <Route
+                    path="pet"
+                    element={<Pet />}
+                  />
+
+                  <Route
+                    path="conquistas"
+                    element={<Achievements />}
+                  />
+                </Route>
+
+                {/* =========================
+                    404
+                ========================= */}
+
+                <Route
+                  path="*"
+                  element={<NotFound />}
+                />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
     </ErrorBoundary>
   );
 };
