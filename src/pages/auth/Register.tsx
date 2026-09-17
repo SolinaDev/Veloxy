@@ -23,11 +23,10 @@ import {
   updateProfile,
 } from "firebase/auth";
 
-import { FirebaseError } from "firebase/app";
-
 import { actionCodeSettings, auth } from "@/config/firebase";
 import { createUserProfile } from "@/services/database";
 import { LEGAL_VERSION } from "@/content/legalContent";
+import { getFirebaseAuthErrorMessage } from "@/lib/firebaseAuthErrors";
 import { toast } from "sonner";
 
 import logo from "@/assets/LogoNova-login.png";
@@ -63,36 +62,6 @@ const itemVariants: Variants = {
 
 const USERNAME_REGEX = /^[a-zA-Z0-9]+$/;
 const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d).+$/;
-
-function getRegisterErrorMessage(error: unknown) {
-  const code = error instanceof FirebaseError ? error.code : undefined;
-
-  if (code === "auth/email-already-in-use") {
-    return "Este email já está sendo utilizado.";
-  }
-
-  if (code === "auth/invalid-email") {
-    return "Digite um email válido.";
-  }
-
-  if (code === "auth/weak-password") {
-    return "A senha deve possuir pelo menos 6 caracteres.";
-  }
-
-  if (code === "auth/network-request-failed") {
-    return "Erro de rede. Verifique sua conexão.";
-  }
-
-  if (code === "auth/operation-not-allowed") {
-    return "O cadastro por email e senha não está ativado no Firebase.";
-  }
-
-  if (code) {
-    return `Erro ao criar conta: ${code}`;
-  }
-
-  return "Erro ao criar conta. Tente novamente.";
-}
 
 export default function Register() {
   const navigate = useNavigate();
@@ -233,7 +202,7 @@ export default function Register() {
       });
     } catch (error: unknown) {
       console.error("Erro completo ao criar conta:", error);
-      toast.error(getRegisterErrorMessage(error));
+      toast.error(getFirebaseAuthErrorMessage(error, "register"));
     } finally {
       setLoading(false);
     }

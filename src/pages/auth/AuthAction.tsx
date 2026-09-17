@@ -6,10 +6,10 @@ import {
   confirmPasswordReset,
   verifyPasswordResetCode,
 } from "firebase/auth";
-import { FirebaseError } from "firebase/app";
 import { CheckCircle2, Loader2, Lock, XCircle } from "lucide-react";
 
 import { auth } from "@/config/firebase";
+import { getFirebaseAuthErrorMessage } from "@/lib/firebaseAuthErrors";
 import logo from "@/assets/LogoNova-login.png";
 
 // Substitui a pagina padrao (branca, sem estilo) que o Firebase abre a
@@ -36,24 +36,6 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function getErrorMessage(error: unknown) {
-  if (error instanceof FirebaseError) {
-    switch (error.code) {
-      case "auth/expired-action-code":
-        return "Esse link expirou. Peça um novo email.";
-      case "auth/invalid-action-code":
-        return "Esse link já foi usado ou é inválido. Peça um novo email.";
-      case "auth/weak-password":
-        return "Escolha uma senha com pelo menos 6 caracteres.";
-      case "auth/user-disabled":
-        return "Essa conta foi desativada.";
-      default:
-        return `Não foi possível concluir a operação. (${error.code})`;
-    }
-  }
-  return "Não foi possível concluir a operação. Tente novamente.";
-}
-
 export default function AuthAction() {
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode");
@@ -77,7 +59,7 @@ export default function AuthAction() {
       applyActionCode(auth, oobCode)
         .then(() => setStatus("verified"))
         .catch((error) => {
-          setErrorMessage(getErrorMessage(error));
+          setErrorMessage(getFirebaseAuthErrorMessage(error, "auth-action"));
           setStatus("error");
         });
       return;
@@ -90,7 +72,7 @@ export default function AuthAction() {
           setStatus("resetForm");
         })
         .catch((error) => {
-          setErrorMessage(getErrorMessage(error));
+          setErrorMessage(getFirebaseAuthErrorMessage(error, "auth-action"));
           setStatus("error");
         });
       return;
@@ -119,7 +101,7 @@ export default function AuthAction() {
       await confirmPasswordReset(auth, oobCode, newPassword);
       setStatus("resetDone");
     } catch (error) {
-      setErrorMessage(getErrorMessage(error));
+      setErrorMessage(getFirebaseAuthErrorMessage(error, "auth-action"));
     } finally {
       setSubmitting(false);
     }

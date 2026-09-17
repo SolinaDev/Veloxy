@@ -20,34 +20,11 @@ import SafeAvatar from "@/components/SafeAvatar";
 import RunHistoryRow from "@/components/RunHistoryRow";
 import { getBestUserPhotoURL } from "@/lib/user-photo";
 import { getPetMood, getPetSpeciesInfo } from "@/lib/pet";
+import { getStoredSettings, updateStoredSettings } from "@/lib/settings";
+import type { DistanceUnit } from "@/lib/settings";
 import { toast } from "sonner";
 
-type DistanceUnit = "km" | "mi";
-
-// Mesma chave/campo usados pelo seletor de unidade em Profile.tsx, para as
-// duas telas ficarem sincronizadas mesmo sem um estado global compartilhado.
-const SETTINGS_STORAGE_KEY = "veloxy-settings";
 const KM_TO_MI = 0.621371;
-
-function getStoredUnit(): DistanceUnit {
-  try {
-    const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
-    const parsed = stored ? JSON.parse(stored) : null;
-    return parsed?.units === "mi" ? "mi" : "km";
-  } catch {
-    return "km";
-  }
-}
-
-function persistUnit(unit: DistanceUnit) {
-  try {
-    const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
-    const parsed = stored ? JSON.parse(stored) : {};
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ ...parsed, units: unit }));
-  } catch {
-    // localStorage indisponivel: a preferencia so vale para esta sessao
-  }
-}
 
 function formatDistance(km: number, unit: DistanceUnit) {
   return (unit === "mi" ? km * KM_TO_MI : km).toFixed(1);
@@ -87,7 +64,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [unit, setUnit] = useState<DistanceUnit>(getStoredUnit);
+  const [unit, setUnit] = useState<DistanceUnit>(() => getStoredSettings().units);
   const [unitModalOpen, setUnitModalOpen] = useState(false);
 
   const displayName = user?.displayName || "Corredor";
@@ -153,7 +130,7 @@ export default function Home() {
   const handleConfirmUnitChange = () => {
     const next: DistanceUnit = unit === "km" ? "mi" : "km";
     setUnit(next);
-    persistUnit(next);
+    updateStoredSettings("units", next);
     setUnitModalOpen(false);
     toast.success(`Distâncias agora exibidas em ${next === "mi" ? "milhas" : "quilômetros"}.`);
   };

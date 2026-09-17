@@ -36,26 +36,13 @@ import { toDateSafe } from "@/lib/feed-utils";
 import { resizeImageToDataUrl } from "@/lib/image-resize";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { getPetSpeciesInfo } from "@/lib/pet";
+import { getStoredSettings, updateStoredSettings } from "@/lib/settings";
+import type { SettingsState } from "@/lib/settings";
 import RunHistoryRow from "@/components/RunHistoryRow";
 
 type Theme = "dark" | "light";
 
-type SettingsState = {
-  privateProfile: boolean;
-  runReminders: boolean;
-  autoPause: boolean;
-  units: "km" | "mi";
-};
-
-const SETTINGS_STORAGE_KEY = "veloxy-settings";
 const THEME_STORAGE_KEY = "veloxy-theme";
-
-const defaultSettings: SettingsState = {
-  privateProfile: false,
-  runReminders: true,
-  autoPause: true,
-  units: "km",
-};
 
 function formatRunHistoryDate(activity: FeedActivity) {
   const date = toDateSafe(activity.timestamp) ?? (
@@ -93,15 +80,6 @@ const playThemeTransition = (theme: Theme) => {
       root.classList.remove("theme-transitioning", "theme-to-light", "theme-to-dark");
     }, 440);
   });
-};
-
-const getStoredSettings = (): SettingsState => {
-  try {
-    const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
-    return stored ? { ...defaultSettings, ...JSON.parse(stored) } : defaultSettings;
-  } catch {
-    return defaultSettings;
-  }
 };
 
 function SettingsRow({
@@ -169,11 +147,7 @@ function SettingsModal({
   const [deletingRuns, setDeletingRuns] = useState(false);
 
   const updateSetting = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
-    setSettings((prev) => {
-      const next = { ...prev, [key]: value };
-      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(next));
-      return next;
-    });
+    setSettings(updateStoredSettings(key, value));
   };
 
   useEffect(() => {

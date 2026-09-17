@@ -13,7 +13,6 @@ import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
 
-import { FirebaseError } from "firebase/app";
 
 import {
   AnimatePresence,
@@ -24,6 +23,7 @@ import type { Variants } from "framer-motion";
 
 import { auth } from "@/config/firebase";
 import { useAuth } from "@/hooks/useAuth";
+import { getFirebaseAuthErrorMessage } from "@/lib/firebaseAuthErrors";
 
 import {
   loginComGooglePopup,
@@ -75,90 +75,6 @@ const itemVariants: Variants = {
 /* ================================
    ERROS FIREBASE
 ================================ */
-
-function getAuthErrorCode(error: unknown) {
-  if (error instanceof FirebaseError) {
-    return error.code;
-  }
-
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    typeof error.code === "string"
-  ) {
-    return error.code;
-  }
-
-  return undefined;
-}
-
-function getAuthErrorMessage(error: unknown) {
-  const code = getAuthErrorCode(error);
-
-  const message =
-    error instanceof Error
-      ? error.message
-      : typeof error === "object" &&
-          error !== null &&
-          "message" in error &&
-          typeof error.message === "string"
-        ? error.message
-        : "";
-
-  if (message.includes("Google nao retornou credenciais")) {
-    return "Google não retornou credenciais. Verifique o SHA-1/SHA-256 e o google-services.json do Android.";
-  }
-
-  if (code === "auth/popup-closed-by-user") {
-    return "Login cancelado.";
-  }
-
-  if (code === "auth/popup-blocked") {
-    return "Popup bloqueado. Permita popups para concluir o login com Google.";
-  }
-
-  if (code === "auth/unauthorized-domain") {
-    return "Este domínio não está autorizado no Firebase.";
-  }
-
-  if (code === "auth/operation-not-allowed") {
-    return "Este método de login não está ativado no Firebase.";
-  }
-
-  if (code === "auth/network-request-failed") {
-    return "Erro de rede. Verifique sua conexão e tente novamente.";
-  }
-
-  if (code === "auth/user-not-found") {
-    return "Usuário não encontrado.";
-  }
-
-  if (
-    code === "auth/wrong-password" ||
-    code === "auth/invalid-credential"
-  ) {
-    return "Email ou senha incorretos.";
-  }
-
-  if (code === "auth/invalid-email") {
-    return "Email inválido.";
-  }
-
-  if (code === "auth/too-many-requests") {
-    return "Muitas tentativas. Aguarde um pouco e tente novamente.";
-  }
-
-  if (code) {
-    return `Erro ao fazer login: ${code}`;
-  }
-
-  if (message) {
-    return `Erro ao fazer login: ${message}`;
-  }
-
-  return "Erro ao fazer login. Tente novamente.";
-}
 
 /* ================================
    COMPONENTE
@@ -242,7 +158,7 @@ export default function Login() {
       );
 
       toast.error(
-        getAuthErrorMessage(error),
+        getFirebaseAuthErrorMessage(error, "login"),
       );
     } finally {
       setLoading(false);
@@ -273,7 +189,7 @@ export default function Login() {
       );
 
       toast.error(
-        getAuthErrorMessage(error),
+        getFirebaseAuthErrorMessage(error, "login"),
       );
     } finally {
       setLoading(false);

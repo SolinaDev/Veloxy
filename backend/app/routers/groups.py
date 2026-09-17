@@ -43,6 +43,13 @@ def _load_users(db: Session, ids: list[str]) -> UserCache:
     return {u.uid: u for u in users}
 
 
+def _author_display(user: User | None) -> tuple[str, str | None]:
+    """Nome/foto com fallback usados por post, comentario e mensagem de chat."""
+    if not user:
+        return "Corredor", None
+    return user.display_name, user.photo_url
+
+
 def _serialize_group(group: Group, users: UserCache) -> GroupOut:
     member_ids = [m.user_id for m in group.members]
     creator = users.get(group.created_by)
@@ -204,11 +211,12 @@ def leave_group(
 
 
 def _serialize_post(post: GroupPost, author: User | None) -> GroupPostOut:
+    author_name, author_photo = _author_display(author)
     return GroupPostOut(
         id=str(post.id),
         author_id=post.author_id,
-        author_name=author.display_name if author else "Corredor",
-        author_photo=author.photo_url if author else None,
+        author_name=author_name,
+        author_photo=author_photo,
         text=post.text,
         image_url=post.image_url,
         likes=list(post.likes or []),
@@ -287,11 +295,12 @@ async def toggle_group_post_like(
 
 
 def _serialize_comment(comment: GroupPostComment, author: User | None) -> GroupCommentOut:
+    author_name, author_photo = _author_display(author)
     return GroupCommentOut(
         id=str(comment.id),
         author_id=comment.author_id,
-        author_name=author.display_name if author else "Corredor",
-        author_photo=author.photo_url if author else None,
+        author_name=author_name,
+        author_photo=author_photo,
         text=comment.text,
         created_at=comment.created_at,
     )
@@ -342,11 +351,12 @@ async def add_group_post_comment(
 
 
 def _serialize_message(message: GroupMessage, sender: User | None) -> GroupMessageOut:
+    sender_name, sender_photo = _author_display(sender)
     return GroupMessageOut(
         id=str(message.id),
         sender_id=message.sender_id,
-        sender_name=sender.display_name if sender else "Corredor",
-        sender_photo=sender.photo_url if sender else None,
+        sender_name=sender_name,
+        sender_photo=sender_photo,
         text=message.text,
         created_at=message.created_at,
     )

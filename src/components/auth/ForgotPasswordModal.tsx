@@ -2,41 +2,15 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Mail, X, Loader2, LockKeyhole } from "lucide-react";
 import { sendPasswordResetEmail } from "firebase/auth";
-import { FirebaseError } from "firebase/app";
 import { toast } from "sonner";
 
 import { actionCodeSettings, auth } from "@/config/firebase";
+import { getFirebaseAuthErrorMessage } from "@/lib/firebaseAuthErrors";
 
 interface ForgotPasswordModalProps {
   open: boolean;
   onClose: () => void;
   initialEmail?: string;
-}
-
-function getResetErrorMessage(error: unknown) {
-  if (error instanceof FirebaseError) {
-    switch (error.code) {
-      case "auth/invalid-email":
-        return "Digite um email válido.";
-
-      case "auth/missing-email":
-        return "Digite seu email.";
-
-      case "auth/too-many-requests":
-        return "Muitas tentativas. Aguarde um pouco e tente novamente.";
-
-      case "auth/network-request-failed":
-        return "Erro de conexão. Verifique sua internet.";
-
-      case "auth/operation-not-allowed":
-        return "Recuperação de senha não está disponível no momento.";
-
-      default:
-        return `Não foi possível enviar o email. (${error.code})`;
-    }
-  }
-
-  return "Não foi possível enviar o email. Tente novamente.";
 }
 
 export default function ForgotPasswordModal({
@@ -79,7 +53,7 @@ export default function ForgotPasswordModal({
     } catch (error: unknown) {
       console.error("Erro ao recuperar senha:", error);
 
-      toast.error(getResetErrorMessage(error));
+      toast.error(getFirebaseAuthErrorMessage(error, "reset-password"));
     } finally {
       setLoading(false);
     }
