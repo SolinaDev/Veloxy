@@ -32,6 +32,7 @@ O Veloxy foi criado para transformar treinos em uma experiencia mais social e or
 - Cloud Firestore
 - Firebase Storage
 - Vitest
+- Backend proprio em migracao: FastAPI + PostgreSQL + Alembic (`backend/`, ver `backend/README.md`)
 
 ## Estrutura
 
@@ -48,7 +49,9 @@ src/
   types/        Tipos compartilhados
 ```
 
-Mais detalhes em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Ha tambem um backend proprio em `backend/` (FastAPI + PostgreSQL), assumindo aos poucos
+dados que hoje vivem no Firestore. Mais detalhes em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+e [backend/README.md](backend/README.md).
 
 ## Como Rodar
 
@@ -88,7 +91,12 @@ VITE_FIREBASE_PROJECT_ID
 VITE_FIREBASE_STORAGE_BUCKET
 VITE_FIREBASE_MESSAGING_SENDER_ID
 VITE_FIREBASE_APP_ID
+VITE_API_URL
 ```
+
+`VITE_API_URL` aponta para o backend proprio (`backend/`). Sem essa variavel o app
+sobe, mas as chamadas que ja usam o backend falham — o que ja migrou muda com
+frequencia, ver "Backend e migracao" em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Roadmap
 
