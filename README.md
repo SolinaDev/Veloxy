@@ -1,58 +1,82 @@
-# Veloxy
+# Runnex (Veloxy)
 
-Aplicativo gamificado de corrida que combina tracking de atividades, comunidade, eventos e recompensas ligadas ao desempenho do corredor.
+Aplicativo gamificado de corrida que combina tracking de atividades, comunidade, grupos com chat em tempo real, eventos e recompensas ligadas ao desempenho do corredor.
 
-## Visao Geral
+> "Runnex" é o nome do produto/app; "Veloxy" é o nome do repositório e do pacote npm — os dois aparecem na base de código.
 
-O Veloxy foi criado para transformar treinos em uma experiencia mais social e orientada por dados. A aplicacao permite registrar corridas, acompanhar estatisticas, evoluir em niveis, participar de desafios e acessar beneficios dentro de uma loja integrada.
+## Visão Geral
+
+O Runnex foi criado para transformar treinos em uma experiência mais social e orientada por dados. A aplicação permite registrar corridas com GPS real, acompanhar estatísticas, evoluir em níveis, participar de grupos e eventos, adotar um mascote virtual (pet) e acessar benefícios dentro de uma loja integrada.
 
 ## Funcionalidades
 
-- Autenticacao com e-mail/senha e login com Google
+- Autenticação com e-mail/senha (com confirmação obrigatória de e-mail) e login com Google
+- Registro de corrida com GPS real (foreground e background no Android), distância, tempo, ritmo, calorias e anti-cheat básico
 - Feed de atividades da comunidade
-- Registro de corrida com GPS real (foreground e background no Android), distancia, tempo, ritmo e calorias
-- Dashboard com resumo de desempenho
-- Sistema de XP, niveis e ranking
-- Grupos de corrida com km semanal por grupo
+- Dashboard com resumo de desempenho e gráfico semanal
+- Sistema de XP, níveis e ranking global
+- Grupos de corrida com feed de publicações e chat em tempo real (WebSocket)
 - Eventos de corrida por localidade
-- Perfil do usuario com foto e estatisticas
+- Perfil do usuário com foto, bio, localização e estatísticas
+- Sistema de conquistas (achievements) calculadas a partir do histórico real de corridas
+- Pet virtual gamificado: escolha de espécie, moeda própria (RunCoin) e loja de acessórios
+- PWA instalável e build nativo Android via Capacitor
 
-> Marketplace/loja com descontos ainda nao esta implementado (ver Roadmap).
+> Marketplace/loja com checkout ainda não está implementado (ver Roadmap).
 
 ## Stack
 
-- React 18
-- Vite
-- TypeScript
-- Tailwind CSS
-- shadcn/ui + Radix UI
+**Frontend**
+- React 18 + Vite + TypeScript
+- Tailwind CSS (com um pequeno conjunto de componentes shadcn/ui + Radix UI)
 - React Router
-- TanStack Query
 - Firebase Authentication
-- Cloud Firestore
-- Firebase Storage
-- Vitest
+- Cloud Firestore (hoje limitado a dados legados/de demonstração — ver [Backend](#backend))
+- Capacitor (build Android nativo) + vite-plugin-pwa
+- Vitest + Testing Library
+
+**Backend** (`backend/`)
+- FastAPI + PostgreSQL (SQLAlchemy + Alembic)
+- Verificação de token do Firebase Auth sem o Admin SDK (JWKS direto do Google)
+- WebSocket para chat/feed/comentários de grupo em tempo real
+
+Detalhes de setup e arquitetura do backend em [backend/README.md](backend/README.md).
 
 ## Estrutura
 
 ```text
 src/
   assets/       Imagens e arquivos estaticos
-  components/   Componentes reutilizaveis
+  components/   Componentes reutilizaveis (inclui components/ui, base do design system)
   config/       Configuracoes externas, como Firebase
+  content/      Conteudo estatico (termos de uso, politica de privacidade)
   hooks/        Contextos e hooks React
-  lib/          Utilitarios e regras de negocio
-  pages/        Telas da aplicacao
-  services/     Operacoes de autenticacao, banco e storage
-  test/         Setup e testes
+  lib/          Utilitarios e regras de negocio (gamificacao, conquistas, pet, etc.)
+  pages/        Telas da aplicacao (auth/ e app/)
+  services/     Acesso a dados, dividido por dominio (usersApi, activitiesApi,
+                groupsApi, eventsApi, petApi, productsApi) + apiClient e groupSocket.
+                database.ts e' um barrel que reexporta os arquivos acima, mantido
+                para compatibilidade de import.
+  test/         Setup e testes automatizados
   types/        Tipos compartilhados
+
+backend/
+  app/
+    routers/    Endpoints da API, um arquivo por dominio (users, activities,
+                groups, events, pet, products)
+    models/     Modelos SQLAlchemy (schema Postgres)
+    services/   Logica de negocio compartilhada entre routers
+    auth.py     Verificacao do ID token do Firebase Auth
+  alembic/      Migracoes do banco
 ```
 
-Mais detalhes em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Mais detalhes em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) e [backend/README.md](backend/README.md).
 
 ## Como Rodar
 
-1. Instale as dependencias:
+### Frontend
+
+1. Instale as dependências:
 
 ```bash
 npm install
@@ -66,20 +90,45 @@ npm install
 npm run dev
 ```
 
-4. Acesse o endereco exibido no terminal.
+4. Acesse o endereço exibido no terminal.
+
+### Backend
+
+O frontend funciona parcialmente sem o backend rodando (login/Firebase continuam ativos), mas atividades, estatísticas, grupos, eventos e pet dependem dele. Setup completo em [backend/README.md](backend/README.md):
+
+```bash
+cd backend
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+cp .env.example .env  # ajustar DATABASE_URL e FIREBASE_PROJECT_ID
+.venv/bin/alembic upgrade head
+.venv/bin/uvicorn app.main:app --reload
+```
+
+### Build Android (Capacitor)
+
+```bash
+npm run android:sync   # build web + sincroniza com o projeto Android
+npm run android:apk    # idem, e ja gera o APK debug (Windows/gradlew.bat)
+```
 
 ## Scripts
 
 ```bash
 npm run dev          # inicia o app localmente
-npm run build        # gera build de producao
+npm run typecheck    # checagem de tipos TypeScript
+npm run build        # typecheck + build de producao
 npm run preview      # previsualiza o build
-npm run lint         # executa analise de codigo
-npm run test         # executa testes
+npm run lint         # eslint + typecheck
+npm run test         # executa testes (vitest)
 npm run test:watch   # executa testes em modo observacao
+npm run android:sync # build + sincroniza com o projeto Android (Capacitor)
+npm run android:apk  # idem + gera APK debug
 ```
 
-## Variaveis de Ambiente
+## Variáveis de Ambiente
+
+Frontend (`.env.local`, ver `.env.example`):
 
 ```text
 VITE_FIREBASE_API_KEY
@@ -88,20 +137,40 @@ VITE_FIREBASE_PROJECT_ID
 VITE_FIREBASE_STORAGE_BUCKET
 VITE_FIREBASE_MESSAGING_SENDER_ID
 VITE_FIREBASE_APP_ID
+VITE_API_URL          # URL do backend (ex.: http://localhost:8000)
 ```
+
+Nenhum desses valores é secreto — são identificadores de cliente do Firebase, protegidos pelas regras do Firestore/Storage e pelas restrições de domínio/pacote do próprio Firebase.
+
+Backend (`backend/.env`, ver `backend/.env.example`):
+
+```text
+DATABASE_URL
+FIREBASE_PROJECT_ID
+```
+
+## Testes
+
+```bash
+npm run test
+```
+
+Cobre lógica de gamificação, utilitários de feed, o hook de autenticação e a criação de perfil de usuário. Backend tem scripts de smoke test manuais (`backend/test_smoke*.py`) que rodam contra um Postgres real — não fazem parte do `npm run test`.
 
 ## Roadmap
 
-- [x] Autenticacao (e-mail/senha e Google)
+- [x] Autenticação (e-mail/senha com confirmação obrigatória, e Google)
 - [x] Estrutura base do app
 - [x] Feed e dashboard inicial
-- [x] Gamificacao base
+- [x] Gamificação base (XP, níveis, conquistas)
 - [x] Tracking real com GPS (foreground e background no Android)
-- [x] Grupos com km semanal calculado a partir das corridas dos membros
-- [ ] Cloud Function para validar XP no servidor (hoje o calculo e so no cliente)
+- [x] Backend próprio (FastAPI + PostgreSQL) para usuários, atividades, grupos, eventos e pet
+- [x] Grupos com feed de publicações e chat em tempo real (WebSocket)
+- [x] Sistema de pet virtual (RunCoin, acessórios)
+- [ ] Cloud Function/validação server-side completa do XP (hoje as regras do Firestore só limitam faixas, o cálculo em si é migrado por partes)
 - [ ] Engine completa de descontos
 - [ ] Marketplace funcional com checkout
-- [ ] Historico avancado de atividades
+- [ ] Histórico avançado de atividades
 
 ## Equipe
 
