@@ -31,7 +31,7 @@ O Runnex foi criado para transformar treinos em uma experiência mais social e o
 - Tailwind CSS (com um pequeno conjunto de componentes shadcn/ui + Radix UI)
 - React Router
 - Firebase Authentication
-- Cloud Firestore (hoje limitado a dados legados/de demonstração — ver [Backend](#backend))
+- Cloud Firestore (uso residual — ver "Backend e migração" abaixo)
 - Capacitor (build Android nativo) + vite-plugin-pwa
 - Vitest + Testing Library
 
@@ -71,6 +71,23 @@ backend/
 ```
 
 Mais detalhes em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) e [backend/README.md](backend/README.md).
+
+## Backend e migração
+
+O login é 100% Firebase Auth — o backend só valida o ID token recebido
+(`backend/app/auth.py`), nunca emite ou gerencia sessão. Usuários, atividades,
+grupos, eventos, pet e catálogo de produtos já são servidos pelo backend próprio
+(`src/services/*Api.ts` chamando `apiClient.ts`). O que resta do Firestore no
+frontend é pontual: leitura de campos legados de perfil (`usersApi.ts`) e
+persistência de "entrar/sair" para os grupos e eventos de demonstração/fallback
+(hardcoded, sem linha real no Postgres) em `groupsApi.ts`/`eventsApi.ts`. Não há
+mais nenhuma leitura em tempo real via Firestore (`onSnapshot`) no projeto — o
+feed usa polling contra o backend e o chat/feed de grupo usa WebSocket
+(`groupSocket.ts` ↔ `backend/app/ws_manager.py`).
+
+Esse estado muda com o tempo — para confirmar o que um domínio específico usa,
+leia o `src/services/<dominio>Api.ts` correspondente em vez de confiar só neste
+parágrafo.
 
 ## Como Rodar
 
@@ -137,10 +154,10 @@ VITE_FIREBASE_PROJECT_ID
 VITE_FIREBASE_STORAGE_BUCKET
 VITE_FIREBASE_MESSAGING_SENDER_ID
 VITE_FIREBASE_APP_ID
-VITE_API_URL          # URL do backend (ex.: http://localhost:8000)
+VITE_API_URL          # URL do backend proprio (ex.: http://localhost:8000)
 ```
 
-Nenhum desses valores é secreto — são identificadores de cliente do Firebase, protegidos pelas regras do Firestore/Storage e pelas restrições de domínio/pacote do próprio Firebase.
+Nenhum desses valores é secreto — são identificadores de cliente do Firebase, protegidos pelas regras do Firestore/Storage e pelas restrições de domínio/pacote do próprio Firebase. Sem `VITE_API_URL` o app sobe, mas todas as chamadas que já usam o backend falham (ver "Backend e migração" acima).
 
 Backend (`backend/.env`, ver `backend/.env.example`):
 
