@@ -9,6 +9,13 @@ from app.main import app
 UID_A = "smoke-group-uid-a"
 UID_B = "smoke-group-uid-b"
 
+
+def straight_route(km: float) -> list[dict]:
+    """Rota reta de `km` quilometros - POST /activities exige rota coerente
+    com a distancia (app/activity_rules.py). 1 grau de latitude ~ 111.195 km."""
+    return [{"lat": -23.55, "lng": -46.63}, {"lat": -23.55 + km / 111.195, "lng": -46.63}]
+
+
 client = TestClient(app)
 
 
@@ -99,7 +106,7 @@ print("9b. listar mensagens:", r.json())
 r = client.post("/activities", json={
     "userId": UID_A, "userName": "Ana Corredora", "userAvatar": None,
     "distance": 7.5, "time": "40:00", "durationSeconds": 2400, "pace": "5'20\"",
-    "type": "RUNNING",
+    "type": "RUNNING", "route": straight_route(7.5),
 })
 assert r.status_code == 200, r.text
 r = client.get(f"/groups/{group_id}")

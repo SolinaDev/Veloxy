@@ -1,10 +1,11 @@
 import traceback
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
+from app.activity_rules import MAX_DURATION_PER_DAY_SECONDS
 from app.auth import FirebaseUser, get_current_user, require_verified_email
 from app.database import get_db
 from app.gamification import calculate_run_coins, calculate_xp, get_level_from_xp
@@ -31,6 +32,17 @@ def save_activity(
 ):
     if current_user.uid != payload.user_id:
         raise HTTPException(status_code=403, detail="userId nao corresponde ao usuario autenticado.")
+
+    # Velocidade e rota ja foram checadas no schema (activity_rules); aqui
+    # fica o que depende do banco: ninguem corre mais de 24h em 24h.
+    since = datetime.now(timezone.utc) - timedelta(hours=24)
+    recent_seconds = (
+        db.query(func.coalesce(func.sum(Activity.duration_seconds), 0))
+        .filter(Activity.user_id == payload.user_id, Activity.created_at >= since)
+        .scalar()
+    )
+    if recent_seconds + payload.duration_seconds > MAX_DURATION_PER_DAY_SECONDS:
+        raise HTTPException(status_code=422, detail="Limite de 24h de corrida nas ultimas 24 horas atingido.")
 
     # print(flush=True) em vez de logging: em pelo menos um ambiente de
     # teste real o uvicorn nao estava imprimindo tracebacks de excecoes

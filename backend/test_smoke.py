@@ -9,6 +9,12 @@ from app.main import app
 TEST_UID = "smoke-test-uid-001"
 
 
+def straight_route(km: float) -> list[dict]:
+    """Rota reta de `km` quilometros - POST /activities exige rota coerente
+    com a distancia (app/activity_rules.py). 1 grau de latitude ~ 111.195 km."""
+    return [{"lat": -23.55, "lng": -46.63}, {"lat": -23.55 + km / 111.195, "lng": -46.63}]
+
+
 def fake_user():
     return FirebaseUser(uid=TEST_UID, email="teste@veloxy.dev", email_verified=True)
 
@@ -34,7 +40,7 @@ r = client.post("/activities", json={
     "pace": "5'00\"",
     "calories": 300,
     "type": "RUNNING",
-    "route": [{"lat": -23.5505, "lng": -46.6333}, {"lat": -23.5510, "lng": -46.6340}],
+    "route": straight_route(5.0),
 })
 assert r.status_code == 200, r.text
 activity_id = r.json()["id"]
@@ -96,7 +102,7 @@ print("9b. escolher pet de novo:", r.status_code)
 r = client.post("/activities", json={
     "userId": TEST_UID, "userName": "Corredor Teste", "userAvatar": None,
     "distance": 3.0, "time": "18:00", "durationSeconds": 1080, "pace": "6'00\"",
-    "type": "RUNNING",
+    "type": "RUNNING", "route": straight_route(3.0),
 })
 assert r.status_code == 200, r.text
 r = client.get(f"/users/{TEST_UID}")

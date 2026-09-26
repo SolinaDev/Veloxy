@@ -1,7 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.activity_rules import check_run_is_plausible
 from app.validators import OptionalImageUrl
 
 
@@ -57,6 +58,11 @@ class ActivityCreate(BaseModel):
     calories: int | None = Field(default=None, ge=0)
     type: str
     route: list[RoutePoint] | None = Field(default=None, max_length=5000)
+
+    @model_validator(mode="after")
+    def _check_plausible(self) -> "ActivityCreate":
+        check_run_is_plausible(self.distance, self.duration_seconds, self.route)
+        return self
 
 
 class ActivityOut(BaseModel):

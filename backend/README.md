@@ -35,3 +35,12 @@ Todo endpoint de escrita declara um limite por usuário via
 A contagem é por `uid` do Firebase (não por IP, que atrás do proxy do Render seria
 o mesmo para todo mundo) e vive na memória do processo — funciona com uma única
 instância; para escalar horizontalmente, o armazenamento precisa ir para Redis.
+
+## Validação de corridas
+
+`POST /activities` recusa com `422` (mensagem em texto) corridas implausíveis
+(`app/activity_rules.py`): velocidade média acima de 30 km/h (mesmo limite do
+anti-cheat de GPS do app), rota com menos de 2 pontos, distância maior que a rota
+enviada (com folga de 30% + 200 m para a decimação de rotas longas) e mais de 24h
+de corrida somadas nas últimas 24 horas. Isso limita o XP que um cliente
+adulterado consegue gerar, mas não impede quem fabricar uma rota coerente.

@@ -69,6 +69,9 @@ const SIMULATED_ROUTE: [number, number][] = [
   [-23.55074, -46.63362],
   [-23.55053, -46.63331],
 ];
+// 12 km/h (pace 5'00"/km): ritmo de corrida plausivel para demonstracao.
+const SIMULATED_TICK_MS = 1000;
+const SIMULATED_STEP_KM = 12 / 3600;
 
 // As regras do Firestore rejeitam rotas com mais de 5000 pontos; mantemos uma
 // margem de segurança e decimamos localmente antes de salvar em vez de deixar
@@ -114,7 +117,13 @@ const getSaveErrorMessage = (error: unknown) => {
   // Fase 1: saveActivity agora chama o backend próprio — erros de validação
   // vêm como ApiError (ver src/services/apiClient.ts), não mais FirebaseError.
   if (error instanceof ApiError) {
-    if (error.status === 422 || error.status === 400) {
+    // 422 traz o motivo da recusa em texto (velocidade acima de 30 km/h,
+    // distancia incompativel com a rota, limite diario - ver
+    // backend/app/activity_rules.py) e 429 avisa do rate limit.
+    if (error.status === 422 || error.status === 429) {
+      return `Não foi possível salvar a corrida: ${error.message}`;
+    }
+    if (error.status === 400) {
       return "Não foi possível salvar a corrida (dados fora dos limites permitidos). Tente novamente ou entre em contato com o suporte.";
     }
     if (error.status === 401) {
@@ -513,19 +522,33 @@ const RunTracking = () => {
       
       interval = setInterval(() => {
         setPath(prev => {
-          const last = prev.length > 0 ? prev[prev.length - 1] : SIMULATED_ROUTE[0];
-          const routeIndex = simulatedPointRef.current % SIMULATED_ROUTE.length;
-          const next = SIMULATED_ROUTE[routeIndex];
-          simulatedPointRef.current += 1;
-          
-          const d = calculateDistance(last[0], last[1], next[0], next[1]);
-          if (prev.length > 0) {
-            setDistance(old => old + d);
+          if (prev.length === 0) {
+            simulatedPointRef.current = 1;
+            setCurrentPos(SIMULATED_ROUTE[0]);
+            return [SIMULATED_ROUTE[0]];
           }
+
+          // Anda SIMULATED_STEP_KM por tick em direcao ao proximo vertice do
+          // circuito. Antes pulava um vertice inteiro (~30 m) a cada 1,4 s,
+          // ~75 km/h - acima do limite de velocidade que o backend aplica.
+          const last = prev[prev.length - 1];
+          const target = SIMULATED_ROUTE[simulatedPointRef.current % SIMULATED_ROUTE.length];
+          const remaining = calculateDistance(last[0], last[1], target[0], target[1]);
+
+          let next = target;
+          if (remaining > SIMULATED_STEP_KM) {
+            const ratio = SIMULATED_STEP_KM / remaining;
+            next = [last[0] + (target[0] - last[0]) * ratio, last[1] + (target[1] - last[1]) * ratio];
+          } else {
+            simulatedPointRef.current += 1;
+          }
+
+          const d = calculateDistance(last[0], last[1], next[0], next[1]);
+          setDistance(old => old + d);
           setCurrentPos(next);
           return [...prev, next];
         });
-      }, 1400);
+      }, SIMULATED_TICK_MS);
     }
     return () => clearInterval(interval);
   }, [calculateDistance, isSimulating, isRunning, isPaused]);
