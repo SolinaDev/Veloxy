@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.auth import FirebaseUser, get_current_user
 from app.database import get_db
 from app.models import User
+from app.rate_limit import rate_limit
 from app.schemas import UserProfileCreate, UserProfileOut
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -59,7 +60,7 @@ def get_user_profile(
     return user
 
 
-@router.put("/{user_id}", response_model=UserProfileOut)
+@router.put("/{user_id}", response_model=UserProfileOut, dependencies=[Depends(rate_limit("users:update", 20, 60))])
 def create_or_update_user_profile(
     user_id: str,
     payload: UserProfileCreate,

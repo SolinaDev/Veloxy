@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.auth import FirebaseUser, get_current_user
 from app.database import get_db
 from app.models import User
+from app.rate_limit import rate_limit
 from app.schemas import UserProfileOut
 from app.schemas_pet import ChoosePetIn, EquipPetAccessoryIn, PurchasePetAccessoryIn
 from app.services.activity_effects import get_or_create_user
@@ -29,7 +30,7 @@ def _get_or_404(db: Session, user_id: str) -> User:
     return user
 
 
-@router.post("/choose", response_model=UserProfileOut)
+@router.post("/choose", response_model=UserProfileOut, dependencies=[Depends(rate_limit("pet", 30, 60))])
 def choose_pet(
     user_id: str,
     payload: ChoosePetIn,
@@ -59,7 +60,7 @@ def choose_pet(
     return user
 
 
-@router.put("/equip", response_model=UserProfileOut)
+@router.put("/equip", response_model=UserProfileOut, dependencies=[Depends(rate_limit("pet", 30, 60))])
 def equip_pet_accessory(
     user_id: str,
     payload: EquipPetAccessoryIn,
@@ -79,7 +80,7 @@ def equip_pet_accessory(
     return user
 
 
-@router.post("/purchase", response_model=UserProfileOut)
+@router.post("/purchase", response_model=UserProfileOut, dependencies=[Depends(rate_limit("pet", 30, 60))])
 def purchase_pet_accessory(
     user_id: str,
     payload: PurchasePetAccessoryIn,

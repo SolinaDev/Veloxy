@@ -26,3 +26,12 @@ A API não emite nem gerencia login — isso continua 100% no Firebase Auth do f
 Cada request autenticada envia `Authorization: Bearer <id_token>` e o middleware em
 `app/auth.py` valida a assinatura e expiração. `require_verified_email` bloqueia
 endpoints sensíveis para contas de email/senha que não confirmaram o email (Fase 1.5).
+
+## Rate limit
+
+Todo endpoint de escrita declara um limite por usuário via
+`dependencies=[Depends(rate_limit("bucket", max_chamadas, janela_em_segundos))]`
+(`app/rate_limit.py`). Estourar o limite devolve `429` com header `Retry-After`.
+A contagem é por `uid` do Firebase (não por IP, que atrás do proxy do Render seria
+o mesmo para todo mundo) e vive na memória do processo — funciona com uma única
+instância; para escalar horizontalmente, o armazenamento precisa ir para Redis.

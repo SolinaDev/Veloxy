@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.auth import FirebaseUser, get_current_user
 from app.database import get_db
 from app.models import Event, EventParticipant
+from app.rate_limit import rate_limit
 from app.schemas_event import RunningEventOut
 
 router = APIRouter(prefix="/events", tags=["events"])
@@ -44,7 +45,7 @@ def list_events(db: Session = Depends(get_db), _: FirebaseUser = Depends(get_cur
     return [_serialize_event(e) for e in events]
 
 
-@router.post("/{event_id}/join", response_model=RunningEventOut)
+@router.post("/{event_id}/join", response_model=RunningEventOut, dependencies=[Depends(rate_limit("events:join", 20, 60))])
 def join_event(
     event_id: int, db: Session = Depends(get_db), current_user: FirebaseUser = Depends(get_current_user)
 ):

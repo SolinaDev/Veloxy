@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.auth import FirebaseUser, decode_firebase_token, get_current_user
 from app.database import SessionLocal, get_db
 from app.models import Group, GroupMember, GroupMessage, GroupPost, GroupPostComment, User
+from app.rate_limit import rate_limit
 from app.schemas_group import (
     GroupCommentCreate,
     GroupCommentOut,
@@ -103,7 +104,7 @@ def list_groups(db: Session = Depends(get_db), _: FirebaseUser = Depends(get_cur
     return [_serialize_group(g, users) for g in groups]
 
 
-@router.post("", response_model=GroupOut)
+@router.post("", response_model=GroupOut, dependencies=[Depends(rate_limit("groups:create", 5, 3600))])
 def create_group(
     payload: GroupCreate,
     db: Session = Depends(get_db),
@@ -168,7 +169,7 @@ def get_group(group_id: int, db: Session = Depends(get_db), _: FirebaseUser = De
     return _serialize_group(group, users)
 
 
-@router.put("/{group_id}/photo", response_model=GroupOut)
+@router.put("/{group_id}/photo", response_model=GroupOut, dependencies=[Depends(rate_limit("groups:photo", 10, 600))])
 def update_group_photo(
     group_id: int,
     payload: UpdateGroupPhotoIn,
@@ -188,7 +189,7 @@ def update_group_photo(
     return _serialize_group(group, users)
 
 
-@router.post("/{group_id}/join", response_model=GroupOut)
+@router.post("/{group_id}/join", response_model=GroupOut, dependencies=[Depends(rate_limit("groups:membership", 20, 60))])
 def join_group(
     group_id: int, db: Session = Depends(get_db), current_user: FirebaseUser = Depends(get_current_user)
 ):
@@ -204,7 +205,7 @@ def join_group(
     return _serialize_group(group, users)
 
 
-@router.post("/{group_id}/leave", response_model=GroupOut)
+@router.post("/{group_id}/leave", response_model=GroupOut, dependencies=[Depends(rate_limit("groups:membership", 20, 60))])
 def leave_group(
     group_id: int, db: Session = Depends(get_db), current_user: FirebaseUser = Depends(get_current_user)
 ):
@@ -257,7 +258,7 @@ def list_group_posts(
     return [_serialize_post(p, users.get(p.author_id)) for p in posts]
 
 
-@router.post("/{group_id}/posts", response_model=GroupPostOut)
+@router.post("/{group_id}/posts", response_model=GroupPostOut, dependencies=[Depends(rate_limit("groups:post", 10, 60))])
 async def create_group_post(
     group_id: int,
     payload: GroupPostCreate,
@@ -281,7 +282,7 @@ async def create_group_post(
     return result
 
 
-@router.post("/{group_id}/posts/{post_id}/like")
+@router.post("/{group_id}/posts/{post_id}/like", dependencies=[Depends(rate_limit("groups:post-like", 60, 60))])
 async def toggle_group_post_like(
     group_id: int,
     post_id: int,
@@ -341,7 +342,7 @@ def list_group_post_comments(
     return [_serialize_comment(c, users.get(c.author_id)) for c in comments]
 
 
-@router.post("/{group_id}/posts/{post_id}/comments", response_model=GroupCommentOut)
+@router.post("/{group_id}/posts/{post_id}/comments", response_model=GroupCommentOut, dependencies=[Depends(rate_limit("groups:comment", 20, 60))])
 async def add_group_post_comment(
     group_id: int,
     post_id: int,
@@ -400,7 +401,7 @@ def list_group_messages(
     return [_serialize_message(m, users.get(m.sender_id)) for m in messages]
 
 
-@router.post("/{group_id}/messages", response_model=GroupMessageOut)
+@router.post("/{group_id}/messages", response_model=GroupMessageOut, dependencies=[Depends(rate_limit("groups:message", 30, 60))])
 async def send_group_message(
     group_id: int,
     payload: GroupMessageCreate,

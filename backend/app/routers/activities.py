@@ -9,6 +9,7 @@ from app.auth import FirebaseUser, get_current_user, require_verified_email
 from app.database import get_db
 from app.gamification import calculate_run_coins, calculate_xp, get_level_from_xp
 from app.models import Activity, User
+from app.rate_limit import rate_limit
 from app.schemas import ActivityCreate, ActivityOut, SaveActivityResult, ToggleLikeIn
 from app.services.activity_effects import (
     apply_xp_and_km,
@@ -19,7 +20,7 @@ from app.services.activity_effects import (
 router = APIRouter(prefix="/activities", tags=["activities"])
 
 
-@router.post("", response_model=SaveActivityResult)
+@router.post("", response_model=SaveActivityResult, dependencies=[Depends(rate_limit("activities:create", 10, 600))])
 def save_activity(
     payload: ActivityCreate,
     db: Session = Depends(get_db),
@@ -158,7 +159,7 @@ def get_feed(
     return q.limit(limit).all()
 
 
-@router.post("/{activity_id}/like")
+@router.post("/{activity_id}/like", dependencies=[Depends(rate_limit("activities:like", 60, 60))])
 def toggle_like(
     activity_id: int,
     payload: ToggleLikeIn,
@@ -181,7 +182,7 @@ def toggle_like(
     return {"likes": likes}
 
 
-@router.delete("/{activity_id}")
+@router.delete("/{activity_id}", dependencies=[Depends(rate_limit("activities:delete", 30, 60))])
 def delete_activity(
     activity_id: int,
     db: Session = Depends(get_db),
@@ -198,7 +199,7 @@ def delete_activity(
     return {"deleted": True}
 
 
-@router.delete("/user/{user_id}/all")
+@router.delete("/user/{user_id}/all", dependencies=[Depends(rate_limit("activities:delete-all", 3, 3600))])
 def delete_all_user_activities(
     user_id: str,
     db: Session = Depends(get_db),
