@@ -66,6 +66,13 @@ export const createUserProfile = async (
   await api.put(`/users/${userId}`, data);
 };
 
+// Apaga do backend tudo que pertence ao usuario (ver
+// backend/app/services/account_deletion.py). O login do Firebase e apagado
+// depois, por deleteCurrentAccount (services/auth.ts).
+export const deleteUserAccount = async (userId: string) => {
+  await api.delete(`/users/${userId}`);
+};
+
 // Buscar Ranking Global (Top 10 por XP) — Fase 1: backend próprio.
 export const getGlobalRanking = async (limitCount = 10): Promise<UserProfile[]> => {
   try {

@@ -120,7 +120,7 @@ Na máxima extensão permitida pela legislação aplicável, o Runnex não se re
 
 13. SUSPENSÃO E ENCERRAMENTO DE CONTA
 Você pode excluir manualmente seu histórico de treinos a qualquer momento por meio da opção "Apagar minhas corridas" disponível no aplicativo.
-Você também poderá encerrar completamente sua conta pelas configurações do aplicativo ou mediante solicitação pelos canais de contato.
+Você também poderá encerrar completamente sua conta pela opção "Excluir minha conta" nas configurações do perfil, que apaga de forma permanente seus dados pessoais, treinos e conteúdos publicados, ou mediante solicitação pelos canais de contato.
 O Runnex poderá suspender ou encerrar contas que violem estes Termos.
 Em casos de fraude ou risco à segurança da plataforma ou de terceiros, a suspensão poderá ser imediata.
 

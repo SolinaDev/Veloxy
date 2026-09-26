@@ -105,6 +105,10 @@ export function getFirebaseAuthErrorMessage(error: unknown, context: AuthErrorCo
       return "Esse link já foi usado ou é inválido. Peça um novo email.";
     case "auth/user-disabled":
       return "Essa conta foi desativada.";
+    case "auth/user-mismatch":
+      return "Entre com a mesma conta que você quer excluir.";
+    case "auth/requires-recent-login":
+      return "Por segurança, saia e entre novamente antes de tentar de novo.";
   }
 
   if (code) {

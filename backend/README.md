@@ -44,3 +44,12 @@ anti-cheat de GPS do app), rota com menos de 2 pontos, distância maior que a ro
 enviada (com folga de 30% + 200 m para a decimação de rotas longas) e mais de 24h
 de corrida somadas nas últimas 24 horas. Isso limita o XP que um cliente
 adulterado consegue gerar, mas não impede quem fabricar uma rota coerente.
+
+## Exclusão de conta
+
+`DELETE /users/{uid}` (só o próprio usuário) apaga do Postgres perfil, corridas, pet,
+participações, posts, comentários e mensagens (`app/services/account_deletion.py`).
+Grupos criados pelo usuário passam para o membro mais antigo e só são apagados se
+ficarem vazios; o uid também sai das curtidas alheias. O login no Firebase Auth é
+apagado pelo app logo depois (`deleteCurrentAccount` em `src/services/auth.ts`),
+após reautenticar o usuário — o backend não usa Admin SDK.

@@ -38,6 +38,7 @@ import type { SettingsState } from "@/lib/settings";
 import { GLASS_CARD_CLASS } from "@/components/GlassCard";
 import { cn } from "@/lib/utils";
 import RunHistoryRow from "@/components/RunHistoryRow";
+import DeleteAccountSection from "@/components/DeleteAccountSection";
 
 type Theme = "dark" | "light";
 
@@ -299,6 +300,11 @@ function SettingsModal({
                     </div>
                   </div>
                 </button>
+                {user && (
+                  <div className="mt-3">
+                    <DeleteAccountSection user={user} />
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

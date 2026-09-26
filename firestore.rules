@@ -792,7 +792,8 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if validUserBase(userId) && validUserCreate(userId);
       allow update: if validUserBase(userId) && validUserUpdate(userId);
-      allow delete: if false;
+      // Exclusao de conta (deleteCurrentAccount): o dono apaga o proprio doc legado.
+      allow delete: if signedIn() && request.auth.uid == userId;
     }
 
     match /products/{productId} {

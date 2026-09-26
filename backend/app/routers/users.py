@@ -9,6 +9,7 @@ from app.database import get_db
 from app.models import User
 from app.rate_limit import rate_limit
 from app.schemas import UserProfileCreate, UserProfileOut
+from app.services.account_deletion import delete_account
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -96,3 +97,16 @@ def create_or_update_user_profile(
     db.commit()
     db.refresh(user)
     return user
+
+
+@router.delete("/{user_id}", status_code=204, dependencies=[Depends(rate_limit("users:delete", 3, 3600))])
+def delete_user_account(
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_user: FirebaseUser = Depends(get_current_user),
+):
+    """Apaga os dados do usuario no Postgres. O login (Firebase Auth) e
+    apagado pelo proprio app logo em seguida - o backend nao usa Admin SDK."""
+    if current_user.uid != user_id:
+        raise HTTPException(status_code=403, detail="So e possivel excluir a propria conta.")
+    delete_account(db, user_id)
