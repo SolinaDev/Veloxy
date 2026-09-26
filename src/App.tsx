@@ -38,7 +38,6 @@ const Home = lazy(() => import("@/pages/app/Home"));
 const Social = lazy(() => import("@/pages/app/Social"));
 const Dashboard = lazy(() => import("@/pages/app/Dashboard"));
 const RunTracking = lazy(() => import("@/pages/app/RunTracking"));
-const Challenges = lazy(() => import("@/pages/app/Challenges"));
 const Events = lazy(() => import("@/pages/app/Events"));
 const Profile = lazy(() => import("@/pages/app/Profile"));
 const Group = lazy(() => import("@/pages/app/Group"));
@@ -170,11 +169,6 @@ const App = () => {
                   <Route
                     path="run"
                     element={<RunTracking />}
-                  />
-
-                  <Route
-                    path="challenges"
-                    element={<Challenges />}
                   />
 
                   <Route
