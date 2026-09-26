@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.validators import ImageUrl, OptionalImageUrl
+
 
 class GroupCreate(BaseModel):
     name: str = Field(min_length=1, max_length=80)
@@ -33,7 +35,7 @@ class GroupOut(BaseModel):
 
 
 class UpdateGroupPhotoIn(BaseModel):
-    photo_url: str = Field(validation_alias="photoURL")
+    photo_url: ImageUrl = Field(validation_alias="photoURL")
 
 
 # Nota: authorName/authorPhoto/senderName/senderPhoto NAO vem mais do
@@ -44,7 +46,7 @@ class UpdateGroupPhotoIn(BaseModel):
 
 class GroupPostCreate(BaseModel):
     text: str = Field(min_length=1, max_length=2000)
-    image_url: str | None = Field(default=None, validation_alias="imageURL")
+    image_url: OptionalImageUrl = Field(default=None, validation_alias="imageURL")
 
 
 class GroupPostOut(BaseModel):

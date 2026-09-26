@@ -12,6 +12,20 @@ class ApiError extends Error {
   }
 }
 
+// Erro de validacao do Pydantic (422) chega como lista de objetos
+// ({ msg: "Value error, ..." }), nao como string - sem isso a mensagem
+// virava "[object Object]".
+function getErrorDetail(detail: unknown): string | undefined {
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item) => (typeof item?.msg === "string" ? item.msg.replace(/^Value error, /, "") : ""))
+      .filter(Boolean);
+    return messages.join(" ") || undefined;
+  }
+  return undefined;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = await auth.currentUser?.getIdToken();
 
@@ -26,7 +40,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({ detail: response.statusText }));
-    throw new ApiError(response.status, body.detail || "Erro na API do Veloxy.");
+    throw new ApiError(response.status, getErrorDetail(body.detail) || "Erro na API do Veloxy.");
   }
 
   if (response.status === 204) return undefined as T;

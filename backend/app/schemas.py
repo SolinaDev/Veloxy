@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.validators import OptionalImageUrl
+
 
 class RoutePoint(BaseModel):
     lat: float
@@ -33,7 +35,7 @@ class UserProfileOut(BaseModel):
 
 class UserProfileCreate(BaseModel):
     display_name: str | None = Field(default=None, validation_alias="displayName")
-    photo_url: str | None = Field(default=None, validation_alias="photoURL")
+    photo_url: OptionalImageUrl = Field(default=None, validation_alias="photoURL")
     terms_version: str | None = Field(default=None, validation_alias="termsVersion")
     bio: str | None = Field(default=None, max_length=150)
     location: str | None = Field(default=None, max_length=120)
@@ -47,7 +49,7 @@ class ActivityCreate(BaseModel):
 
     user_id: str = Field(validation_alias="userId")
     user_name: str = Field(validation_alias="userName", min_length=1, max_length=80)
-    user_avatar: str | None = Field(default=None, validation_alias="userAvatar")
+    user_avatar: OptionalImageUrl = Field(default=None, validation_alias="userAvatar")
     distance: float = Field(gt=0, le=500)
     time: str
     duration_seconds: int = Field(validation_alias="durationSeconds", gt=0, le=24 * 3600)
