@@ -37,7 +37,8 @@ src/
    proprio (via `apiClient.ts`) e, pontualmente, com o Firestore — ver
    "Backend e migracao" abaixo.
 5. `src/pages/*` monta as experiencias de login, feed, corrida, grupos, eventos,
-   pet e perfil. (A loja/marketplace ainda nao existe — ver Roadmap no README.)
+   pet e perfil. (A loja/marketplace esta fora de escopo deste ciclo — ver
+   Roadmap no README.)
 
 ## Backend e migracao
 

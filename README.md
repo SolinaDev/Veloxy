@@ -22,7 +22,7 @@ O Runnex foi criado para transformar treinos em uma experiência mais social e o
 - Pet virtual gamificado: escolha de espécie, moeda própria (RunCoin) e loja de acessórios
 - PWA instalável e build nativo Android via Capacitor
 
-> Marketplace/loja com checkout ainda não está implementado (ver Roadmap).
+> Marketplace/loja com checkout está fora do escopo deste ciclo — ver "Fora de escopo" no Roadmap.
 
 ## Stack
 
@@ -185,9 +185,11 @@ Cobre lógica de gamificação, utilitários de feed, o hook de autenticação e
 - [x] Grupos com feed de publicações e chat em tempo real (WebSocket)
 - [x] Sistema de pet virtual (RunCoin, acessórios)
 - [ ] Cloud Function/validação server-side completa do XP (hoje as regras do Firestore só limitam faixas, o cálculo em si é migrado por partes)
-- [ ] Engine completa de descontos
-- [ ] Marketplace funcional com checkout
 - [ ] Histórico avançado de atividades
+
+### Fora de escopo (decisão do time)
+
+- **Marketplace/loja com checkout e engine de descontos** — a proposta segue válida e é apresentada como trabalho futuro, mas foi retirada do escopo deste ciclo por falta de recursos (tempo/infra) para concluir com qualidade. Não é uma pendência por atraso, é um corte deliberado.
 
 ## Equipe
 
