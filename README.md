@@ -124,6 +124,8 @@ cp .env.example .env  # ajustar DATABASE_URL e FIREBASE_PROJECT_ID
 
 ### Build Android (Capacitor)
 
+1. Baixe o `google-services.json` do projeto no [console do Firebase](https://console.firebase.google.com/) (Configurações do projeto → Seus apps → app Android) e coloque em `android/app/google-services.json` (use `android/app/google-services.json.example` como referência do formato). Esse arquivo não é versionado.
+
 ```bash
 npm run android:sync   # build web + sincroniza com o projeto Android
 npm run android:apk    # idem, e ja gera o APK debug (Windows/gradlew.bat)
