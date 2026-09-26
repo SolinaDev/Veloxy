@@ -19,11 +19,8 @@ import {
   Zap,
   Moon,
   Sun,
-  Bell,
   Shield,
   Ruler,
-  Smartphone,
-  HelpCircle,
   Lock,
   Trash2,
   BarChart3,
@@ -144,6 +141,7 @@ function SettingsModal({
   privateProfile: boolean;
   onPrivacyChange: (value: boolean) => Promise<void>;
 }) {
+  const navigate = useNavigate();
   const [settings, setSettings] = useState<SettingsState>(getStoredSettings);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deletingRuns, setDeletingRuns] = useState(false);
@@ -247,14 +245,6 @@ function SettingsModal({
                 <ToggleSwitch checked={settings.privateProfile} onChange={updatePrivacy} />
               </SettingsRow>
 
-              <SettingsRow icon={<Bell size={18} />} title="Lembretes de treino" description="Receber alertas para manter a sequência.">
-                <ToggleSwitch checked={settings.runReminders} onChange={(value) => updateSetting("runReminders", value)} />
-              </SettingsRow>
-
-              <SettingsRow icon={<Smartphone size={18} />} title="Pausa automática" description="Pausar corrida quando o movimento parar.">
-                <ToggleSwitch checked={settings.autoPause} onChange={(value) => updateSetting("autoPause", value)} />
-              </SettingsRow>
-
               <SettingsRow icon={<Ruler size={18} />} title="Unidade de distância" description="Define a unidade preferida para corridas.">
                 <div className="flex rounded-2xl bg-background/50 border border-border p-1">
                   {(["km", "mi"] as const).map((unit) => (
@@ -271,16 +261,14 @@ function SettingsModal({
                 </div>
               </SettingsRow>
 
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <button className="rounded-2xl bg-card/80 backdrop-blur-xl border border-border p-4 text-left">
-                  <HelpCircle size={18} className="text-purple-500 mb-3" />
-                  <p className="settings-title text-xs font-black text-white">Ajuda</p>
-                  <p className="settings-muted text-[10px] text-zinc-500 mt-1">FAQ e suporte</p>
-                </button>
-                <button className="rounded-2xl bg-card/80 backdrop-blur-xl border border-border p-4 text-left">
+              <div className="pt-2">
+                <button
+                  onClick={() => navigate("/termos-e-privacidade")}
+                  className={cn(GLASS_CARD_CLASS, "w-full rounded-2xl p-4 text-left")}
+                >
                   <Lock size={18} className="text-purple-500 mb-3" />
                   <p className="settings-title text-xs font-black text-white">Privacidade</p>
-                  <p className="settings-muted text-[10px] text-zinc-500 mt-1">Dados e segurança</p>
+                  <p className="settings-muted text-[10px] text-zinc-500 mt-1">Termos de uso e política de privacidade</p>
                 </button>
               </div>
 

@@ -2,8 +2,6 @@ export type DistanceUnit = "km" | "mi";
 
 export type SettingsState = {
   privateProfile: boolean;
-  runReminders: boolean;
-  autoPause: boolean;
   units: DistanceUnit;
 };
 
@@ -11,8 +9,6 @@ const SETTINGS_STORAGE_KEY = "veloxy-settings";
 
 export const defaultSettings: SettingsState = {
   privateProfile: false,
-  runReminders: true,
-  autoPause: true,
   units: "km",
 };
 
