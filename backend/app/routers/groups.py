@@ -78,6 +78,24 @@ def _get_group_or_404(db: Session, group_id: int) -> Group:
     return group
 
 
+def _is_group_member(db: Session, group_id: int, user_id: str) -> bool:
+    return (
+        db.query(GroupMember)
+        .filter(GroupMember.group_id == group_id, GroupMember.user_id == user_id)
+        .first()
+        is not None
+    )
+
+
+def _require_member(db: Session, group_id: int, user_id: str) -> None:
+    """Bug real encontrado em revisao: posts/comentarios/mensagens de grupo
+    (REST) aceitavam qualquer usuario autenticado, nao so membros do grupo -
+    a checagem so existia na conexao WebSocket. Mesma query usada la,
+    extraida pra nao duplicar a logica."""
+    if not _is_group_member(db, group_id, user_id):
+        raise HTTPException(status_code=403, detail="Voce precisa ser membro do grupo.")
+
+
 @router.get("", response_model=list[GroupOut])
 def list_groups(db: Session = Depends(get_db), _: FirebaseUser = Depends(get_current_user)):
     groups = db.query(Group).options(selectinload(Group.members)).order_by(desc(Group.created_at)).limit(50).all()
@@ -123,12 +141,7 @@ async def group_websocket(group_id: int, websocket: WebSocket, token: str = ""):
 
     db = SessionLocal()
     try:
-        is_member = (
-            db.query(GroupMember)
-            .filter(GroupMember.group_id == group_id, GroupMember.user_id == user.uid)
-            .first()
-            is not None
-        )
+        is_member = _is_group_member(db, group_id, user.uid)
     finally:
         db.close()
 
@@ -230,8 +243,9 @@ def list_group_posts(
     group_id: int,
     limit: int = 30,
     db: Session = Depends(get_db),
-    _: FirebaseUser = Depends(get_current_user),
+    current_user: FirebaseUser = Depends(get_current_user),
 ):
+    _require_member(db, group_id, current_user.uid)
     posts = (
         db.query(GroupPost)
         .filter(GroupPost.group_id == group_id)
@@ -250,6 +264,7 @@ async def create_group_post(
     db: Session = Depends(get_db),
     current_user: FirebaseUser = Depends(get_current_user),
 ):
+    _require_member(db, group_id, current_user.uid)
     author = _user_or_404(db, current_user.uid)
     post = GroupPost(
         group_id=group_id,
@@ -274,6 +289,7 @@ async def toggle_group_post_like(
     db: Session = Depends(get_db),
     current_user: FirebaseUser = Depends(get_current_user),
 ):
+    _require_member(db, group_id, current_user.uid)
     post = db.query(GroupPost).filter(GroupPost.id == post_id, GroupPost.group_id == group_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="Publicacao nao encontrada.")
@@ -311,8 +327,9 @@ def list_group_post_comments(
     group_id: int,
     post_id: int,
     db: Session = Depends(get_db),
-    _: FirebaseUser = Depends(get_current_user),
+    current_user: FirebaseUser = Depends(get_current_user),
 ):
+    _require_member(db, group_id, current_user.uid)
     comments = (
         db.query(GroupPostComment)
         .filter(GroupPostComment.post_id == post_id)
@@ -332,6 +349,7 @@ async def add_group_post_comment(
     db: Session = Depends(get_db),
     current_user: FirebaseUser = Depends(get_current_user),
 ):
+    _require_member(db, group_id, current_user.uid)
     author = _user_or_404(db, current_user.uid)
     post = db.query(GroupPost).filter(GroupPost.id == post_id, GroupPost.group_id == group_id).first()
     if not post:
@@ -367,8 +385,9 @@ def list_group_messages(
     group_id: int,
     limit: int = 100,
     db: Session = Depends(get_db),
-    _: FirebaseUser = Depends(get_current_user),
+    current_user: FirebaseUser = Depends(get_current_user),
 ):
+    _require_member(db, group_id, current_user.uid)
     messages = (
         db.query(GroupMessage)
         .filter(GroupMessage.group_id == group_id)
@@ -388,6 +407,7 @@ async def send_group_message(
     db: Session = Depends(get_db),
     current_user: FirebaseUser = Depends(get_current_user),
 ):
+    _require_member(db, group_id, current_user.uid)
     sender = _user_or_404(db, current_user.uid)
     message = GroupMessage(group_id=group_id, sender_id=current_user.uid, text=payload.text.strip())
     db.add(message)

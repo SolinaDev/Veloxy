@@ -6,6 +6,7 @@ from app.database import get_db
 from app.models import User
 from app.schemas import UserProfileOut
 from app.schemas_pet import ChoosePetIn, EquipPetAccessoryIn, PurchasePetAccessoryIn
+from app.services.activity_effects import get_or_create_user
 
 router = APIRouter(prefix="/users/{user_id}/pet", tags=["pet"])
 
@@ -35,9 +36,17 @@ def choose_pet(
     db: Session = Depends(get_db),
     current_user: FirebaseUser = Depends(get_current_user),
 ):
-    """Escolha do pet: so pode ser feita uma vez (mesma regra de firestore.rules)."""
+    """Escolha do pet: so pode ser feita uma vez (mesma regra de firestore.rules).
+
+    Bug real encontrado em revisao: esse endpoint usava _get_or_404, que
+    rejeitava com 404 qualquer usuario cujo perfil ainda nao existisse no
+    Postgres — o que acontece com contas Google que nunca salvaram uma
+    corrida antes de ir direto pra tela de pet (ensureUserProfile no login
+    e best-effort e pode falhar silenciosamente). Auto-provisiona igual
+    POST /activities ja faz, em vez de depender de outro fluxo ter rodado
+    antes."""
     _require_self(user_id, current_user)
-    user = _get_or_404(db, user_id)
+    user = get_or_create_user(db, user_id, "Corredor", None)
 
     if user.pet_species:
         raise HTTPException(status_code=409, detail="Pet ja escolhido para este usuario.")

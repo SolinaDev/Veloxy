@@ -45,11 +45,17 @@ def get_global_ranking(
 
 @router.get("/{user_id}", response_model=UserProfileOut)
 def get_user_profile(
-    user_id: str, db: Session = Depends(get_db), _: FirebaseUser = Depends(get_current_user)
+    user_id: str, db: Session = Depends(get_db), current_user: FirebaseUser = Depends(get_current_user)
 ):
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="Perfil nao encontrado.")
+    # Bug real encontrado em revisao: private_profile so era respeitado no
+    # ranking global (get_global_ranking) - qualquer usuario autenticado
+    # conseguia ver o perfil completo de uma conta marcada como privada
+    # direto por aqui, sabendo/adivinhando o uid.
+    if user.private_profile and current_user.uid != user_id:
+        raise HTTPException(status_code=403, detail="Este perfil e privado.")
     return user
 
 

@@ -102,9 +102,17 @@ def get_user_activities(
     user_id: str,
     limit: int | None = 10,
     db: Session = Depends(get_db),
-    _: FirebaseUser = Depends(get_current_user),
+    current_user: FirebaseUser = Depends(get_current_user),
 ):
-    """limit=None retorna todas as corridas do usuario (usado por getUserStats no frontend)."""
+    """limit=None retorna todas as corridas do usuario (usado por getUserStats no frontend).
+
+    Bug real encontrado em revisao: private_profile so era respeitado no
+    ranking global - as corridas de uma conta privada continuavam visiveis
+    por aqui pra qualquer usuario autenticado que soubesse/adivinhasse o uid."""
+    target_user = db.get(User, user_id)
+    if target_user and target_user.private_profile and current_user.uid != user_id:
+        raise HTTPException(status_code=403, detail="Este perfil e privado.")
+
     q = db.query(Activity).filter(Activity.user_id == user_id).order_by(desc(Activity.created_at))
     if limit is not None:
         q = q.limit(limit)
