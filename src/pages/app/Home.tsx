@@ -181,8 +181,9 @@ export default function Home() {
           <p className="text-[10px] font-black uppercase tracking-[0.24em] text-zinc-600">Carregando corridas</p>
         </div>
       ) : (
-        <>
-          <section className="px-6 pt-8">
+        <div className="lg:grid lg:grid-cols-2 lg:gap-8 lg:px-6">
+          <div>
+          <section className="px-6 pt-8 lg:px-0">
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">Suas corridas</p>
             <h2 className="mt-2 font-display text-4xl font-black uppercase tracking-tighter">
               Bora, {firstName}
@@ -213,7 +214,7 @@ export default function Home() {
                   { label: "Melhor", value: stats.bestActivity ? `${formatDistance(stats.bestActivity.distance, unit)}${unit}` : `0${unit}` },
                 ].map((item) => (
                   <div key={item.label} className="rounded-2xl bg-secondary/60 border border-input p-3">
-                    <p className="font-display text-xl font-black leading-none">{item.value}</p>
+                    <p className="whitespace-nowrap font-display text-lg font-black leading-none sm:text-xl">{item.value}</p>
                     <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.18em] text-zinc-500">{item.label}</p>
                   </div>
                 ))}
@@ -221,7 +222,7 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="mt-6 grid grid-cols-2 gap-3 px-6">
+          <section className="mt-6 grid grid-cols-2 gap-3 px-6 lg:px-0">
             {summaryCards.map((card, index) => (
               <motion.div
                 key={card.label}
@@ -242,7 +243,7 @@ export default function Home() {
             ))}
           </section>
 
-          <section className="mt-8 px-6">
+          <section className="mt-8 px-6 lg:px-0">
             <div className={cn(GLASS_CARD_CLASS, "p-5")}>
               <div className="mb-5 flex items-center justify-between">
                 <div>
@@ -259,7 +260,7 @@ export default function Home() {
                     <motion.div
                       initial={{ height: 4 }}
                       animate={{ height: Math.max(6, (day.km / maxKm) * 96) }}
-                      className={`w-full rounded-full ${day.km > 0 ? "bg-purple-500" : "bg-secondary"}`}
+                      className={`w-full max-w-8 rounded-full ${day.km > 0 ? "bg-purple-500" : "bg-secondary"}`}
                     />
                     <span className="text-[8px] font-black text-zinc-500">{day.day}</span>
                   </div>
@@ -268,7 +269,9 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="mt-8 px-6">
+          </div>
+
+          <section className="mt-8 px-6 lg:mt-0 lg:px-0 lg:pt-8">
             <div className="flex items-center justify-between">
               <h3 className="font-display text-lg font-black uppercase">Corridas recentes</h3>
               <span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Somente suas</span>
@@ -301,7 +304,7 @@ export default function Home() {
               )}
             </div>
           </section>
-        </>
+        </div>
       )}
 
       <AnimatePresence>

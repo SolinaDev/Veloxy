@@ -626,8 +626,12 @@ const Profile = () => {
         </div>
       </header>
 
+      {/* Desktop: perfil + progresso à esquerda, histórico à direita, conquistas
+          e conta em largura total. No celular a ordem do DOM continua a mesma. */}
+      <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8 lg:px-6">
+      <div>
       {/* Hero Section */}
-      <section className="px-6 mt-8 flex flex-col items-center text-center">
+      <section className="px-6 mt-8 flex flex-col items-center text-center lg:px-0">
         <motion.div 
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -672,7 +676,7 @@ const Profile = () => {
       </section>
 
       {/* Progresso: numeros principais, pet, metas e nivel agrupados sob um unico titulo */}
-      <section className="px-6 mt-10">
+      <section className="px-6 mt-10 lg:px-0">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-display font-black text-sm tracking-tighter">SEU PROGRESSO</h3>
         </div>
@@ -789,8 +793,10 @@ const Profile = () => {
         </div>
       </section>
 
+      </div>
+
       {/* Achievements Horizontal */}
-      <section className="mt-10">
+      <section className="mt-10 lg:col-span-2">
           <div className="px-6 flex items-center justify-between mb-4">
             <h3 className="font-display font-black text-sm tracking-tighter">CONQUISTAS</h3>
             <button onClick={() => navigate("/conquistas")} className="text-[10px] font-black text-purple-500">VER TODAS</button>
@@ -817,7 +823,7 @@ const Profile = () => {
           </div>
       </section>
 
-      <section className="px-6 mt-10">
+      <section className="px-6 mt-10 lg:col-start-2 lg:row-start-1 lg:mt-8 lg:px-0">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display font-black text-sm tracking-tighter">HISTÓRICO</h3>
           <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
@@ -839,7 +845,7 @@ const Profile = () => {
       </section>
 
       {/* Conta */}
-      <section className="px-6 mt-10 pb-6">
+      <section className="px-6 mt-10 pb-6 lg:col-span-2 lg:px-0">
         <h3 className="mb-4 font-display font-black text-sm tracking-tighter">CONTA</h3>
         <button
             onClick={handleLogout}
@@ -849,6 +855,7 @@ const Profile = () => {
             SAIR DA CONTA
         </button>
       </section>
+      </div>
 
       <EditProfileModal
         open={editOpen} 

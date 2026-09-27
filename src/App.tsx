@@ -8,9 +8,11 @@ import {
   Routes,
   Route,
   Outlet,
+  useLocation,
 } from "react-router-dom";
 
 import BottomNav from "@/components/BottomNav";
+import SideNav from "@/components/SideNav";
 import PrivateRoute from "@/components/PrivateRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/hooks/AuthContext";
@@ -64,10 +66,16 @@ function applySavedTheme() {
 }
 
 function ProtectedLayout() {
+  // A tela de corrida é um mapa em tela cheia: sem menu lateral nem coluna.
+  const isRunScreen = useLocation().pathname === "/run";
+
   return (
     <PrivateRoute>
-      <div className="min-h-screen">
-        <Outlet />
+      <div className={isRunScreen ? "min-h-screen" : "min-h-screen lg:pl-64"}>
+        <div className={isRunScreen ? undefined : "lg:mx-auto lg:max-w-6xl"}>
+          <Outlet />
+        </div>
+        {!isRunScreen && <SideNav />}
         <BottomNav />
       </div>
     </PrivateRoute>

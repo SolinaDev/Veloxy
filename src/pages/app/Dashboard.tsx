@@ -181,7 +181,7 @@ const Dashboard = () => {
           </h3>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
           {loading ? (
             <>
               {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-36 rounded-3xl" />)}
@@ -256,7 +256,7 @@ const Dashboard = () => {
                       initial={{ height: 0 }}
                       animate={{ height: `${(d.km / maxKm) * 100}px` }}
                       transition={{ delay: i * 0.1, duration: 0.7, ease: "easeOut" }}
-                      className={`w-full rounded-2xl ${
+                      className={`w-full max-w-10 rounded-2xl ${
                         d.km > 0
                           ? "bg-gradient-to-t from-purple-600 to-purple-400 shadow-[0_0_15px_rgba(147,51,234,0.3)]"
                           : "bg-secondary/50"
@@ -278,9 +278,11 @@ const Dashboard = () => {
         </div>
       </section>
 
+      {/* No desktop, melhor corrida e última atividade ficam lado a lado */}
+      <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:px-6">
       {/* Best Run Card */}
       {stats.bestActivity && (
-        <section className="px-6 mt-10">
+        <section className="px-6 mt-10 lg:px-0">
           <div className="rounded-3xl border border-purple-500/20 bg-purple-500/10 p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -312,7 +314,7 @@ const Dashboard = () => {
       )}
 
       {/* Last Run Card */}
-      <section className="px-6 mt-10 pb-10">
+      <section className="px-6 mt-10 pb-10 lg:px-0">
         <h3 className="font-display font-black text-sm tracking-tighter uppercase mb-6 flex items-center gap-2">
           <BarChart3 size={16} className="text-purple-500" />
           Última Atividade
@@ -384,6 +386,7 @@ const Dashboard = () => {
           </motion.div>
         )}
       </section>
+      </div>
     </div>
   );
 };
