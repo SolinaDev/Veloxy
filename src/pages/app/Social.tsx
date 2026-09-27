@@ -114,10 +114,10 @@ function GroupCreateModal({
             >
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500">Comunidade</p>
+                  <p className="text-[9px] font-black uppercase tracking-[0.25em] text-muted-foreground">Comunidade</p>
                   <h2 className="font-display text-2xl font-black text-purple-500">CRIAR GRUPO</h2>
                 </div>
-                <button onClick={onClose} className="h-10 w-10 rounded-full bg-card/80 backdrop-blur-xl border border-border flex items-center justify-center text-zinc-400" aria-label="Fechar">
+                <button onClick={onClose} className="h-10 w-10 rounded-full bg-card/80 backdrop-blur-xl border border-border flex items-center justify-center text-muted-foreground" aria-label="Fechar">
                   <X size={18} />
                 </button>
               </div>
@@ -139,7 +139,7 @@ function GroupCreateModal({
                   {avatarPreview ? (
                     <img src={avatarPreview} alt="Preview do grupo" className="h-full w-full object-cover" />
                   ) : (
-                    <Users size={28} className="text-zinc-600" />
+                    <Users size={28} className="text-muted-foreground/70" />
                   )}
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition group-hover:opacity-100">
                     <Camera size={22} className="text-white" />
@@ -154,7 +154,7 @@ function GroupCreateModal({
                   { key: "tag", label: "Tag", placeholder: "Ex: 10K" },
                 ].map((field) => (
                   <label key={field.key} className="block">
-                    <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">{field.label} *</span>
+                    <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">{field.label} *</span>
                     <input
                       required
                       value={form[field.key as keyof GroupForm]}
@@ -166,7 +166,7 @@ function GroupCreateModal({
                 ))}
 
                 <label className="block">
-                  <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Descricao *</span>
+                  <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">Descricao *</span>
                   <textarea
                     required
                     value={form.description}
@@ -384,7 +384,7 @@ export default function Social() {
           <div className="flex items-center gap-3">
             <SafeAvatar src={userPhotoURL} name={displayName} alt="Perfil" className="h-11 w-11 rounded-full border border-purple-500/30 bg-card" />
             <div>
-              <p className="text-[9px] font-black uppercase tracking-[0.24em] text-zinc-600">Veloxy</p>
+              <p className="text-[9px] font-black uppercase tracking-[0.24em] text-muted-foreground/70">Veloxy</p>
               <h1 className="font-display text-2xl font-black tracking-tighter text-purple-500">SOCIAL</h1>
             </div>
           </div>
@@ -401,7 +401,7 @@ export default function Social() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`relative flex flex-col items-center gap-1 rounded-2xl px-2 py-3 text-[9px] font-black uppercase transition ${
-                activeTab === tab.id ? "bg-purple-600 text-white" : "bg-card/80 backdrop-blur-xl border border-border text-zinc-500"
+                activeTab === tab.id ? "bg-purple-600 text-white" : "bg-card/80 backdrop-blur-xl border border-border text-muted-foreground"
               }`}
             >
               <tab.icon size={16} />
@@ -440,8 +440,8 @@ export default function Social() {
                   </div>
                 ) : ranking.length === 0 ? (
                   <div className={cn(GLASS_CARD_CLASS, "p-10 text-center")}>
-                    <Trophy className="mx-auto text-zinc-700" size={36} />
-                    <p className="mt-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Ranking vazio por enquanto</p>
+                    <Trophy className="mx-auto text-muted-foreground/50" size={36} />
+                    <p className="mt-4 text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Ranking vazio por enquanto</p>
                   </div>
                 ) : (
                   ranking.map((athlete, index) => (
@@ -454,7 +454,7 @@ export default function Social() {
                 <button
                   onClick={() => setRankingLimit((value) => Math.min(value + RANKING_STEP, RANKING_CAP))}
                   disabled={rankingLoading}
-                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-card/80 backdrop-blur-xl border border-border py-4 text-xs font-black uppercase tracking-widest text-zinc-300 disabled:opacity-60"
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-card/80 backdrop-blur-xl border border-border py-4 text-xs font-black uppercase tracking-widest text-foreground/80 disabled:opacity-60"
                 >
                   {rankingLoading ? <Loader2 size={14} className="animate-spin text-purple-500" /> : <ChevronDown size={14} className="text-purple-500" />}
                   Ver mais
@@ -467,7 +467,7 @@ export default function Social() {
             <section>
               <div className="mb-5 flex items-end justify-between gap-4">
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-[0.22em] text-zinc-500">Comunidades</p>
+                  <p className="text-[9px] font-black uppercase tracking-[0.22em] text-muted-foreground">Comunidades</p>
                   <h2 className="mt-1 font-display text-3xl font-black">Grupos reais</h2>
                 </div>
                 <button
@@ -495,7 +495,7 @@ export default function Social() {
                         }`}
                       >
                         <p className="truncate font-display text-lg font-black">{group.name}</p>
-                        <p className="mt-1 flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.14em] text-zinc-500">
+                        <p className="mt-1 flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground">
                           <MapPin size={10} className="text-purple-500" />
                           {group.city}
                         </p>
@@ -513,7 +513,7 @@ export default function Social() {
                               {selectedGroup.tag}
                             </div>
                             <h3 className="font-display text-2xl font-black">{selectedGroup.name}</h3>
-                            <p className="mt-2 text-xs leading-relaxed text-zinc-400">{selectedGroup.description || "Grupo de corrida no Veloxy."}</p>
+                            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{selectedGroup.description || "Grupo de corrida no Veloxy."}</p>
                           </div>
                           <Users size={28} className="text-purple-500" />
                         </div>
@@ -521,11 +521,11 @@ export default function Social() {
                         <div className="mt-5 grid grid-cols-2 gap-3">
                           <div className="rounded-2xl bg-secondary/60 border border-input p-3">
                             <p className="font-display text-2xl font-black">{selectedGroup.membersCount}</p>
-                            <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-600">membros</p>
+                            <p className="text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground/70">membros</p>
                           </div>
                           <div className="rounded-2xl bg-secondary/60 border border-input p-3">
                             <p className="font-display text-2xl font-black">{selectedGroup.weeklyKm.toFixed(0)}</p>
-                            <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-600">km semanais</p>
+                            <p className="text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground/70">km semanais</p>
                           </div>
                         </div>
 
@@ -565,7 +565,7 @@ export default function Social() {
                           {groupDetailsLoading ? (
                             <Loader2 className="mx-auto animate-spin text-purple-500" size={24} />
                           ) : groupLeaderboard.length === 0 ? (
-                            <p className="py-5 text-center text-xs font-black uppercase tracking-[0.16em] text-zinc-600">Entre no grupo para iniciar o ranking</p>
+                            <p className="py-5 text-center text-xs font-black uppercase tracking-[0.16em] text-muted-foreground/70">Entre no grupo para iniciar o ranking</p>
                           ) : (
                             groupLeaderboard.slice(0, 5).map((athlete, index) => <AthleteRow key={athlete.uid} athlete={athlete} index={index} active={athlete.uid === user?.uid} compact />)
                           )}
@@ -578,18 +578,18 @@ export default function Social() {
                           {groupDetailsLoading ? (
                             <Loader2 className="mx-auto animate-spin text-purple-500" size={24} />
                           ) : groupFeed.length === 0 ? (
-                            <p className="py-5 text-center text-xs font-black uppercase tracking-[0.16em] text-zinc-600">Sem corridas recentes neste grupo</p>
+                            <p className="py-5 text-center text-xs font-black uppercase tracking-[0.16em] text-muted-foreground/70">Sem corridas recentes neste grupo</p>
                           ) : (
                             groupFeed.map((activity) => (
                               <div key={activity.id} className={cn(GLASS_CARD_CLASS, "rounded-2xl p-4")}>
                                 <div className="flex items-center justify-between gap-4">
                                   <div className="min-w-0">
                                     <p className="truncate text-sm font-black">{activity.userName}</p>
-                                    <p className="text-[10px] text-zinc-500">{formatCardDate(activity.timestamp, activity.createdAtMs)}</p>
+                                    <p className="text-[10px] text-muted-foreground">{formatCardDate(activity.timestamp, activity.createdAtMs)}</p>
                                   </div>
                                   <div className="text-right">
                                     <p className="font-display text-xl font-black text-purple-400">{activity.distance.toFixed(2)}</p>
-                                    <p className="text-[8px] font-black uppercase tracking-[0.18em] text-zinc-600">km</p>
+                                    <p className="text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground/70">km</p>
                                   </div>
                                 </div>
                               </div>
@@ -630,7 +630,7 @@ function AthleteRow({
       <SafeAvatar src={athlete.photoURL} name={athlete.displayName || "Atleta"} className="h-11 w-11 rounded-2xl bg-card" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-black">{athlete.displayName || "Atleta"}</p>
-        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">{athlete.level || "Iniciante"}</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">{athlete.level || "Iniciante"}</p>
       </div>
       <div className="text-right">
         <p className="font-display text-lg font-black">{(athlete.totalXP || 0).toLocaleString("pt-BR")}</p>

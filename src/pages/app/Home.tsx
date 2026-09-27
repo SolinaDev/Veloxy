@@ -154,7 +154,7 @@ export default function Home() {
             />
           </button>
           <div className="text-center">
-            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-600">Veloxy</p>
+            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-muted-foreground/70">Veloxy</p>
             <h1 className="font-display text-2xl font-black tracking-tighter text-purple-500">
               INICIO
             </h1>
@@ -169,7 +169,7 @@ export default function Home() {
             {petSpeciesInfo ? (
               <span className="text-xl">{petSpeciesInfo.emoji}</span>
             ) : (
-              <PawPrint size={18} className="text-zinc-500" />
+              <PawPrint size={18} className="text-muted-foreground" />
             )}
           </button>
         </div>
@@ -178,13 +178,13 @@ export default function Home() {
       {loading ? (
         <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4">
           <Loader2 className="animate-spin text-purple-500" size={36} />
-          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-zinc-600">Carregando corridas</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-muted-foreground/70">Carregando corridas</p>
         </div>
       ) : (
         <div className="lg:grid lg:grid-cols-2 lg:gap-8 lg:px-6">
           <div>
           <section className="px-6 pt-8 lg:px-0">
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">Suas corridas</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">Suas corridas</p>
             <h2 className="mt-2 font-display text-4xl font-black uppercase tracking-tighter">
               Bora, {firstName}
             </h2>
@@ -194,7 +194,7 @@ export default function Home() {
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-[0.22em] text-purple-300">Distancia total</p>
                   <div className="mt-2 flex items-end gap-2">
-                    <span className="font-display text-6xl font-black leading-none text-white">{formatDistance(Number(stats.totalKm), unit)}</span>
+                    <span className="font-display text-6xl font-black leading-none text-foreground">{formatDistance(Number(stats.totalKm), unit)}</span>
                     <span className="mb-2 text-xs font-black uppercase text-purple-400">{unit}</span>
                   </div>
                 </div>
@@ -215,7 +215,7 @@ export default function Home() {
                 ].map((item) => (
                   <div key={item.label} className="rounded-2xl bg-secondary/60 border border-input p-3">
                     <p className="whitespace-nowrap font-display text-lg font-black leading-none sm:text-xl">{item.value}</p>
-                    <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.18em] text-zinc-500">{item.label}</p>
+                    <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{item.label}</p>
                   </div>
                 ))}
               </div>
@@ -234,7 +234,7 @@ export default function Home() {
                 <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
                   <card.icon size={17} />
                 </div>
-                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-500">{card.label}</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground">{card.label}</p>
                 <div className="mt-1 flex items-baseline gap-1">
                   <span className="font-display text-2xl font-black">{card.value}</span>
                   <span className="text-[9px] font-black uppercase text-purple-500">{card.unit}</span>
@@ -247,7 +247,7 @@ export default function Home() {
             <div className={cn(GLASS_CARD_CLASS, "p-5")}>
               <div className="mb-5 flex items-center justify-between">
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">Ultimos 7 dias</p>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">Ultimos 7 dias</p>
                   <h3 className="mt-1 font-display text-xl font-black">Progresso semanal</h3>
                 </div>
                 <div className="rounded-full bg-purple-500/10 px-3 py-1 text-[10px] font-black text-purple-400">
@@ -262,7 +262,7 @@ export default function Home() {
                       animate={{ height: Math.max(6, (day.km / maxKm) * 96) }}
                       className={`w-full max-w-8 rounded-full ${day.km > 0 ? "bg-purple-500" : "bg-secondary"}`}
                     />
-                    <span className="text-[8px] font-black text-zinc-500">{day.day}</span>
+                    <span className="text-[8px] font-black text-muted-foreground">{day.day}</span>
                   </div>
                 ))}
               </div>
@@ -274,14 +274,14 @@ export default function Home() {
           <section className="mt-8 px-6 lg:mt-0 lg:px-0 lg:pt-8">
             <div className="flex items-center justify-between">
               <h3 className="font-display text-lg font-black uppercase">Corridas recentes</h3>
-              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Somente suas</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">Somente suas</span>
             </div>
 
             <div className="mt-4 space-y-3">
               {activities.length === 0 ? (
                 <div className={cn(GLASS_CARD_CLASS, "p-8 text-center")}>
-                  <Trophy size={34} className="mx-auto text-zinc-700" />
-                  <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Nenhuma corrida salva ainda</p>
+                  <Trophy size={34} className="mx-auto text-muted-foreground/50" />
+                  <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-muted-foreground">Nenhuma corrida salva ainda</p>
                   <button
                     onClick={() => navigate("/run")}
                     className="mt-5 rounded-xl bg-purple-600 hover:bg-purple-700 transition px-6 py-3 text-xs font-black uppercase tracking-widest text-white"
@@ -328,13 +328,13 @@ export default function Home() {
                   <Ruler size={24} />
                 </div>
                 <h2 className="mt-4 font-display text-xl font-black">Trocar unidade de distância?</h2>
-                <p className="mt-2 text-sm text-zinc-400">
+                <p className="mt-2 text-sm text-muted-foreground">
                   Suas distâncias vão passar a ser exibidas em {unit === "km" ? "milhas (mi)" : "quilômetros (km)"}.
                 </p>
                 <div className="mt-6 flex gap-3">
                   <button
                     onClick={() => setUnitModalOpen(false)}
-                    className="flex-1 rounded-xl border border-border bg-secondary/60 py-3 text-xs font-black uppercase tracking-widest text-zinc-300"
+                    className="flex-1 rounded-xl border border-border bg-secondary/60 py-3 text-xs font-black uppercase tracking-widest text-foreground/80"
                   >
                     Cancelar
                   </button>

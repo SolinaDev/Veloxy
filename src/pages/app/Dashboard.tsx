@@ -138,13 +138,13 @@ const Dashboard = () => {
       <section className="px-6 mt-8">
         <div className="flex items-start justify-between">
           <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
-            <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">
+            <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] mb-1">
               Bem-vindo de volta,
             </p>
             {loading ? (
               <Skeleton className="h-10 w-32 rounded-lg" />
             ) : (
-              <h2 className="font-display font-black text-4xl tracking-tighter text-white uppercase">
+              <h2 className="font-display font-black text-4xl tracking-tighter text-foreground uppercase">
                 {displayName.split(" ")[0]}
               </h2>
             )}
@@ -199,16 +199,16 @@ const Dashboard = () => {
                   className={`w-8 h-8 rounded-xl flex items-center justify-center mb-3 ${
                     stat.color === "purple"
                       ? "bg-purple-500/20 text-purple-400"
-                      : "bg-secondary text-zinc-400"
+                      : "bg-secondary text-muted-foreground"
                   }`}
                 >
                   {stat.icon}
                 </div>
-                <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">
+                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">
                   {stat.label}
                 </p>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-black font-display text-white leading-none">
+                  <span className="text-2xl font-black font-display text-foreground leading-none">
                     {stat.value}
                   </span>
                   <span className="text-[9px] font-black text-purple-500 uppercase tracking-tighter">
@@ -225,7 +225,7 @@ const Dashboard = () => {
       <section className="px-6 mt-10">
         <div className={cn(GLASS_CARD_CLASS, "p-7")}>
           <div className="flex items-center justify-between mb-8">
-            <h3 className="font-display font-black text-sm tracking-tighter uppercase text-white">
+            <h3 className="font-display font-black text-sm tracking-tighter uppercase text-foreground">
               Últimos 7 Dias
             </h3>
             <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
@@ -242,8 +242,8 @@ const Dashboard = () => {
             </div>
           ) : !hasRuns ? (
             <div className="flex flex-col items-center justify-center h-32 gap-3">
-              <TrendingUp size={28} className="text-zinc-700" />
-              <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">
+              <TrendingUp size={28} className="text-muted-foreground/50" />
+              <p className="text-[10px] font-black text-muted-foreground/70 uppercase tracking-widest">
                 Nenhuma corrida ainda
               </p>
             </div>
@@ -266,7 +266,7 @@ const Dashboard = () => {
                   </div>
                   <span
                     className={`text-[8px] font-black tracking-tighter ${
-                      d.km > 0 ? "text-purple-400" : "text-zinc-600"
+                      d.km > 0 ? "text-purple-400" : "text-muted-foreground/70"
                     }`}
                   >
                     {d.day}
@@ -289,7 +289,7 @@ const Dashboard = () => {
                 <p className="text-[9px] font-black uppercase tracking-[0.22em] text-purple-300">
                   Melhor corrida
                 </p>
-                <h3 className="mt-2 font-display text-3xl font-black text-white">
+                <h3 className="mt-2 font-display text-3xl font-black text-foreground">
                   {stats.bestActivity.distance.toFixed(2)} km
                 </h3>
               </div>
@@ -303,9 +303,9 @@ const Dashboard = () => {
                 { label: "TEMPO", value: stats.bestActivity.time },
                 { label: "KCAL", value: (stats.bestActivity.calories ?? 0).toString() },
               ].map((item) => (
-                <div key={item.label} className="rounded-2xl bg-black/25 p-3">
-                  <p className="font-display text-lg font-black text-white leading-none">{item.value}</p>
-                  <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.18em] text-purple-200/70">{item.label}</p>
+                <div key={item.label} className="rounded-2xl bg-background/30 p-3">
+                  <p className="font-display text-lg font-black text-foreground leading-none">{item.value}</p>
+                  <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{item.label}</p>
                 </div>
               ))}
             </div>
@@ -331,10 +331,10 @@ const Dashboard = () => {
 
             <div className="relative z-10 flex items-center justify-between mb-8">
               <div>
-                <h4 className="font-display font-black text-xl text-white uppercase">
+                <h4 className="font-display font-black text-xl text-foreground uppercase">
                   {stats.lastActivity.type === "RUNNING" ? "Corrida" : stats.lastActivity.type}
                 </h4>
-                <p className="text-[10px] font-bold text-zinc-500 tracking-widest uppercase">
+                <p className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
                   {formatLastRunDate(stats.lastActivity)}
                 </p>
               </div>
@@ -353,10 +353,10 @@ const Dashboard = () => {
                 { label: "KCAL",  value: (stats.lastActivity.calories ?? 0).toString() },
               ].map((s) => (
                 <div key={s.label} className="text-left">
-                  <p className="font-display font-black text-lg text-white leading-none mb-1">
+                  <p className="font-display font-black text-lg text-foreground leading-none mb-1">
                     {s.value}
                   </p>
-                  <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-[0.2em]">
+                  <p className="text-[8px] font-bold text-muted-foreground/70 uppercase tracking-[0.2em]">
                     {s.label}
                   </p>
                 </div>
@@ -373,7 +373,7 @@ const Dashboard = () => {
             <div className="w-16 h-16 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
               <Play size={28} className="text-purple-500 fill-current ml-1" />
             </div>
-            <p className="text-[11px] font-black text-zinc-500 uppercase tracking-widest text-center">
+            <p className="text-[11px] font-black text-muted-foreground uppercase tracking-widest text-center">
               Ainda sem corridas registradas
             </p>
             <motion.button

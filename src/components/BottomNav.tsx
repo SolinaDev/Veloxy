@@ -61,13 +61,13 @@ const BottomNav = () => {
               >
                 <tab.icon
                   size={22}
-                  className={isActive ? "text-purple-500" : "text-zinc-500 group-hover:text-zinc-300 transition-colors"}
+                  className={isActive ? "text-purple-500" : "text-muted-foreground group-hover:text-foreground/80 transition-colors"}
                   strokeWidth={isActive ? 2.5 : 2}
                 />
               </motion.div>
               <span
                 className={`text-[9px] font-black tracking-tighter ${
-                  isActive ? "text-purple-500" : "text-zinc-500 group-hover:text-zinc-300"
+                  isActive ? "text-purple-500" : "text-muted-foreground group-hover:text-foreground/80"
                 }`}
               >
                 {tab.label}

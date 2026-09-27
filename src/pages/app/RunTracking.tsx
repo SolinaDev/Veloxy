@@ -629,7 +629,7 @@ const RunTracking = () => {
         transition={{ duration: 0.45, ease: [0.2, 0.8, 0.2, 1] }}
         className="px-6 py-4 flex items-center justify-between sticky top-0 bg-background/90 backdrop-blur-2xl z-40 border-b border-border/60 shadow-[0_16px_34px_rgba(0,0,0,0.28)]"
       >
-        <button onClick={handleBack} className="w-10 h-10 rounded-full bg-card/80 backdrop-blur-xl border border-border flex items-center justify-center text-zinc-400 active:scale-95 transition-transform" aria-label="Voltar">
+        <button onClick={handleBack} className="w-10 h-10 rounded-full bg-card/80 backdrop-blur-xl border border-border flex items-center justify-center text-muted-foreground active:scale-95 transition-transform" aria-label="Voltar">
           <ArrowLeft size={20} />
         </button>
         <motion.h1
@@ -644,7 +644,7 @@ const RunTracking = () => {
         {import.meta.env.DEV ? (
           <button
             onClick={() => setIsSimulating(!isSimulating)}
-            className={`text-[10px] font-black px-3 py-2 rounded-xl border transition-colors ${isSimulating ? 'bg-purple-600 border-purple-400 text-white' : 'bg-card/80 backdrop-blur-xl border-border text-zinc-500'}`}
+            className={`text-[10px] font-black px-3 py-2 rounded-xl border transition-colors ${isSimulating ? 'bg-purple-600 border-purple-400 text-white' : 'bg-card/80 backdrop-blur-xl border-border text-muted-foreground'}`}
           >
             {isSimulating ? "OFF" : "SIMULAR"}
           </button>
@@ -694,7 +694,7 @@ const RunTracking = () => {
                 <div className="w-20 h-20 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20 mb-4 animate-float animate-soft-glow">
                     <Navigation size={32} className="text-purple-500" />
                 </div>
-                <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">
+                <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">
                   {isRunning ? "BUSCANDO SINAL GPS..." : "AGUARDANDO SINAL GPS..."}
                 </p>
               </div>
@@ -705,7 +705,7 @@ const RunTracking = () => {
         <div className="absolute bottom-5 left-6 right-6 z-[1002] flex items-center justify-between rounded-2xl bg-card/80 backdrop-blur-xl border border-border px-4 py-3">
           <div className="flex items-center gap-2">
             <span className={`h-2.5 w-2.5 rounded-full ${isPaused ? "bg-yellow-400" : currentPos ? "bg-green-400 animate-status-pulse" : isRunning ? "bg-purple-400 animate-status-pulse" : "bg-zinc-600"}`} />
-            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-300">
+            <span className="text-[9px] font-black uppercase tracking-widest text-foreground/80">
               {isPaused ? "Pausado" : trackingStatus}
             </span>
           </div>
@@ -728,7 +728,7 @@ const RunTracking = () => {
                         <MapIcon size={18} />
                     </div>
                     <div>
-                        <p className="text-[8px] font-black text-zinc-500 uppercase leading-none mb-1">Pace</p>
+                        <p className="text-[8px] font-black text-muted-foreground uppercase leading-none mb-1">Pace</p>
                         <p className="text-sm font-black font-display leading-none">{getPace()}</p>
                     </div>
                 </div>
@@ -737,7 +737,7 @@ const RunTracking = () => {
                         <Zap size={18} />
                     </div>
                     <div>
-                        <p className="text-[8px] font-black text-zinc-500 uppercase leading-none mb-1">Calorias</p>
+                        <p className="text-[8px] font-black text-muted-foreground uppercase leading-none mb-1">Calorias</p>
                         <p className="text-sm font-black font-display leading-none">{getCalories()} kcal</p>
                     </div>
                 </div>
@@ -765,20 +765,20 @@ const RunTracking = () => {
             >
               {distance.toFixed(2)}
             </motion.p>
-            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mt-2">DISTÂNCIA TOTAL (KM)</p>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] mt-2">DISTÂNCIA TOTAL (KM)</p>
           </div>
 
-          <div className="grid grid-cols-3 divide-x divide-zinc-800">
+          <div className="grid grid-cols-3 divide-x divide-border">
             <div className="text-center">
-              <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Tempo</p>
+              <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest mb-1">Tempo</p>
               <p className="font-display font-black text-lg">{formatTime(seconds)}</p>
             </div>
             <div className="text-center">
-              <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Ritmo</p>
+              <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest mb-1">Ritmo</p>
               <p className="font-display font-black text-lg">{getPace()}</p>
             </div>
             <div className="text-center">
-              <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1">Velocidade</p>
+              <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest mb-1">Velocidade</p>
               <p className="font-display font-black text-lg">{(distance > 0 ? (distance / (seconds / 3600)) : 0).toFixed(1)}</p>
             </div>
           </div>
@@ -806,7 +806,7 @@ const RunTracking = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={handleStart}
-                className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-[0_14px_44px_rgba(147,51,234,0.48)] border-4 border-black group animate-soft-glow"
+                className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-[0_14px_44px_rgba(147,51,234,0.48)] border-4 border-background group animate-soft-glow"
                 aria-label="Iniciar corrida"
               >
                 <Play size={40} className="text-white fill-current ml-2 group-hover:scale-110 transition-transform" />
@@ -834,7 +834,7 @@ const RunTracking = () => {
                 transition={{ type: "spring", stiffness: 360, damping: 22, delay: 0.06 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setIsPaused(!isPaused)}
-                className="w-24 h-24 rounded-full bg-zinc-100 flex items-center justify-center shadow-[0_16px_42px_rgba(255,255,255,0.16)] border-4 border-black group active:scale-95 transition-transform"
+                className="w-24 h-24 rounded-full bg-zinc-100 flex items-center justify-center shadow-[0_16px_42px_rgba(255,255,255,0.16)] border-4 border-background group active:scale-95 transition-transform"
                 aria-label={isPaused ? "Retomar corrida" : "Pausar corrida"}
               >
                 {isPaused ? (
@@ -875,15 +875,15 @@ const RunTracking = () => {
                 exit={{ opacity: 0, y: 28, scale: 0.96 }}
                 className={cn(GLASS_CARD_CLASS, "pointer-events-auto w-full max-w-md p-6")}
               >
-                <p className="text-[9px] font-black uppercase tracking-[0.24em] text-zinc-500">Veloxy</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.24em] text-muted-foreground">Veloxy</p>
                 <h2 className="mt-1 font-display text-xl font-black text-purple-500 uppercase">Corrida nao finalizada</h2>
-                <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                   Encontramos {recoverableRun.distance.toFixed(2)} km de uma corrida que nao chegou a ser salva. Quer continuar de onde parou ou descartar?
                 </p>
                 <div className="mt-6 flex gap-3">
                   <button
                     onClick={handleDiscardRun}
-                    className="flex-1 rounded-xl border border-input bg-secondary py-3 text-xs font-black uppercase tracking-widest text-zinc-300"
+                    className="flex-1 rounded-xl border border-input bg-secondary py-3 text-xs font-black uppercase tracking-widest text-foreground/80"
                   >
                     Descartar
                   </button>
@@ -919,18 +919,18 @@ const RunTracking = () => {
               >
                 <div className="mb-5 flex items-center justify-between">
                   <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.24em] text-zinc-500">Treino</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.24em] text-muted-foreground">Treino</p>
                     <h2 className="font-display text-2xl font-black text-purple-500">Musica</h2>
                   </div>
                   <button
                     onClick={() => setIsMusicOpen(false)}
-                    className="bg-card/80 backdrop-blur-xl border border-border flex h-10 w-10 items-center justify-center rounded-full text-zinc-400"
+                    className="bg-card/80 backdrop-blur-xl border border-border flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground"
                     aria-label="Fechar musica"
                   >
                     <X size={18} />
                   </button>
                 </div>
-                <p className="mb-4 text-sm leading-relaxed text-zinc-400">
+                <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
                   Abra sua playlist antes ou durante a corrida. O Veloxy continua acompanhando o treino quando você voltar para o app.
                 </p>
                 <div className="grid gap-3">

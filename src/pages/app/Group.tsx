@@ -50,7 +50,7 @@ function LoadingScreen() {
   return (
     <div className="app-shell flex flex-col items-center justify-center gap-4">
       <Loader2 className="animate-spin text-purple-500" size={40} />
-      <p className="text-[10px] font-black text-zinc-500 tracking-[0.2em] uppercase">Carregando grupo...</p>
+      <p className="text-[10px] font-black text-muted-foreground tracking-[0.2em] uppercase">Carregando grupo...</p>
     </div>
   );
 }
@@ -78,12 +78,12 @@ function StateScreen({
       </div>
       <div>
         <p className="font-display text-xl font-black uppercase tracking-tighter">{title}</p>
-        <p className="mt-2 max-w-xs text-sm text-zinc-500">{description}</p>
+        <p className="mt-2 max-w-xs text-sm text-muted-foreground">{description}</p>
       </div>
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate("/social")}
-          className="rounded-xl border border-border bg-card/80 backdrop-blur-xl px-6 py-3 text-xs font-black uppercase tracking-widest text-zinc-300"
+          className="rounded-xl border border-border bg-card/80 backdrop-blur-xl px-6 py-3 text-xs font-black uppercase tracking-widest text-foreground/80"
         >
           Voltar aos grupos
         </button>
@@ -153,7 +153,7 @@ function PostComposer({
         className="mb-4 flex w-full items-center gap-3 rounded-2xl bg-card/80 backdrop-blur-xl border border-border p-4 text-left"
       >
         <SafeAvatar src={authorPhoto} name={authorName} className="h-9 w-9 rounded-full bg-secondary shrink-0" />
-        <span className="text-sm text-zinc-500">O que você quer compartilhar com o grupo?</span>
+        <span className="text-sm text-muted-foreground">O que você quer compartilhar com o grupo?</span>
       </button>
     );
   }
@@ -173,7 +173,7 @@ function PostComposer({
           placeholder="O que você quer compartilhar com o grupo?"
           rows={3}
           maxLength={1000}
-          className="w-full resize-none bg-transparent text-sm outline-none placeholder:text-zinc-600"
+          className="w-full resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground/70"
         />
       </div>
 
@@ -194,7 +194,7 @@ function PostComposer({
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="flex items-center gap-2 rounded-xl border border-border bg-secondary/60 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-zinc-400"
+          className="flex items-center gap-2 rounded-xl border border-border bg-secondary/60 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground"
         >
           <ImageIcon size={14} className="text-purple-400" />
           Imagem
@@ -204,7 +204,7 @@ function PostComposer({
           <button
             onClick={reset}
             disabled={posting}
-            className="rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 disabled:opacity-60"
+            className="rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground disabled:opacity-60"
           >
             Cancelar
           </button>
@@ -263,7 +263,7 @@ function PostComments({ groupId, postId }: { groupId: string; postId: string }) 
           <Loader2 size={16} className="animate-spin text-purple-500" />
         </div>
       ) : comments.length === 0 ? (
-        <p className="py-2 text-center text-[10px] font-black uppercase tracking-widest text-zinc-600">
+        <p className="py-2 text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">
           Nenhum comentário ainda
         </p>
       ) : (
@@ -273,7 +273,7 @@ function PostComments({ groupId, postId }: { groupId: string; postId: string }) 
               <SafeAvatar src={comment.authorPhoto} name={comment.authorName} className="h-7 w-7 rounded-full bg-secondary shrink-0" />
               <div className="min-w-0 flex-1 rounded-2xl bg-secondary/60 border border-input px-3 py-2">
                 <p className="text-[11px] font-black">{comment.authorName}</p>
-                <p className="text-xs text-zinc-300 break-words">{comment.text}</p>
+                <p className="text-xs text-foreground/80 break-words">{comment.text}</p>
               </div>
             </div>
           ))}
@@ -325,11 +325,11 @@ function PostCard({ post, groupId, userUid }: { post: GroupPost; groupId: string
         <SafeAvatar src={post.authorPhoto} name={post.authorName} className="h-10 w-10 rounded-full bg-secondary shrink-0" />
         <div className="min-w-0">
           <p className="truncate text-sm font-black">{post.authorName}</p>
-          <p className="text-[10px] text-zinc-500">{formatCardDate(post.createdAt)}</p>
+          <p className="text-[10px] text-muted-foreground">{formatCardDate(post.createdAt)}</p>
         </div>
       </div>
 
-      {post.text && <p className="mt-3 whitespace-pre-wrap text-sm text-zinc-200 break-words">{post.text}</p>}
+      {post.text && <p className="mt-3 whitespace-pre-wrap text-sm text-foreground/90 break-words">{post.text}</p>}
 
       {post.imageURL && (
         <div className="mt-3 overflow-hidden rounded-2xl border border-border">
@@ -341,16 +341,16 @@ function PostCard({ post, groupId, userUid }: { post: GroupPost; groupId: string
         <button onClick={handleLike} className="flex items-center gap-1.5 group" aria-label={isLiked ? "Descurtir" : "Curtir"}>
           <Heart
             size={18}
-            className={`transition-all ${isLiked ? "text-purple-500 fill-current" : "text-zinc-500 group-hover:text-purple-400"}`}
+            className={`transition-all ${isLiked ? "text-purple-500 fill-current" : "text-muted-foreground group-hover:text-purple-400"}`}
           />
-          <span className={`text-xs font-bold tabular-nums ${isLiked ? "text-purple-400" : "text-zinc-500"}`}>
+          <span className={`text-xs font-bold tabular-nums ${isLiked ? "text-purple-400" : "text-muted-foreground"}`}>
             {post.likes.length}
           </span>
         </button>
 
         <button onClick={() => setCommentsOpen((v) => !v)} className="flex items-center gap-1.5 group" aria-label="Comentários">
-          <MessageCircle size={18} className={`transition-all ${commentsOpen ? "text-purple-400" : "text-zinc-500 group-hover:text-purple-400"}`} />
-          <span className={`text-xs font-bold tabular-nums ${commentsOpen ? "text-purple-400" : "text-zinc-500"}`}>
+          <MessageCircle size={18} className={`transition-all ${commentsOpen ? "text-purple-400" : "text-muted-foreground group-hover:text-purple-400"}`} />
+          <span className={`text-xs font-bold tabular-nums ${commentsOpen ? "text-purple-400" : "text-muted-foreground"}`}>
             {post.commentsCount}
           </span>
         </button>
@@ -412,8 +412,8 @@ function GroupFeedPanel({ group, authorName, authorPhoto, userUid }: {
         </div>
       ) : posts.length === 0 ? (
         <div className={cn(GLASS_CARD_CLASS, "p-10 text-center")}>
-          <Rss className="mx-auto text-zinc-700" size={32} />
-          <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+          <Rss className="mx-auto text-muted-foreground/50" size={32} />
+          <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-muted-foreground">
             Nenhuma publicação ainda. Seja o primeiro a compartilhar!
           </p>
         </div>
@@ -438,7 +438,7 @@ function MessageBubble({ message, isOwn }: { message: GroupMessage; isOwn: boole
       <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${isOwn ? "bg-purple-600 text-white rounded-br-sm" : "bg-secondary/80 border border-input rounded-bl-sm"}`}>
         {!isOwn && <p className="mb-0.5 text-[10px] font-black text-purple-300">{message.senderName}</p>}
         <p className="whitespace-pre-wrap text-sm break-words">{message.text}</p>
-        <p className={`mt-1 text-[9px] ${isOwn ? "text-purple-200" : "text-zinc-500"}`}>
+        <p className={`mt-1 text-[9px] ${isOwn ? "text-purple-200" : "text-muted-foreground"}`}>
           {date ? format(date, "HH:mm", { locale: ptBR }) : ""}
         </p>
       </div>
@@ -500,8 +500,8 @@ function GroupChatPanel({ group, senderName, senderPhoto, userUid }: {
           </div>
         ) : messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-            <MessageSquare className="text-zinc-700" size={30} />
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+            <MessageSquare className="text-muted-foreground/50" size={30} />
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground">
               Nenhuma mensagem ainda. Diga oi!
             </p>
           </div>
@@ -564,18 +564,18 @@ function GroupOptionsModal({ open, onClose, group, onLeave, leaving }: {
             >
               <div className="mb-5 flex items-center justify-between">
                 <h2 className="font-display text-xl font-black text-purple-500">OPÇÕES DO GRUPO</h2>
-                <button onClick={onClose} className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center text-zinc-400" aria-label="Fechar">
+                <button onClick={onClose} className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center text-muted-foreground" aria-label="Fechar">
                   <X size={16} />
                 </button>
               </div>
 
               <div className="space-y-3">
                 <div className="rounded-2xl border border-border bg-secondary/50 p-4">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Cidade</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Cidade</p>
                   <p className="text-sm font-bold">{group.city}</p>
                 </div>
                 <div className="rounded-2xl border border-border bg-secondary/50 p-4">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Criado por</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Criado por</p>
                   <p className="text-sm font-bold">{group.creatorName}</p>
                 </div>
 
@@ -715,7 +715,7 @@ export default function Group() {
       <div className="app-shell relative flex flex-col items-center justify-center gap-5 px-6 text-center safe-top">
         <button
           onClick={() => navigate("/social")}
-          className="absolute left-5 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-card/80 backdrop-blur-xl border border-border text-zinc-400"
+          className="absolute left-5 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-card/80 backdrop-blur-xl border border-border text-muted-foreground"
           aria-label="Voltar"
         >
           <ArrowLeft size={18} />
@@ -725,11 +725,11 @@ export default function Group() {
 
         <div>
           <p className="font-display text-2xl font-black uppercase tracking-tighter">{group.name}</p>
-          <p className="mt-1 text-xs font-bold uppercase tracking-widest text-zinc-500">{group.city} · {group.membersCount} membros</p>
-          {group.description && <p className="mt-3 max-w-xs text-sm text-zinc-400">{group.description}</p>}
+          <p className="mt-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">{group.city} · {group.membersCount} membros</p>
+          {group.description && <p className="mt-3 max-w-xs text-sm text-muted-foreground">{group.description}</p>}
         </div>
 
-        <p className="text-xs font-black uppercase tracking-widest text-zinc-600">Você ainda não participa deste grupo</p>
+        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground/70">Você ainda não participa deste grupo</p>
 
         <button
           onClick={handleJoin}
@@ -749,7 +749,7 @@ export default function Group() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate("/social")}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card/80 backdrop-blur-xl border border-border text-zinc-400"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card/80 backdrop-blur-xl border border-border text-muted-foreground"
             aria-label="Voltar"
           >
             <ArrowLeft size={18} />
@@ -759,14 +759,14 @@ export default function Group() {
 
           <div className="min-w-0 flex-1">
             <h1 className="truncate font-display text-xl font-black">{group.name}</h1>
-            <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+            <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
               <Users size={11} className="text-purple-500" /> {group.membersCount} membros
             </p>
           </div>
 
           <button
             onClick={() => setOptionsOpen(true)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card/80 backdrop-blur-xl border border-border text-zinc-400"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card/80 backdrop-blur-xl border border-border text-muted-foreground"
             aria-label="Opções do grupo"
           >
             <Settings size={18} />
@@ -774,7 +774,7 @@ export default function Group() {
         </div>
 
         {group.description && (
-          <p className="mt-3 text-xs leading-relaxed text-zinc-400">{group.description}</p>
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{group.description}</p>
         )}
 
         <div className="mt-4 grid grid-cols-2 gap-2 lg:hidden">
@@ -786,7 +786,7 @@ export default function Group() {
               key={tab.id}
               onClick={() => setMobileTab(tab.id)}
               className={`flex items-center justify-center gap-2 rounded-2xl px-3 py-2.5 text-[10px] font-black uppercase tracking-widest transition ${
-                mobileTab === tab.id ? "bg-purple-600 text-white" : "bg-card/80 backdrop-blur-xl border border-border text-zinc-500"
+                mobileTab === tab.id ? "bg-purple-600 text-white" : "bg-card/80 backdrop-blur-xl border border-border text-muted-foreground"
               }`}
             >
               <tab.icon size={14} />
@@ -799,11 +799,11 @@ export default function Group() {
       {isDemoGroup ? (
         <div className="px-5 pt-8">
           <div className={cn(GLASS_CARD_CLASS, "p-8 text-center")}>
-            <RefreshCw className="mx-auto text-zinc-700" size={30} />
-            <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+            <RefreshCw className="mx-auto text-muted-foreground/50" size={30} />
+            <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-muted-foreground">
               Este é um grupo de demonstração
             </p>
-            <p className="mt-2 text-xs text-zinc-600">
+            <p className="mt-2 text-xs text-muted-foreground/70">
               Feed e chat ficam disponíveis em grupos criados de verdade. Crie um grupo para usar essas funções.
             </p>
           </div>

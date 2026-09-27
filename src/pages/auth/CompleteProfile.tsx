@@ -128,7 +128,7 @@ export default function CompleteProfile() {
         transition={{ delay: 0.2 }}
         className="text-center mb-8"
       >
-        <h1 className="font-display text-2xl font-bold text-white mb-2">
+        <h1 className="font-display text-2xl font-bold text-foreground mb-2">
           Quase lá! 🎉
         </h1>
         <p className="text-gray-400 text-sm max-w-xs">
@@ -174,7 +174,7 @@ export default function CompleteProfile() {
               {uploadingPhoto ? (
                 <Loader2 size={24} className="text-white animate-spin" />
               ) : (
-                <Camera size={24} className="text-white opacity-90" />
+                <Camera size={24} className="text-foreground opacity-90" />
               )}
             </div>
           </button>
@@ -199,7 +199,7 @@ export default function CompleteProfile() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Escolha seu nome ou apelido"
-            className="w-full bg-secondary border border-input rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none focus:border-purple-500 transition"
+            className="w-full bg-secondary border border-input rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-gray-500 outline-none focus:border-purple-500 transition"
           />
         </div>
 
@@ -214,7 +214,7 @@ export default function CompleteProfile() {
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             placeholder="Ex: São Paulo, SP"
-            className="w-full bg-secondary border border-input rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none focus:border-purple-500 transition"
+            className="w-full bg-secondary border border-input rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-gray-500 outline-none focus:border-purple-500 transition"
           />
         </div>
 
@@ -230,7 +230,7 @@ export default function CompleteProfile() {
             placeholder="Conte um pouco sobre você como corredor..."
             rows={2}
             maxLength={150}
-            className="w-full bg-secondary border border-input rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none focus:border-purple-500 transition resize-none"
+            className="w-full bg-secondary border border-input rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-gray-500 outline-none focus:border-purple-500 transition resize-none"
           />
           <p className="text-[10px] text-gray-600 text-right mt-0.5">
             {bio.length}/150

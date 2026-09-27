@@ -57,7 +57,7 @@ export default function DeleteAccountSection({ user }: { user: User }) {
     return (
       <button
         onClick={() => setExpanded(true)}
-        className="settings-danger-action w-full rounded-2xl border border-border bg-card/80 backdrop-blur-xl p-4 text-left text-zinc-400 transition"
+        className="settings-danger-action w-full rounded-2xl border border-border bg-card/80 backdrop-blur-xl p-4 text-left text-muted-foreground transition"
       >
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-red-500/10 text-red-400 flex items-center justify-center">
@@ -65,7 +65,7 @@ export default function DeleteAccountSection({ user }: { user: User }) {
           </div>
           <div>
             <p className="settings-danger-title text-sm font-black">Excluir minha conta</p>
-            <p className="settings-muted text-[10px] text-zinc-500 mt-0.5">
+            <p className="settings-muted text-[10px] text-muted-foreground mt-0.5">
               Apaga perfil, corridas, pet, posts e mensagens de forma permanente.
             </p>
           </div>
@@ -77,7 +77,7 @@ export default function DeleteAccountSection({ user }: { user: User }) {
   return (
     <div className="rounded-2xl border border-red-500/60 bg-red-500/10 p-4 space-y-3">
       <p className="text-sm font-black text-red-400">Excluir conta definitivamente</p>
-      <p className="settings-muted text-xs text-zinc-400">
+      <p className="settings-muted text-xs text-muted-foreground">
         Seu perfil, corridas, XP, pet, posts, comentários, mensagens e inscrições serão apagados e não
         poderão ser recuperados. Grupos que você criou passam para o membro mais antigo.
       </p>
@@ -102,7 +102,7 @@ export default function DeleteAccountSection({ user }: { user: User }) {
       />
 
       {!needsPassword && (
-        <p className="settings-muted text-[10px] text-zinc-500">
+        <p className="settings-muted text-[10px] text-muted-foreground">
           Você vai precisar confirmar com sua conta Google.
         </p>
       )}

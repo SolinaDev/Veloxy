@@ -188,7 +188,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
 
             <button
               onClick={handleBellClick}
-              className="w-10 h-10 rounded-full bg-card/80 backdrop-blur-xl border border-border text-zinc-400 flex items-center justify-center relative active:scale-95 transition-transform"
+              className="w-10 h-10 rounded-full bg-card/80 backdrop-blur-xl border border-border text-muted-foreground flex items-center justify-center relative active:scale-95 transition-transform"
               aria-label="Ver curtidas recebidas"
             >
               <Bell size={20} />
@@ -209,13 +209,13 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
             animate={{ borderColor: query ? "rgba(147,51,234,0.6)" : "rgba(63,63,70,0.8)" }}
             className="flex items-center gap-3 bg-secondary border border-input rounded-xl px-4 py-3"
           >
-            <Search size={16} className={`flex-shrink-0 transition-colors duration-200 ${query ? "text-purple-400" : "text-zinc-500"}`} />
+            <Search size={16} className={`flex-shrink-0 transition-colors duration-200 ${query ? "text-purple-400" : "text-muted-foreground"}`} />
             <input
               ref={searchRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar atletas ou atividades..."
-              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-zinc-600 outline-none"
+              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/70 outline-none"
             />
             <AnimatePresence>
               {query && (
@@ -224,10 +224,10 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.5 }}
                   onClick={() => { setQuery(""); searchRef.current?.focus(); }}
-                  className="w-5 h-5 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0"
+                  className="w-5 h-5 rounded-full bg-border flex items-center justify-center flex-shrink-0"
                   aria-label="Limpar busca"
                 >
-                  <X size={11} className="text-zinc-300" />
+                  <X size={11} className="text-foreground/80" />
                 </motion.button>
               )}
             </AnimatePresence>
@@ -253,7 +253,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                     transition={{ delay: i * 0.06 }}
                     className={cn(GLASS_CARD_CLASS, "p-3 rounded-2xl relative overflow-hidden")}
                   >
-                    <p className="text-[7px] font-bold text-zinc-500 uppercase tracking-tighter mb-0.5">{s.label}</p>
+                    <p className="text-[7px] font-bold text-muted-foreground uppercase tracking-tighter mb-0.5">{s.label}</p>
                     <div className="flex items-baseline gap-0.5">
                       <span className="text-base font-black font-display">{s.value}</span>
                       {s.unit && <span className="text-[7px] font-bold text-purple-500">{s.unit}</span>}
@@ -281,7 +281,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <Users size={14} className="text-purple-500" />
-                  <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Atletas</h3>
+                  <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Atletas</h3>
                 </div>
                 <div className="space-y-2">
                   {filteredAthletes.map((athlete) => (
@@ -302,7 +302,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-sm truncate">{athlete.name}</p>
-                        <p className="text-[10px] text-zinc-500">
+                        <p className="text-[10px] text-muted-foreground">
                           {athlete.runs} {athlete.runs === 1 ? "corrida" : "corridas"} · {athlete.totalKm} km
                         </p>
                       </div>
@@ -319,7 +319,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <Zap size={14} className="text-purple-500" />
-                  <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                  <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                     Atividades ({filteredActivities.length})
                   </h3>
                 </div>
@@ -342,18 +342,18 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-sm truncate">{item.userName}</p>
-                        <p className="text-[10px] text-zinc-500">
+                        <p className="text-[10px] text-muted-foreground">
                           {Number(item.distance).toFixed(2)} km · {item.pace}/km · {item.time}
                         </p>
                         {toDateSafe(item.timestamp) && (
-                          <p className="text-[9px] text-zinc-600 mt-0.5">
+                          <p className="text-[9px] text-muted-foreground/70 mt-0.5">
                             {format(toDateSafe(item.timestamp)!, "d MMM yyyy · HH:mm", { locale: ptBR })}
                           </p>
                         )}
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className="font-display font-black text-base text-purple-400">{Number(item.distance).toFixed(1)}</p>
-                        <p className="text-[8px] text-zinc-600 uppercase">km</p>
+                        <p className="text-[8px] text-muted-foreground/70 uppercase">km</p>
                       </div>
                     </motion.div>
                   ))}
@@ -363,8 +363,8 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
 
             {filteredAthletes.length === 0 && filteredActivities.length === 0 && (
               <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
-                <Search size={32} className="text-zinc-700" />
-                <p className="font-black text-zinc-500 uppercase tracking-widest text-xs">
+                <Search size={32} className="text-muted-foreground/50" />
+                <p className="font-black text-muted-foreground uppercase tracking-widest text-xs">
                   Nenhum resultado para "{query}"
                 </p>
               </div>
@@ -377,7 +377,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                 <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
                   <div className="px-6 flex items-center gap-2 mb-3">
                     <Users size={14} className="text-purple-500" />
-                    <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Atletas Ativos</h3>
+                    <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Atletas Ativos</h3>
                   </div>
                   <div className="flex gap-3 overflow-x-auto no-scrollbar px-6 pb-1">
                     {athletes.map((athlete, i) => (
@@ -401,7 +401,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                             {athlete.totalKm}km
                           </div>
                         </div>
-                        <span className="text-[9px] font-bold text-zinc-400 text-center truncate w-full">
+                        <span className="text-[9px] font-bold text-muted-foreground text-center truncate w-full">
                           {athlete.name.split(" ")[0]}
                         </span>
                       </motion.button>
@@ -415,7 +415,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-24 gap-4">
                   <Loader2 className="animate-spin text-purple-500" size={36} />
-                  <p className="text-zinc-500 font-display tracking-widest text-xs uppercase">Carregando Feed...</p>
+                  <p className="text-muted-foreground font-display tracking-widest text-xs uppercase">Carregando Feed...</p>
                 </div>
               ) : activities.length === 0 ? (
                 <motion.div
@@ -427,8 +427,8 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                     <Play size={32} className="text-purple-500 fill-current ml-1" />
                   </div>
                   <div>
-                    <p className="font-display font-black text-xl text-white uppercase tracking-tighter">Nenhuma corrida ainda</p>
-                    <p className="text-zinc-500 text-xs mt-1">Seja o primeiro a registrar uma atividade!</p>
+                    <p className="font-display font-black text-xl text-foreground uppercase tracking-tighter">Nenhuma corrida ainda</p>
+                    <p className="text-muted-foreground text-xs mt-1">Seja o primeiro a registrar uma atividade!</p>
                   </div>
                   <motion.button
                     whileTap={{ scale: 0.95 }}
@@ -458,7 +458,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                         whileTap={{ scale: 0.95 }}
                         onClick={handleLoadMore}
                         disabled={loadingMore}
-                        className="flex items-center gap-2 px-6 py-3 bg-card/80 backdrop-blur-xl border border-border rounded-2xl text-xs font-black text-zinc-400 uppercase tracking-widest disabled:opacity-50 transition-opacity"
+                        className="flex items-center gap-2 px-6 py-3 bg-card/80 backdrop-blur-xl border border-border rounded-2xl text-xs font-black text-muted-foreground uppercase tracking-widest disabled:opacity-50 transition-opacity"
                       >
                         {loadingMore
                           ? <><Loader2 size={13} className="animate-spin text-purple-500" /> Carregando...</>
@@ -467,7 +467,7 @@ const Feed = ({ embedded = false }: { embedded?: boolean }) => {
                       </motion.button>
                     </div>
                   ) : (
-                    <p className="text-center text-[10px] text-zinc-700 uppercase tracking-widest pb-2 font-black">
+                    <p className="text-center text-[10px] text-muted-foreground/50 uppercase tracking-widest pb-2 font-black">
                       · você chegou ao início do feed ·
                     </p>
                   )}

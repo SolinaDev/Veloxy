@@ -79,14 +79,14 @@ export default function VerifyEmail() {
           <Mail className="text-purple-400" size={26} />
         </div>
 
-        <h1 className="text-2xl font-bold text-white mb-2">Confirme seu email</h1>
-        <p className="text-sm text-zinc-400 leading-relaxed mb-1">
+        <h1 className="text-2xl font-bold text-foreground mb-2">Confirme seu email</h1>
+        <p className="text-sm text-muted-foreground leading-relaxed mb-1">
           Enviamos um link de confirmação para
         </p>
         <p className="text-sm text-purple-400 font-semibold mb-6 break-all">
           {user?.email}
         </p>
-        <p className="text-xs text-zinc-500 leading-relaxed mb-6">
+        <p className="text-xs text-muted-foreground leading-relaxed mb-6">
           Abra o email e clique no link. Depois, volte aqui e toque em "Já confirmei".
         </p>
 
@@ -102,14 +102,14 @@ export default function VerifyEmail() {
         <button
           onClick={handleResend}
           disabled={resending}
-          className="w-full bg-secondary border border-input hover:border-purple-500/50 transition rounded-xl py-3 text-zinc-300 text-sm font-semibold disabled:opacity-60 mb-3"
+          className="w-full bg-secondary border border-input hover:border-purple-500/50 transition rounded-xl py-3 text-foreground/80 text-sm font-semibold disabled:opacity-60 mb-3"
         >
           {resending ? "Reenviando..." : "Reenviar email"}
         </button>
 
         <button
           onClick={handleLogout}
-          className="w-full text-zinc-500 hover:text-zinc-300 transition text-xs flex items-center justify-center gap-2 py-2"
+          className="w-full text-muted-foreground hover:text-foreground/80 transition text-xs flex items-center justify-center gap-2 py-2"
         >
           <LogOut className="w-3.5 h-3.5" />
           Sair e entrar com outra conta

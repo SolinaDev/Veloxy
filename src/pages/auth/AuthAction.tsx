@@ -113,7 +113,7 @@ export default function AuthAction() {
     return (
       <Shell>
         <Loader2 className="w-8 h-8 text-purple-400 animate-spin mx-auto mb-4" />
-        <p className="text-sm text-zinc-400">Validando link...</p>
+        <p className="text-sm text-muted-foreground">Validando link...</p>
       </Shell>
     );
   }
@@ -124,8 +124,8 @@ export default function AuthAction() {
         <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
           <XCircle className="text-red-400" size={26} />
         </div>
-        <h1 className="text-xl font-bold text-white mb-2">Não foi possível continuar</h1>
-        <p className="text-sm text-zinc-400 mb-6">{errorMessage}</p>
+        <h1 className="text-xl font-bold text-foreground mb-2">Não foi possível continuar</h1>
+        <p className="text-sm text-muted-foreground mb-6">{errorMessage}</p>
         <Link
           to="/login"
           className="block w-full bg-purple-600 hover:bg-purple-700 transition rounded-xl py-3 text-white text-sm font-semibold"
@@ -142,8 +142,8 @@ export default function AuthAction() {
         <div className="w-14 h-14 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center mx-auto mb-4">
           <CheckCircle2 className="text-green-400" size={26} />
         </div>
-        <h1 className="text-xl font-bold text-white mb-2">Email confirmado!</h1>
-        <p className="text-sm text-zinc-400 mb-6">
+        <h1 className="text-xl font-bold text-foreground mb-2">Email confirmado!</h1>
+        <p className="text-sm text-muted-foreground mb-6">
           Sua conta foi verificada. Volte ao app para continuar.
         </p>
         <Link
@@ -162,8 +162,8 @@ export default function AuthAction() {
         <div className="w-14 h-14 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center mx-auto mb-4">
           <CheckCircle2 className="text-green-400" size={26} />
         </div>
-        <h1 className="text-xl font-bold text-white mb-2">Senha alterada!</h1>
-        <p className="text-sm text-zinc-400 mb-6">
+        <h1 className="text-xl font-bold text-foreground mb-2">Senha alterada!</h1>
+        <p className="text-sm text-muted-foreground mb-6">
           Sua senha foi redefinida com sucesso. Já pode entrar com a nova senha.
         </p>
         <Link
@@ -182,13 +182,13 @@ export default function AuthAction() {
       <div className="w-14 h-14 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mx-auto mb-4">
         <Lock className="text-purple-400" size={26} />
       </div>
-      <h1 className="text-xl font-bold text-white mb-2">Redefinir senha</h1>
-      <p className="text-sm text-zinc-400 mb-1">Criando nova senha para</p>
+      <h1 className="text-xl font-bold text-foreground mb-2">Redefinir senha</h1>
+      <p className="text-sm text-muted-foreground mb-1">Criando nova senha para</p>
       <p className="text-sm text-purple-400 font-semibold mb-6 break-all">{email}</p>
 
       <form onSubmit={handleResetSubmit} className="space-y-3 text-left">
         <div>
-          <label className="text-xs text-zinc-400 font-medium mb-1.5 block">Nova senha</label>
+          <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Nova senha</label>
           <input
             type="password"
             value={newPassword}
@@ -196,18 +196,18 @@ export default function AuthAction() {
             placeholder="Mínimo 6 caracteres"
             autoFocus
             disabled={submitting}
-            className="w-full bg-secondary border border-input rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none focus:border-purple-500 transition disabled:opacity-60"
+            className="w-full bg-secondary border border-input rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-gray-500 outline-none focus:border-purple-500 transition disabled:opacity-60"
           />
         </div>
         <div>
-          <label className="text-xs text-zinc-400 font-medium mb-1.5 block">Confirmar senha</label>
+          <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Confirmar senha</label>
           <input
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Repita a nova senha"
             disabled={submitting}
-            className="w-full bg-secondary border border-input rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none focus:border-purple-500 transition disabled:opacity-60"
+            className="w-full bg-secondary border border-input rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-gray-500 outline-none focus:border-purple-500 transition disabled:opacity-60"
           />
         </div>
 

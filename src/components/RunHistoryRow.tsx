@@ -28,25 +28,25 @@ const RunHistoryRow = ({ run, dateLabel, onSelect, onDelete, deleting = false, c
       <div className="flex items-center justify-between gap-4">
         {onSelect ? (
           <button type="button" onClick={onSelect} className="min-w-0 flex-1 text-left">
-            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">{dateLabel}</p>
-            <p className="mt-1 font-display text-lg font-black italic text-white">Corrida</p>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">{dateLabel}</p>
+            <p className="mt-1 font-display text-lg font-black italic text-foreground">Corrida</p>
           </button>
         ) : (
           <div className="min-w-0 flex-1">
-            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">{dateLabel}</p>
-            <p className="mt-1 font-display text-lg font-black italic text-white">Corrida</p>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">{dateLabel}</p>
+            <p className="mt-1 font-display text-lg font-black italic text-foreground">Corrida</p>
           </div>
         )}
 
         {onSelect ? (
           <button type="button" onClick={onSelect} className="text-right">
             <p className="font-display text-2xl font-black italic text-purple-400">{run.distance.toFixed(2)}</p>
-            <p className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-600">km</p>
+            <p className="text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground/70">km</p>
           </button>
         ) : (
           <div className="text-right">
             <p className="font-display text-2xl font-black italic text-purple-400">{run.distance.toFixed(2)}</p>
-            <p className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-600">km</p>
+            <p className="text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground/70">km</p>
           </div>
         )}
 
@@ -58,7 +58,7 @@ const RunHistoryRow = ({ run, dateLabel, onSelect, onDelete, deleting = false, c
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition active:scale-95 disabled:opacity-60 ${
               confirmDelete
                 ? "border-red-500/50 bg-red-500/15 text-red-400"
-                : "border-input bg-secondary text-zinc-500 hover:border-red-500/35 hover:text-red-400"
+                : "border-input bg-secondary text-muted-foreground hover:border-red-500/35 hover:text-red-400"
             }`}
             aria-label="Apagar corrida"
           >
@@ -69,11 +69,11 @@ const RunHistoryRow = ({ run, dateLabel, onSelect, onDelete, deleting = false, c
 
       <div className="mt-4 grid grid-cols-3 gap-3 border-t border-border/70 pt-4">
         {stats.map((item) => (
-          <div key={item.label} className="flex items-center gap-2 text-zinc-400">
+          <div key={item.label} className="flex items-center gap-2 text-muted-foreground">
             <item.icon size={13} className="text-purple-500" />
             <div>
               <p className="text-xs font-black">{item.value}</p>
-              <p className="text-[8px] uppercase tracking-[0.15em] text-zinc-600">{item.label}</p>
+              <p className="text-[8px] uppercase tracking-[0.15em] text-muted-foreground/70">{item.label}</p>
             </div>
           </div>
         ))}

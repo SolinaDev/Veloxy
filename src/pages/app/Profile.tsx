@@ -100,8 +100,8 @@ function SettingsRow({
           {icon}
         </div>
         <div className="min-w-0">
-          <p className="settings-title text-sm font-black text-white">{title}</p>
-          <p className="settings-muted text-[10px] text-zinc-500 leading-snug mt-0.5">{description}</p>
+          <p className="settings-title text-sm font-black text-foreground">{title}</p>
+          <p className="settings-muted text-[10px] text-muted-foreground leading-snug mt-0.5">{description}</p>
         </div>
       </div>
       <div className="shrink-0">{children}</div>
@@ -204,10 +204,10 @@ function SettingsModal({
           >
             <div className="flex items-center justify-between mb-6">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500">Veloxy</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground">Veloxy</p>
                 <h2 className="font-display text-2xl font-black text-purple-500">CONFIGURAÇÕES</h2>
               </div>
-              <button onClick={onClose} className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-zinc-400" aria-label="Fechar">
+              <button onClick={onClose} className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-muted-foreground" aria-label="Fechar">
                 <X size={20} />
               </button>
             </div>
@@ -220,7 +220,7 @@ function SettingsModal({
                       key={option}
                       onClick={() => onThemeChange(option)}
                       className={`relative px-3 py-2 rounded-xl text-[10px] font-black uppercase transition ${
-                        theme === option ? "text-white" : "text-zinc-500"
+                        theme === option ? "text-foreground" : "text-muted-foreground"
                       }`}
                     >
                       {theme === option && (
@@ -253,7 +253,7 @@ function SettingsModal({
                       key={unit}
                       onClick={() => updateSetting("units", unit)}
                       className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase transition ${
-                        settings.units === unit ? "bg-purple-600 text-white" : "text-zinc-500"
+                        settings.units === unit ? "bg-purple-600 text-white" : "text-muted-foreground"
                       }`}
                     >
                       {unit}
@@ -268,8 +268,8 @@ function SettingsModal({
                   className={cn(GLASS_CARD_CLASS, "w-full rounded-2xl p-4 text-left")}
                 >
                   <Lock size={18} className="text-purple-500 mb-3" />
-                  <p className="settings-title text-xs font-black text-white">Privacidade</p>
-                  <p className="settings-muted text-[10px] text-zinc-500 mt-1">Termos de uso e política de privacidade</p>
+                  <p className="settings-title text-xs font-black text-foreground">Privacidade</p>
+                  <p className="settings-muted text-[10px] text-muted-foreground mt-1">Termos de uso e política de privacidade</p>
                 </button>
               </div>
 
@@ -283,7 +283,7 @@ function SettingsModal({
                   className={`settings-danger-action w-full rounded-2xl border p-4 text-left transition disabled:opacity-60 ${
                     confirmDelete
                       ? "border-red-500/60 bg-red-500/10 text-red-400"
-                      : "border-border bg-card/80 backdrop-blur-xl text-zinc-400"
+                      : "border-border bg-card/80 backdrop-blur-xl text-muted-foreground"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -294,7 +294,7 @@ function SettingsModal({
                       <p className="settings-danger-title text-sm font-black">
                         {confirmDelete ? "Confirmar exclusão" : "Apagar minhas corridas"}
                       </p>
-                      <p className="settings-muted text-[10px] text-zinc-500 mt-0.5">
+                      <p className="settings-muted text-[10px] text-muted-foreground mt-0.5">
                         Remove atividades salvas e zera km/XP do perfil.
                       </p>
                     </div>
@@ -422,7 +422,7 @@ function EditProfileModal({
           >
             <div className="flex items-center justify-between mb-8">
               <h2 className="font-display text-2xl font-black text-purple-500">EDITAR PERFIL</h2>
-              <button onClick={onClose} className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-zinc-400" aria-label="Fechar">
+              <button onClick={onClose} className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-muted-foreground" aria-label="Fechar">
                 <X size={20} />
               </button>
             </div>
@@ -454,10 +454,10 @@ function EditProfileModal({
                         {uploadingPhoto ? <Loader2 size={22} className="animate-spin text-white" /> : <Camera size={22} className="text-white" />}
                       </div>
                     </button>
-                    <p className="mt-2 text-[9px] font-black uppercase tracking-widest text-zinc-500">Toque para trocar a foto</p>
+                    <p className="mt-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground">Toque para trocar a foto</p>
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 block">Nome de Corredor</label>
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2 block">Nome de Corredor</label>
                     <input
                       type="text"
                       value={displayName}
@@ -466,7 +466,7 @@ function EditProfileModal({
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 block">Localização</label>
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2 block">Localização</label>
                     <input
                       type="text"
                       placeholder="Ex: São Paulo, SP"
@@ -476,7 +476,7 @@ function EditProfileModal({
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 block">Meta semanal (km)</label>
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2 block">Meta semanal (km)</label>
                     <input
                       type="number"
                       min="0"
@@ -488,7 +488,7 @@ function EditProfileModal({
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 block">Minha Bio</label>
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2 block">Minha Bio</label>
                     <textarea
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
@@ -596,7 +596,7 @@ const Profile = () => {
     return (
       <div className="app-shell flex flex-col items-center justify-center gap-4">
         <Loader2 className="animate-spin text-purple-500" size={40} />
-        <p className="text-[10px] font-black text-zinc-500 tracking-[0.2em] uppercase">Carregando Perfil...</p>
+        <p className="text-[10px] font-black text-muted-foreground tracking-[0.2em] uppercase">Carregando Perfil...</p>
       </div>
     );
   }
@@ -611,14 +611,14 @@ const Profile = () => {
         <div className="flex gap-2">
             <button
                 onClick={() => setEditOpen(true)}
-                className="w-10 h-10 rounded-full bg-card/80 backdrop-blur-xl border border-border flex items-center justify-center text-zinc-400 active:scale-95 transition-transform"
+                className="w-10 h-10 rounded-full bg-card/80 backdrop-blur-xl border border-border flex items-center justify-center text-muted-foreground active:scale-95 transition-transform"
                 aria-label="Editar perfil"
             >
                 <Pencil size={18} />
             </button>
             <button
               onClick={() => setSettingsOpen(true)}
-              className="w-10 h-10 rounded-full bg-card/80 backdrop-blur-xl border border-border flex items-center justify-center text-zinc-400 active:scale-95 transition-transform"
+              className="w-10 h-10 rounded-full bg-card/80 backdrop-blur-xl border border-border flex items-center justify-center text-muted-foreground active:scale-95 transition-transform"
               aria-label="Configurações"
             >
                 <Settings size={20} />
@@ -650,7 +650,7 @@ const Profile = () => {
                 )}
 
                 <div className="absolute inset-0 hidden group-hover:flex items-center justify-center">
-                    <Camera size={32} className="text-white drop-shadow-md" />
+                    <Camera size={32} className="text-foreground drop-shadow-md" />
                 </div>
             </button>
             <div className="absolute -bottom-2 left-1/2 bg-purple-600 px-4 py-1 rounded-full text-[10px] font-black tracking-widest border-2 border-background -translate-x-1/2 shadow-card whitespace-nowrap z-10 text-white">
@@ -666,11 +666,11 @@ const Profile = () => {
         >
           {displayName}
         </motion.h2>
-        <div className="mt-3 flex items-center gap-1.5 rounded-full bg-card/80 backdrop-blur-xl border border-border px-3 py-1.5 text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
+        <div className="mt-3 flex items-center gap-1.5 rounded-full bg-card/80 backdrop-blur-xl border border-border px-3 py-1.5 text-muted-foreground text-[10px] font-bold uppercase tracking-widest">
             <MapPin size={12} className="text-purple-500" />
             {profile?.location || "São Paulo, SP"}
         </div>
-        <p className="mt-6 text-sm text-zinc-400 max-w-xs leading-relaxed">
+        <p className="mt-6 text-sm text-muted-foreground max-w-xs leading-relaxed">
             {profile?.bio || "Apaixonado por corrida e desafios urbanos."}
         </p>
       </section>
@@ -689,12 +689,12 @@ const Profile = () => {
             {petSpeciesInfo?.emoji || <PawPrint className="text-purple-500" size={20} />}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Seu pet</p>
+            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Seu pet</p>
             <p className="mt-0.5 truncate font-display text-base font-black">
               {profile?.petName || "Adote seu pet"}
             </p>
           </div>
-          <ChevronRight size={18} className="shrink-0 text-zinc-500" />
+          <ChevronRight size={18} className="shrink-0 text-muted-foreground" />
         </button>
 
         <div className="grid grid-cols-2 gap-4">
@@ -704,7 +704,7 @@ const Profile = () => {
                 whileHover={{ y: -3 }}
                 className={cn(GLASS_CARD_CLASS, "p-6 relative overflow-hidden")}
             >
-                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Total acumulado</p>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Total acumulado</p>
                 <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-black font-display">{statsData?.totalKm || "0.0"}</span>
                     <span className="text-xs font-bold text-purple-500">KM</span>
@@ -718,7 +718,7 @@ const Profile = () => {
                 whileHover={{ y: -3 }}
                 className={cn(GLASS_CARD_CLASS, "p-6 relative overflow-hidden")}
             >
-                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">XP Total</p>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">XP Total</p>
                 <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-black font-display">{profile?.totalXP?.toLocaleString("pt-BR") || "0"}</span>
                     <span className="text-xs font-bold text-orange-500 uppercase">XP</span>
@@ -730,7 +730,7 @@ const Profile = () => {
         <div className={cn(GLASS_CARD_CLASS, "mt-4 p-5")}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Meta semanal</p>
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Meta semanal</p>
               <h3 className="mt-1 font-display text-xl font-black">
                 {weeklyKm.toFixed(1)} / {weeklyGoalKm.toFixed(1)} km
               </h3>
@@ -754,7 +754,7 @@ const Profile = () => {
           <div className="my-5 border-t border-border" />
 
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Nível</p>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Nível</p>
             <span className="text-xs font-black text-purple-500 uppercase">{levelInfo.currentLevel} → {levelInfo.nextLevel}</span>
           </div>
           <div className="mt-3 h-3 rounded-full bg-background/80 p-1 border border-border">
@@ -764,7 +764,7 @@ const Profile = () => {
                 className="h-full rounded-full bg-gradient-to-r from-purple-600 to-purple-400"
             />
           </div>
-          <p className="mt-3 text-[10px] font-bold text-zinc-600">
+          <p className="mt-3 text-[10px] font-bold text-muted-foreground/70">
             {levelInfo.xpToNext > 0
               ? `Faltam ${levelInfo.xpToNext.toLocaleString("pt-BR")} XP para se tornar ${levelInfo.nextLevel.toUpperCase()}`
               : "Você atingiu o nível máximo!"}
@@ -779,9 +779,9 @@ const Profile = () => {
           >
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Status completo</p>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Status completo</p>
                 <h3 className="mt-1 font-display text-xl font-black">Informacoes da corrida</h3>
-                <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                   Ritmo medio, melhor corrida, sequencia, calorias e progresso semanal.
                 </p>
               </div>
@@ -816,7 +816,7 @@ const Profile = () => {
                     </div>
                     <div className="text-center">
                         <p className="text-[10px] font-black leading-tight uppercase">{a.name}</p>
-                        <p className="text-[8px] font-bold text-zinc-600 mt-1">{a.detail}</p>
+                        <p className="text-[8px] font-bold text-muted-foreground/70 mt-1">{a.detail}</p>
                     </div>
                 </motion.div>
               ))}
@@ -826,15 +826,15 @@ const Profile = () => {
       <section className="px-6 mt-10 lg:col-start-2 lg:row-start-1 lg:mt-8 lg:px-0">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display font-black text-sm tracking-tighter">HISTÓRICO</h3>
-          <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
+          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
             {runHistory.length} corridas
           </span>
         </div>
         <div className="space-y-3">
           {runHistory.length === 0 ? (
             <div className={cn(GLASS_CARD_CLASS, "p-8 text-center")}>
-              <Calendar size={32} className="mx-auto text-zinc-700" />
-              <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Nenhuma corrida no histórico</p>
+              <Calendar size={32} className="mx-auto text-muted-foreground/50" />
+              <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-muted-foreground">Nenhuma corrida no histórico</p>
             </div>
           ) : (
             runHistory.map((run) => (
@@ -849,7 +849,7 @@ const Profile = () => {
         <h3 className="mb-4 font-display font-black text-sm tracking-tighter">CONTA</h3>
         <button
             onClick={handleLogout}
-            className="w-full bg-card/80 backdrop-blur-xl border border-border py-4 rounded-xl text-[10px] font-black tracking-widest text-zinc-500 hover:text-red-500 hover:border-red-500/30 transition-all flex items-center justify-center gap-2"
+            className="w-full bg-card/80 backdrop-blur-xl border border-border py-4 rounded-xl text-[10px] font-black tracking-widest text-muted-foreground hover:text-red-500 hover:border-red-500/30 transition-all flex items-center justify-center gap-2"
         >
             <LogOut size={16} />
             SAIR DA CONTA

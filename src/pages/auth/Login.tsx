@@ -208,7 +208,7 @@ export default function Login() {
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
 
-          <p className="text-zinc-400 text-sm">
+          <p className="text-muted-foreground text-sm">
             Verificando login...
           </p>
         </div>
@@ -298,11 +298,11 @@ export default function Login() {
               }}
             />
 
-            <h1 className="text-3xl font-bold text-white">
+            <h1 className="text-3xl font-bold text-foreground">
               Bem-vindo
             </h1>
 
-            <p className="text-zinc-400 mt-2 text-sm">
+            <p className="text-muted-foreground mt-2 text-sm">
               Faça login para continuar
             </p>
 
@@ -321,13 +321,13 @@ export default function Login() {
               variants={itemVariants}
             >
 
-              <label className="text-sm text-zinc-300 mb-2 block font-medium">
+              <label className="text-sm text-foreground/80 mb-2 block font-medium">
                 Email
               </label>
 
               <div className="relative">
 
-                <Mail className="absolute left-4 top-3.5 text-zinc-500 w-5 h-5" />
+                <Mail className="absolute left-4 top-3.5 text-muted-foreground w-5 h-5" />
 
                 <input
                   type="email"
@@ -340,7 +340,7 @@ export default function Login() {
                   }
                   disabled={loading}
                   autoComplete="email"
-                  className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-4 text-white text-sm outline-none focus:border-purple-500 transition disabled:opacity-60"
+                  className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-4 text-foreground text-sm outline-none focus:border-purple-500 transition disabled:opacity-60"
                 />
 
               </div>
@@ -353,13 +353,13 @@ export default function Login() {
               variants={itemVariants}
             >
 
-              <label className="text-sm text-zinc-300 mb-2 block font-medium">
+              <label className="text-sm text-foreground/80 mb-2 block font-medium">
                 Senha
               </label>
 
               <div className="relative">
 
-                <Lock className="absolute left-4 top-3.5 text-zinc-500 w-5 h-5" />
+                <Lock className="absolute left-4 top-3.5 text-muted-foreground w-5 h-5" />
 
                 <input
                   type={
@@ -376,7 +376,7 @@ export default function Login() {
                   }
                   disabled={loading}
                   autoComplete="current-password"
-                  className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-11 text-white text-sm outline-none focus:border-purple-500 transition disabled:opacity-60"
+                  className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-11 text-foreground text-sm outline-none focus:border-purple-500 transition disabled:opacity-60"
                 />
 
                 {/* MOSTRAR / ESCONDER SENHA */}
@@ -389,7 +389,7 @@ export default function Login() {
                     )
                   }
                   disabled={loading}
-                  className="absolute right-4 top-3.5 text-zinc-400 hover:text-purple-400 transition disabled:opacity-60"
+                  className="absolute right-4 top-3.5 text-muted-foreground hover:text-purple-400 transition disabled:opacity-60"
                   aria-label={
                     mostrarSenha
                       ? "Ocultar senha"
@@ -519,7 +519,7 @@ export default function Login() {
 
           <motion.p
             variants={itemVariants}
-            className="text-center text-sm text-zinc-400 mt-4"
+            className="text-center text-sm text-muted-foreground mt-4"
           >
 
             Não tem uma conta?{" "}
@@ -545,13 +545,13 @@ export default function Login() {
             className="flex items-center gap-4 my-4"
           >
 
-            <div className="flex-1 h-px bg-zinc-700" />
+            <div className="flex-1 h-px bg-border" />
 
-            <span className="text-zinc-500 text-sm">
+            <span className="text-muted-foreground text-sm">
               ou continue com
             </span>
 
-            <div className="flex-1 h-px bg-zinc-700" />
+            <div className="flex-1 h-px bg-border" />
 
           </motion.div>
 
@@ -574,7 +574,7 @@ export default function Login() {
               }
               disabled={loading}
               type="button"
-              className="w-full bg-secondary hover:bg-secondary/80 transition rounded-xl py-3 flex items-center justify-center gap-3 text-white font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full bg-secondary hover:bg-secondary/80 transition rounded-xl py-3 flex items-center justify-center gap-3 text-foreground font-medium disabled:opacity-60 disabled:cursor-not-allowed"
             >
 
               {loading ? (

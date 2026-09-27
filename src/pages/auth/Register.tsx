@@ -272,7 +272,7 @@ export default function Register() {
                   }
                   : {}
               }
-              className="flex items-center gap-2 text-sm text-zinc-400 hover:text-purple-400 transition mb-2 disabled:opacity-60"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-purple-400 transition mb-2 disabled:opacity-60"
             >
               <ArrowLeft className="w-4 h-4" />
               Voltar para o login
@@ -298,11 +298,11 @@ export default function Register() {
                 }}
               />
 
-              <h1 className="text-3xl font-bold text-white">
+              <h1 className="text-3xl font-bold text-foreground">
                 Crie sua conta
               </h1>
 
-              <p className="text-zinc-400 mt-2 text-sm text-center">
+              <p className="text-muted-foreground mt-2 text-sm text-center">
                 Comece sua jornada com a Veloxy
               </p>
             </motion.div>
@@ -312,13 +312,13 @@ export default function Register() {
               <motion.div variants={itemVariants}>
                 <label
                   htmlFor="username"
-                  className="text-sm text-zinc-300 mb-2 block font-medium"
+                  className="text-sm text-foreground/80 mb-2 block font-medium"
                 >
                   Nome de usuário
                 </label>
 
                 <div className="relative">
-                  <User className="absolute left-4 top-3.5 text-zinc-500 w-5 h-5" />
+                  <User className="absolute left-4 top-3.5 text-muted-foreground w-5 h-5" />
 
                   <input
                     id="username"
@@ -331,16 +331,16 @@ export default function Register() {
                     }
                     disabled={loading}
                     autoComplete="username"
-                    className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-4 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
+                    className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-4 text-foreground text-sm outline-none placeholder:text-muted-foreground focus:border-purple-500 transition disabled:opacity-60"
                   />
 
 
-                  <span className="absolute bottom-2 right-3 text-xs text-zinc-500">
+                  <span className="absolute bottom-2 right-3 text-xs text-muted-foreground">
                     {username.length}/30
                   </span>
                 </div>
 
-                <p className="text-xs text-zinc-500 mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                   Apenas letras e números, sem símbolos.
                 </p>
               </motion.div>
@@ -349,13 +349,13 @@ export default function Register() {
               <motion.div variants={itemVariants}>
                 <label
                   htmlFor="email"
-                  className="text-sm text-zinc-300 mb-2 block font-medium"
+                  className="text-sm text-foreground/80 mb-2 block font-medium"
                 >
                   Email
                 </label>
 
                 <div className="relative">
-                  <Mail className="absolute left-4 top-3.5 text-zinc-500 w-5 h-5" />
+                  <Mail className="absolute left-4 top-3.5 text-muted-foreground w-5 h-5" />
                   <input
                     id="email"
                     type="email"
@@ -364,7 +364,7 @@ export default function Register() {
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={loading}
                     autoComplete="email"
-                    className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-4 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
+                    className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-4 text-foreground text-sm outline-none placeholder:text-muted-foreground focus:border-purple-500 transition disabled:opacity-60"
                   />
                 </div>
               </motion.div>
@@ -373,13 +373,13 @@ export default function Register() {
               <motion.div variants={itemVariants}>
                 <label
                   htmlFor="confirmEmail"
-                  className="text-sm text-zinc-300 mb-2 block font-medium"
+                  className="text-sm text-foreground/80 mb-2 block font-medium"
                 >
                   Confirmar email
                 </label>
 
                 <div className="relative">
-                  <Mail className="absolute left-4 top-3.5 text-zinc-500 w-5 h-5" />
+                  <Mail className="absolute left-4 top-3.5 text-muted-foreground w-5 h-5" />
 
                   <input
                     id="confirmEmail"
@@ -389,7 +389,7 @@ export default function Register() {
                     onChange={(e) => setConfirmEmail(e.target.value)}
                     disabled={loading}
                     autoComplete="email"
-                    className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-4 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
+                    className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-4 text-foreground text-sm outline-none placeholder:text-muted-foreground focus:border-purple-500 transition disabled:opacity-60"
                   />
 
                 </div>
@@ -399,13 +399,13 @@ export default function Register() {
               <motion.div variants={itemVariants}>
                 <label
                   htmlFor="password"
-                  className="text-sm text-zinc-300 mb-2 block font-medium"
+                  className="text-sm text-foreground/80 mb-2 block font-medium"
                 >
                   Senha
                 </label>
 
                 <div className="relative">
-                  <Lock className="absolute left-4 top-3.5 text-zinc-500 w-5 h-5" />
+                  <Lock className="absolute left-4 top-3.5 text-muted-foreground w-5 h-5" />
 
                   <input
                     id="password"
@@ -415,7 +415,7 @@ export default function Register() {
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={loading}
                     autoComplete="new-password"
-                    className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-11 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
+                    className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-11 text-foreground text-sm outline-none placeholder:text-muted-foreground focus:border-purple-500 transition disabled:opacity-60"
                   />
 
                   <button
@@ -425,7 +425,7 @@ export default function Register() {
                     aria-label={
                       showPassword ? "Ocultar senha" : "Mostrar senha"
                     }
-                    className="absolute right-4 top-3.5 text-zinc-400 hover:text-purple-400 transition disabled:opacity-60"
+                    className="absolute right-4 top-3.5 text-muted-foreground hover:text-purple-400 transition disabled:opacity-60"
                   >
                     <AnimatePresence mode="wait">
                       {showPassword ? (
@@ -481,7 +481,7 @@ export default function Register() {
                   </button>
                 </div>
 
-                <p className="text-xs text-zinc-500 mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                   Use pelo menos 6 caracteres, com letras e números. Para
                   reforçar a segurança, inclua também símbolos (ex: @, #, !).
                 </p>
@@ -491,13 +491,13 @@ export default function Register() {
               <motion.div variants={itemVariants}>
                 <label
                   htmlFor="confirmPassword"
-                  className="text-sm text-zinc-300 mb-2 block font-medium"
+                  className="text-sm text-foreground/80 mb-2 block font-medium"
                 >
                   Confirmar senha
                 </label>
 
                 <div className="relative">
-                  <Lock className="absolute left-4 top-3.5 text-zinc-500 w-5 h-5" />
+                  <Lock className="absolute left-4 top-3.5 text-muted-foreground w-5 h-5" />
 
                   <input
                     id="confirmPassword"
@@ -507,7 +507,7 @@ export default function Register() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     disabled={loading}
                     autoComplete="new-password"
-                    className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-11 text-white text-sm outline-none placeholder:text-zinc-500 focus:border-purple-500 transition disabled:opacity-60"
+                    className="w-full bg-secondary border border-input rounded-xl py-3 pl-11 pr-11 text-foreground text-sm outline-none placeholder:text-muted-foreground focus:border-purple-500 transition disabled:opacity-60"
                   />
 
                   <button
@@ -521,7 +521,7 @@ export default function Register() {
                         ? "Ocultar confirmação de senha"
                         : "Mostrar confirmação de senha"
                     }
-                    className="absolute right-4 top-3.5 text-zinc-400 hover:text-purple-400 transition disabled:opacity-60"
+                    className="absolute right-4 top-3.5 text-muted-foreground hover:text-purple-400 transition disabled:opacity-60"
                   >
                     <AnimatePresence mode="wait">
                       {showConfirmPassword ? (
@@ -628,7 +628,7 @@ export default function Register() {
               >
                 {termsAccepted && <Check size={13} className="text-white" strokeWidth={3} />}
               </button>
-              <p className="text-xs text-zinc-500 leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 Li e concordo com os{" "}
                 <button
                   type="button"
@@ -643,7 +643,7 @@ export default function Register() {
             {/* Link para login */}
             <motion.p
               variants={itemVariants}
-              className="text-center text-sm text-zinc-400 mt-4"
+              className="text-center text-sm text-muted-foreground mt-4"
             >
               Já possui uma conta?{" "}
               <button

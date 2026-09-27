@@ -50,13 +50,13 @@ export default function Achievements() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card/80 backdrop-blur-xl border border-border text-zinc-400"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card/80 backdrop-blur-xl border border-border text-muted-foreground"
             aria-label="Voltar"
           >
             <ArrowLeft size={18} />
           </button>
           <div className="min-w-0 flex-1">
-            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Perfil</p>
+            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Perfil</p>
             <h1 className="font-display text-xl font-black">Conquistas</h1>
           </div>
           {!loading && !loadError && (
@@ -70,12 +70,12 @@ export default function Achievements() {
       {loading ? (
         <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
           <Loader2 className="animate-spin text-purple-500" size={36} />
-          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-zinc-600">Carregando conquistas</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-muted-foreground/70">Carregando conquistas</p>
         </div>
       ) : loadError ? (
         <div className="flex min-h-[60vh] flex-col items-center justify-center gap-5 px-6 text-center">
           <p className="font-display text-xl font-black">Erro ao carregar dados</p>
-          <p className="text-sm text-zinc-500">Não foi possível carregar suas conquistas agora.</p>
+          <p className="text-sm text-muted-foreground">Não foi possível carregar suas conquistas agora.</p>
           <button
             onClick={loadData}
             className="rounded-xl bg-purple-600 hover:bg-purple-700 transition px-6 py-3 text-xs font-black uppercase tracking-widest text-white"
@@ -102,7 +102,7 @@ export default function Achievements() {
                 </div>
                 <div>
                   <p className="text-[11px] font-black uppercase leading-tight">{achievement.name}</p>
-                  <p className="mt-1.5 text-[9px] font-bold text-zinc-500">{detail}</p>
+                  <p className="mt-1.5 text-[9px] font-bold text-muted-foreground">{detail}</p>
                 </div>
               </motion.div>
             );

@@ -13,10 +13,10 @@ function PrivateRoute({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
         <Loader2 className="animate-spin text-purple-500" size={36} />
 
-        <p className="text-[10px] font-black text-zinc-500 tracking-[0.2em] uppercase">
+        <p className="text-[10px] font-black text-muted-foreground tracking-[0.2em] uppercase">
           Carregando...
         </p>
       </div>

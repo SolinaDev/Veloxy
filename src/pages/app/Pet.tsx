@@ -75,7 +75,7 @@ function PetOnboarding({ onAdopt, adopting }: { onAdopt: (species: PetSpecies, n
     <div className="app-shell flex flex-col items-center px-6 pt-16 pb-10 safe-top text-center">
       <Sparkles size={36} className="text-purple-500" />
       <h1 className="mt-4 font-display text-3xl font-black uppercase tracking-tighter">Adote seu pet</h1>
-      <p className="mt-2 max-w-xs text-sm text-zinc-400">
+      <p className="mt-2 max-w-xs text-sm text-muted-foreground">
         Escolha um companheiro de velocidade. Ele evolui com seu XP e fica mais feliz quanto mais você corre.
       </p>
 
@@ -89,13 +89,13 @@ function PetOnboarding({ onAdopt, adopting }: { onAdopt: (species: PetSpecies, n
             }`}
           >
             <span className="text-4xl">{item.emoji}</span>
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-300">{item.label}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-foreground/80">{item.label}</span>
           </button>
         ))}
       </div>
 
       <div className="mt-8 w-full max-w-sm text-left">
-        <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Nome do pet</label>
+        <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">Nome do pet</label>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -231,7 +231,7 @@ export default function Pet() {
     return (
       <div className="app-shell flex flex-col items-center justify-center gap-4">
         <Loader2 className="animate-spin text-purple-500" size={40} />
-        <p className="text-[10px] font-black text-zinc-500 tracking-[0.2em] uppercase">Carregando pet...</p>
+        <p className="text-[10px] font-black text-muted-foreground tracking-[0.2em] uppercase">Carregando pet...</p>
       </div>
     );
   }
@@ -240,7 +240,7 @@ export default function Pet() {
     return (
       <div className="app-shell flex flex-col items-center justify-center gap-5 px-6 text-center safe-top">
         <p className="font-display text-xl font-black">Erro ao carregar dados</p>
-        <p className="text-sm text-zinc-500">Não foi possível carregar seu pet agora.</p>
+        <p className="text-sm text-muted-foreground">Não foi possível carregar seu pet agora.</p>
         <button
           onClick={loadPetData}
           className="rounded-xl bg-purple-600 hover:bg-purple-700 transition px-6 py-3 text-xs font-black uppercase tracking-widest text-white"
@@ -275,13 +275,13 @@ export default function Pet() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card/80 backdrop-blur-xl border border-border text-zinc-400"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card/80 backdrop-blur-xl border border-border text-muted-foreground"
             aria-label="Voltar"
           >
             <ArrowLeft size={18} />
           </button>
           <div className="min-w-0 flex-1">
-            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Seu pet</p>
+            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Seu pet</p>
             <h1 className="truncate font-display text-xl font-black">{profile.petName}</h1>
           </div>
           <div className="flex items-center gap-1.5 rounded-full border border-purple-500/25 bg-purple-500/10 px-3 py-2 text-xs font-black text-purple-300">
@@ -322,14 +322,14 @@ export default function Pet() {
         </motion.div>
 
         <p className="mt-5 font-display text-2xl font-black uppercase tracking-tighter">{profile.petName}</p>
-        <p className="mt-1 text-xs font-black uppercase tracking-widest text-zinc-500">{speciesInfo?.label}</p>
-        <div className="mt-3 rounded-full border border-border bg-card/80 backdrop-blur-xl px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+        <p className="mt-1 text-xs font-black uppercase tracking-widest text-muted-foreground">{speciesInfo?.label}</p>
+        <div className="mt-3 rounded-full border border-border bg-card/80 backdrop-blur-xl px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
           {PET_MOOD_LABEL[mood]}
         </div>
 
         <div className={cn(GLASS_CARD_CLASS, "mt-6 w-full max-w-sm p-5")}>
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Nível</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Nível</p>
             <span className="text-xs font-black text-purple-400">{levelInfo.currentLevel}</span>
           </div>
           <div className="mt-2 h-3 rounded-full bg-background/80 border border-border p-0.5">
@@ -347,7 +347,7 @@ export default function Pet() {
           <button
             onClick={() => setTab("acessorios")}
             className={`rounded-2xl py-3 text-xs font-black uppercase tracking-widest transition ${
-              tab === "acessorios" ? "bg-purple-600 text-white" : "bg-card/80 backdrop-blur-xl border border-border text-zinc-500"
+              tab === "acessorios" ? "bg-purple-600 text-white" : "bg-card/80 backdrop-blur-xl border border-border text-muted-foreground"
             }`}
           >
             Acessórios
@@ -355,7 +355,7 @@ export default function Pet() {
           <button
             onClick={() => setTab("loja")}
             className={`flex items-center justify-center gap-1.5 rounded-2xl py-3 text-xs font-black uppercase tracking-widest transition ${
-              tab === "loja" ? "bg-purple-600 text-white" : "bg-card/80 backdrop-blur-xl border border-border text-zinc-500"
+              tab === "loja" ? "bg-purple-600 text-white" : "bg-card/80 backdrop-blur-xl border border-border text-muted-foreground"
             }`}
           >
             <ShoppingBag size={13} />
@@ -409,7 +409,7 @@ export default function Pet() {
           >
             {storeAccessories.length === 0 ? (
               <div className={cn(GLASS_CARD_CLASS, "p-8 text-center")}>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Você já tem todos os itens da loja!</p>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground">Você já tem todos os itens da loja!</p>
               </div>
             ) : (
               storeAccessories.map((accessory) => (
@@ -454,11 +454,11 @@ function AccessoryRow({
   return (
     <div className={`flex items-center gap-4 rounded-2xl bg-card/80 backdrop-blur-xl border p-4 ${equipped ? "border-purple-500/50" : "border-border"} ${locked ? "opacity-50" : ""}`}>
       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-secondary/60 border border-input text-2xl">
-        {locked ? <Lock size={18} className="text-zinc-500" /> : accessory.emoji}
+        {locked ? <Lock size={18} className="text-muted-foreground" /> : accessory.emoji}
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-black">{accessory.label}</p>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
           {locked ? lockedHint : ACCESSORY_SLOTS.find((slot) => slot.id === accessory.slot)?.label}
         </p>
       </div>
@@ -467,7 +467,7 @@ function AccessoryRow({
           onClick={onAction}
           disabled={busy || disabled}
           className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest transition disabled:opacity-50 ${
-            equipped ? "bg-purple-600 text-white" : "bg-secondary border border-input text-zinc-300"
+            equipped ? "bg-purple-600 text-white" : "bg-secondary border border-input text-foreground/80"
           }`}
         >
           {busy ? <Loader2 size={12} className="animate-spin" /> : equipped ? <Check size={12} /> : null}

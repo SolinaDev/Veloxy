@@ -84,7 +84,7 @@ function ProtectedLayout() {
 
 function AppLoading() {
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center text-white">
+    <div className="min-h-screen bg-background flex items-center justify-center text-foreground">
       Carregando...
     </div>
   );

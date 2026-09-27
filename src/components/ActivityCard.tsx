@@ -32,13 +32,13 @@ const ActivityCard = ({ item, userUid, idx, onLike }: ActivityCardProps) => {
           <SafeAvatar
             src={item.userAvatar}
             name={item.userName || "Atleta"}
-            className="w-11 h-11 rounded-full ring-2 ring-purple-500/50 p-0.5 bg-gradient-to-br from-purple-500/30 to-zinc-800 flex-shrink-0 shadow-[0_0_22px_rgba(147,51,234,0.22)]"
+            className="w-11 h-11 rounded-full ring-2 ring-purple-500/50 p-0.5 bg-gradient-to-br from-purple-500/30 to-secondary flex-shrink-0 shadow-[0_0_22px_rgba(147,51,234,0.22)]"
             imageClassName="rounded-full"
             fallbackClassName="text-xs font-bold text-purple-500"
           />
           <div>
             <h4 className="font-bold text-sm leading-tight">{item.userName}</h4>
-            <p className="text-[10px] text-zinc-500 mt-0.5">
+            <p className="text-[10px] text-muted-foreground mt-0.5">
               {formatCardDate(item.timestamp, item.createdAtMs)} · <span className="text-purple-400">{item.type === "RUNNING" ? "Corrida" : item.type}</span>
             </p>
           </div>
@@ -69,17 +69,17 @@ const ActivityCard = ({ item, userUid, idx, onLike }: ActivityCardProps) => {
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-3 divide-x divide-zinc-800 mx-3 my-3 bg-secondary/60 border border-input py-4 rounded-2xl">
+      <div className="grid grid-cols-3 divide-x divide-border mx-3 my-3 bg-secondary/60 border border-input py-4 rounded-2xl">
         {[
           { label: "Ritmo", value: item.pace, unit: "/km" },
           { label: "Tempo", value: item.time, unit: "" },
           { label: "Calorias", value: (item.calories ?? 0).toString(), unit: "kcal" },
         ].map((s) => (
           <div key={s.label} className="text-center">
-            <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-tighter mb-1">{s.label}</p>
+            <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter mb-1">{s.label}</p>
             <p className="text-base font-black font-display leading-none">
               {s.value}
-              {s.unit && <span className="text-[9px] ml-0.5 text-zinc-400 italic">{s.unit}</span>}
+              {s.unit && <span className="text-[9px] ml-0.5 text-muted-foreground italic">{s.unit}</span>}
             </p>
           </div>
         ))}
@@ -97,9 +97,9 @@ const ActivityCard = ({ item, userUid, idx, onLike }: ActivityCardProps) => {
               transition={{ duration: 0.28 }}
               whileTap={{ scale: 1.5 }}
             >
-              <Heart size={20} className={`transition-all duration-200 ${isLiked ? "text-purple-500 fill-current drop-shadow-[0_0_6px_rgba(168,85,247,0.6)]" : "text-zinc-500 group-hover:text-purple-400"}`} />
+              <Heart size={20} className={`transition-all duration-200 ${isLiked ? "text-purple-500 fill-current drop-shadow-[0_0_6px_rgba(168,85,247,0.6)]" : "text-muted-foreground group-hover:text-purple-400"}`} />
             </motion.div>
-            <span className={`text-xs font-bold tabular-nums ${isLiked ? "text-purple-400" : "text-zinc-500"}`}>
+            <span className={`text-xs font-bold tabular-nums ${isLiked ? "text-purple-400" : "text-muted-foreground"}`}>
               {item.likes?.length || 0}
             </span>
           </button>
@@ -109,7 +109,7 @@ const ActivityCard = ({ item, userUid, idx, onLike }: ActivityCardProps) => {
           className="w-9 h-9 rounded-2xl bg-secondary/60 border border-input/50 flex items-center justify-center active:scale-95 transition-transform group hover:border-purple-500/40 hover:bg-purple-500/10"
           aria-label="Compartilhar corrida"
         >
-          <Share2 size={15} className="text-zinc-500 group-hover:text-purple-400 transition-colors" />
+          <Share2 size={15} className="text-muted-foreground group-hover:text-purple-400 transition-colors" />
         </button>
       </div>
     </motion.div>

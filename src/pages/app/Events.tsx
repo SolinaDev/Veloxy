@@ -40,6 +40,16 @@ const getDistanceKm = (from: { lat: number; lng: number }, event: RunningEvent) 
     return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
+// Evento sem imagem (ou com URL quebrada) mostrava o texto alternativo
+// cru ("featured"/"event") no lugar da foto; cai num gradiente da marca.
+function EventImage({ src, className }: { src?: string; className?: string }) {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) {
+    return <div className={cn(className, "bg-gradient-to-br from-purple-600/50 via-purple-900/40 to-secondary")} aria-hidden="true" />;
+  }
+  return <img src={src} alt="" className={className} onError={() => setFailed(true)} />;
+}
+
 const Events = ({ embedded = false }: { embedded?: boolean }) => {
     const { user } = useAuth();
     const [events, setEvents] = useState<RunningEvent[]>([]);
@@ -168,7 +178,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
         return (
             <div className={`${embedded ? "min-h-[280px]" : "app-shell"} flex flex-col items-center justify-center gap-4`}>
                 <Loader2 className="animate-spin text-purple-500" size={40} />
-                <p className="text-[10px] font-black text-zinc-500 tracking-[0.2em] uppercase">Buscando Corridas...</p>
+                <p className="text-[10px] font-black text-muted-foreground tracking-[0.2em] uppercase">Buscando Corridas...</p>
             </div>
         );
     }
@@ -189,7 +199,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
           VELOXY EVENTS
         </h1>
         
-        <button className="w-10 h-10 rounded-full bg-card flex items-center justify-center border border-border text-zinc-400" aria-label="Ver calendário de eventos">
+        <button className="w-10 h-10 rounded-full bg-card flex items-center justify-center border border-border text-muted-foreground" aria-label="Ver calendário de eventos">
           <Calendar size={18} />
         </button>
       </header>}
@@ -210,7 +220,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
               className={`px-6 py-2 rounded-full text-[10px] font-black tracking-widest transition-all ${
                 activeTab === c
                   ? "bg-purple-600 text-white"
-                  : "bg-card/80 backdrop-blur-xl border border-border text-zinc-500"
+                  : "bg-card/80 backdrop-blur-xl border border-border text-muted-foreground"
               }`}
             >
               {c.toUpperCase()}
@@ -222,7 +232,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
           <button
             onClick={requestLocation}
             disabled={locationLoading}
-            className="bg-card/80 backdrop-blur-xl border border-border flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest text-zinc-400 disabled:opacity-60"
+            className="bg-card/80 backdrop-blur-xl border border-border flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground disabled:opacity-60"
           >
             {locationLoading ? <Loader2 size={14} className="animate-spin text-purple-500" /> : <Navigation size={14} className="text-purple-500" />}
             {userCoords ? "Localizacao ativa" : "Usar minha localizacao"}
@@ -238,7 +248,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
               key={distance}
               onClick={() => setSelectedDistance(distance)}
               className={`rounded-full px-4 py-2 text-[9px] font-black uppercase tracking-widest transition ${
-                selectedDistance === distance ? "bg-purple-600 text-white" : "bg-card/80 backdrop-blur-xl border border-border text-zinc-500"
+                selectedDistance === distance ? "bg-purple-600 text-white" : "bg-card/80 backdrop-blur-xl border border-border text-muted-foreground"
               }`}
             >
               {distance}
@@ -253,7 +263,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
                 key={radius.label}
                 onClick={() => setSelectedRadius(radius.value)}
                 className={`rounded-full px-4 py-2 text-[9px] font-black uppercase tracking-widest transition ${
-                  selectedRadius === radius.value ? "bg-purple-600 text-white" : "bg-card/80 backdrop-blur-xl border border-border text-zinc-500"
+                  selectedRadius === radius.value ? "bg-purple-600 text-white" : "bg-card/80 backdrop-blur-xl border border-border text-muted-foreground"
                 }`}
               >
                 {radius.label}
@@ -270,15 +280,15 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
             animate={{ opacity: 1, scale: 1 }}
             className="group relative h-64 rounded-3xl overflow-hidden border border-border cursor-pointer shadow-2xl"
           >
-              <img src={events[0].image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="featured" />
+              <EventImage src={events[0].image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-              <div className="absolute bottom-8 left-8 right-8">
+              <div className="absolute bottom-8 left-8 right-8 text-white">
                   <div className="flex items-center gap-2 mb-3">
                       <div className="bg-purple-600 px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase shadow-lg shadow-purple-600/30">EM BREVE</div>
                       <div className="bg-black/50 backdrop-blur-md border border-white/10 px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase">Geral</div>
                   </div>
                   <h2 className="font-display font-black text-2xl tracking-tighter uppercase mb-2 leading-none">{events[0].title}</h2>
-                  <div className="flex items-center gap-4 text-zinc-400 text-[10px] font-bold uppercase tracking-widest">
+                  <div className="flex items-center gap-4 text-white/70 text-[10px] font-bold uppercase tracking-widest">
                       <span className="flex items-center gap-1.5"><Calendar size={12} className="text-purple-500" /> {events[0].date}</span>
                       <span className="flex items-center gap-1.5"><MapPin size={12} className="text-purple-500" /> {events[0].city}</span>
                   </div>
@@ -290,13 +300,13 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
       <section className={`${embedded ? "mt-8 px-0 pb-2" : "mt-12 px-6 pb-10"} space-y-8`}>
         <div className="flex items-center justify-between mb-2">
             <h3 className="font-display font-black text-sm tracking-tighter uppercase">Todas as Corridas</h3>
-            <span className="text-[10px] font-black text-zinc-500 tracking-widest">{filteredEvents.length} DISPONIVEIS</span>
+            <span className="text-[10px] font-black text-muted-foreground tracking-widest">{filteredEvents.length} DISPONIVEIS</span>
         </div>
 
         {!filteredEvents.length ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-                <Calendar size={48} className="text-zinc-800" />
-                <p className="font-black text-zinc-600 uppercase tracking-widest text-xs">
+                <Calendar size={48} className="text-muted-foreground/50" />
+                <p className="font-black text-muted-foreground/70 uppercase tracking-widest text-xs">
                     Nenhum evento encontrado nesta categoria
                 </p>
             </div>
@@ -316,7 +326,7 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
             >
                <div className="flex items-center gap-5">
                   <div className="w-24 h-24 rounded-2xl overflow-hidden border border-border relative flex-shrink-0">
-                      <img src={event.image} className="w-full h-full object-cover" alt="event" />
+                      <EventImage src={event.image} className="w-full h-full object-cover" />
                       <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md p-1.5 rounded-xl border border-white/10">
                           <Tag size={12} className="text-purple-500" />
                       </div>
@@ -329,13 +339,13 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
                   <div className="flex-1 min-w-0">
                       <h4 className="font-display font-black text-lg tracking-tighter uppercase truncate leading-tight mb-1">{event.title}</h4>
                       <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-bold tracking-widest uppercase leading-none">
+                          <div className="flex items-center gap-1.5 text-muted-foreground text-[9px] font-bold tracking-widest uppercase leading-none">
                               <Clock size={10} className="text-purple-500" /> {event.date} • 07:00 AM
                           </div>
-                          <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-bold tracking-widest uppercase leading-none mt-1">
+                          <div className="flex items-center gap-1.5 text-muted-foreground text-[9px] font-bold tracking-widest uppercase leading-none mt-1">
                               <MapPin size={10} className="text-purple-500" /> {event.location}
                           </div>
-                          <div className="flex items-center gap-1.5 text-zinc-500 text-[9px] font-bold tracking-widest uppercase leading-none mt-1">
+                          <div className="flex items-center gap-1.5 text-muted-foreground text-[9px] font-bold tracking-widest uppercase leading-none mt-1">
                               <ExternalLink size={10} className="text-purple-500" /> {event.source || "Fonte oficial"}
                               {event.verified ? " · verificado" : ""}
                           </div>
@@ -346,15 +356,15 @@ const Events = ({ embedded = false }: { embedded?: boolean }) => {
                <div className="flex items-center justify-between pt-6 border-t border-border/50">
                   <div className="flex items-center gap-4">
                       <div className="flex flex-col">
-                          <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none mb-1">Inscrição</p>
+                          <p className="text-[9px] font-black text-muted-foreground/70 uppercase tracking-widest leading-none mb-1">Inscrição</p>
                           <p className="text-sm font-black text-purple-500 uppercase leading-none">{event.price}</p>
                       </div>
                       <div className="w-[1px] h-6 bg-border/50" />
                       <div className="flex flex-col">
-                          <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none mb-1">Salvos</p>
+                          <p className="text-[9px] font-black text-muted-foreground/70 uppercase tracking-widest leading-none mb-1">Salvos</p>
                           <div className="flex items-center gap-1 leading-none">
-                              <Users size={10} className="text-zinc-500" />
-                              <span className="text-[10px] font-black text-white">{event.participantsCount}</span>
+                              <Users size={10} className="text-muted-foreground" />
+                              <span className="text-[10px] font-black text-foreground">{event.participantsCount}</span>
                           </div>
                       </div>
                   </div>

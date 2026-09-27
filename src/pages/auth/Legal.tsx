@@ -54,7 +54,7 @@ export default function Legal() {
                     whileTap={{
                         scale: 0.95,
                     }}
-                    className="flex items-center gap-2 text-sm text-zinc-400 hover:text-purple-400 transition mb-5"
+                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-purple-400 transition mb-5"
                 >
                     <ArrowLeft className="w-4 h-4" />
                     Voltar
@@ -101,7 +101,7 @@ export default function Legal() {
                                 </h1>
                             </div>
 
-                            <div className="flex items-center gap-2 mt-3 text-zinc-400">
+                            <div className="flex items-center gap-2 mt-3 text-muted-foreground">
                                 <ShieldCheck className="w-4 h-4 text-purple-400" />
 
                                 <p className="text-sm">
@@ -113,7 +113,7 @@ export default function Legal() {
 
                     {/* TEXTO */}
                     <div className="px-5 sm:px-8 py-7 sm:py-10">
-                        <div className="whitespace-pre-line text-sm sm:text-[15px] text-zinc-300 leading-7">
+                        <div className="whitespace-pre-line text-sm sm:text-[15px] text-foreground/80 leading-7">
                             {legalContent}
                         </div>
                     </div>
@@ -137,7 +137,7 @@ export default function Legal() {
                 </motion.div>
 
                 {/* FOOTER */}
-                <p className="text-center text-xs text-zinc-600 mt-5 pb-4">
+                <p className="text-center text-xs text-muted-foreground/70 mt-5 pb-4">
                     © 2026 RUNNEX. Todos os direitos reservados.
                 </p>
             </div>

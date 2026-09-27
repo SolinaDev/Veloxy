@@ -28,7 +28,7 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center">
+        <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-6 text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -38,18 +38,18 @@ export class ErrorBoundary extends Component<Props, State> {
               <AlertCircle size={32} className="text-red-500" />
             </div>
             <h1 className="font-display font-black text-2xl italic tracking-tight mb-2">Ops, algo deu errado.</h1>
-            <p className="text-zinc-400 text-sm mb-6 max-w-[250px]">
+            <p className="text-muted-foreground text-sm mb-6 max-w-[250px]">
               Tivemos um problema inesperado ao renderizar essa página. Nossa equipe foi notificada (mentira, é só um app, mas o erro tá guardado).
             </p>
             
             <button
               onClick={() => window.location.reload()}
-              className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-full font-bold active:scale-95 transition-transform"
+              className="flex items-center gap-2 bg-foreground text-background px-6 py-3 rounded-full font-bold active:scale-95 transition-transform"
             >
               <RefreshCw size={16} />
               Tentar Novamente
             </button>
-            <div className="mt-6 text-[10px] uppercase text-zinc-600 font-mono break-all text-left w-full h-24 overflow-y-auto bg-background p-3 rounded-xl border border-border">
+            <div className="mt-6 text-[10px] uppercase text-muted-foreground/70 font-mono break-all text-left w-full h-24 overflow-y-auto bg-background p-3 rounded-xl border border-border">
               {this.state.error?.message || "Unknown Error"}
             </div>
           </motion.div>

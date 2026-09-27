@@ -41,7 +41,7 @@ export const RouteSVGPreview = ({ route, uid }: RouteSVGPreviewProps) => {
   }
 
   return (
-    <div className="w-full h-full bg-zinc-950 relative isolate overflow-hidden">
+    <div className="w-full h-full bg-background relative isolate overflow-hidden">
       <MapContainer
         key={uid}
         center={data.center}

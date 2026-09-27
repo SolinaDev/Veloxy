@@ -79,7 +79,7 @@ export default function ForgotPasswordModal({
               handleClose();
             }
           }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm px-4"
         >
           <motion.div
             initial={{
@@ -107,7 +107,7 @@ export default function ForgotPasswordModal({
               type="button"
               onClick={handleClose}
               disabled={loading}
-              className="absolute right-5 top-5 text-zinc-500 transition hover:text-white disabled:opacity-50"
+              className="absolute right-5 top-5 text-muted-foreground transition hover:text-foreground disabled:opacity-50"
               aria-label="Fechar"
             >
               <X className="h-5 w-5" />
@@ -130,11 +130,11 @@ export default function ForgotPasswordModal({
                 <LockKeyhole className="h-7 w-7 text-purple-400" />
               </motion.div>
 
-              <h2 className="text-3xl font-bold text-white">
+              <h2 className="text-3xl font-bold text-foreground">
                 Recuperar senha
               </h2>
 
-              <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 Digite o email da sua conta e enviaremos um link para você
                 criar uma nova senha.
               </p>
@@ -143,12 +143,12 @@ export default function ForgotPasswordModal({
             {/* Form */}
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-300">
+                <label className="mb-2 block text-sm font-medium text-foreground/80">
                   Email
                 </label>
 
                 <div className="relative">
-                  <Mail className="absolute left-4 top-3.5 h-5 w-5 text-zinc-500" />
+                  <Mail className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
 
                   <input
                     type="email"
@@ -158,7 +158,7 @@ export default function ForgotPasswordModal({
                     autoComplete="email"
                     autoFocus
                     disabled={loading}
-                    className="w-full rounded-xl border border-input bg-secondary py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-purple-500 disabled:opacity-60"
+                    className="w-full rounded-xl border border-input bg-secondary py-3 pl-11 pr-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-purple-500 disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -184,7 +184,7 @@ export default function ForgotPasswordModal({
                 type="button"
                 onClick={handleClose}
                 disabled={loading}
-                className="w-full py-1 text-sm text-zinc-400 transition hover:text-white disabled:opacity-50"
+                className="w-full py-1 text-sm text-muted-foreground transition hover:text-foreground disabled:opacity-50"
               >
                 Cancelar
               </button>
