@@ -9,10 +9,21 @@ const onAuthStateChangedMock = vi.fn((_auth: unknown, callback: (user: User | nu
   return vi.fn();
 });
 
+// O Firebase atualiza auth.currentUser antes de chamar onAuthStateChanged, e o
+// AuthProvider relê auth.currentUser depois de sincronizar a foto do Google.
+// O mock antigo deixava currentUser sempre null, então o user "sumia" logo
+// depois do login no teste (e só no teste).
+const mockAuth = vi.hoisted(() => ({ currentUser: null as User | null }));
+
 vi.mock("@/config/firebase", () => ({
-  auth: { currentUser: null },
+  auth: mockAuth,
   db: {},
 }));
+
+function fireAuthState(user: User | null) {
+  mockAuth.currentUser = user;
+  authStateCallback?.(user);
+}
 
 vi.mock("firebase/auth", () => ({
   onAuthStateChanged: (...args: [unknown, (user: User | null) => void]) => onAuthStateChangedMock(...args),
@@ -32,6 +43,7 @@ function wrapper({ children }: { children: ReactNode }) {
 describe("useAuth / AuthProvider", () => {
   beforeEach(() => {
     authStateCallback = null;
+    mockAuth.currentUser = null;
     onAuthStateChangedMock.mockClear();
   });
 
@@ -54,7 +66,7 @@ describe("useAuth / AuthProvider", () => {
 
     const fakeUser = { uid: "abc123", displayName: "Ana" } as User;
     act(() => {
-      authStateCallback?.(fakeUser);
+      fireAuthState(fakeUser);
     });
 
     await waitFor(() => {
@@ -67,7 +79,7 @@ describe("useAuth / AuthProvider", () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     act(() => {
-      authStateCallback?.(null);
+      fireAuthState(null);
     });
 
     await waitFor(() => {

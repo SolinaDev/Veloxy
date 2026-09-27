@@ -12,6 +12,10 @@ const { putMock } = vi.hoisted(() => ({
   putMock: vi.fn().mockResolvedValue({ uid: "user-123" }),
 }));
 
+// usersApi também lê o Firestore legado; sem este mock o import sobe o
+// Firebase de verdade e quebra sem as variáveis VITE_FIREBASE_* (como no CI).
+vi.mock("@/config/firebase", () => ({ auth: { currentUser: null }, db: {} }));
+
 vi.mock("@/services/apiClient", () => ({
   api: { put: putMock, get: vi.fn(), post: vi.fn(), delete: vi.fn() },
 }));
