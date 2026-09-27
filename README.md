@@ -6,7 +6,7 @@ Aplicativo gamificado de corrida que combina tracking de atividades, comunidade,
 
 ## Visão Geral
 
-O Runnex foi criado para transformar treinos em uma experiência mais social e orientada por dados. A aplicação permite registrar corridas com GPS real, acompanhar estatísticas, evoluir em níveis, participar de grupos e eventos, adotar um mascote virtual (pet) e acessar benefícios dentro de uma loja integrada.
+O Runnex foi criado para transformar treinos em uma experiência mais social e orientada por dados. A aplicação permite registrar corridas com GPS real, acompanhar estatísticas, evoluir em níveis, participar de grupos e eventos e adotar um mascote virtual (pet) que evolui com os treinos e ganha acessórios comprados com a moeda do app (RunCoin).
 
 ## Funcionalidades
 
@@ -184,6 +184,9 @@ O CI (`.github/workflows/ci.yml`) roda lint, testes e build do frontend e, no
 backend, aplica as migrations num Postgres novo, confere `alembic check` e roda o pytest
 a cada push.
 
+O que só dá para testar num aparelho físico (GPS em segundo plano, login Google nativo,
+recuperação após o Android matar o app) está em [`docs/TESTE_ANDROID.md`](docs/TESTE_ANDROID.md).
+
 ## Roadmap
 
 - [x] Autenticação (e-mail/senha com confirmação obrigatória, e Google)
@@ -200,7 +203,7 @@ a cada push.
 
 ### Fora de escopo (decisão do time)
 
-- **Marketplace/loja com checkout e engine de descontos** — a proposta segue válida e é apresentada como trabalho futuro, mas foi retirada do escopo deste ciclo por falta de recursos (tempo/infra) para concluir com qualidade. Não é uma pendência por atraso, é um corte deliberado.
+- **Marketplace/loja com checkout e engine de descontos** — a proposta segue válida e é apresentada como trabalho futuro, mas foi retirada do escopo deste ciclo por falta de recursos (tempo/infra) para concluir com qualidade. Não é uma pendência por atraso, é um corte deliberado. Argumentação para a banca em [`docs/BANCA_TRABALHOS_FUTUROS.md`](docs/BANCA_TRABALHOS_FUTUROS.md).
 
 ## Equipe
 

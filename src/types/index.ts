@@ -62,22 +62,6 @@ export interface FeedActivity extends ActivityData {
   id: string;
 }
 
-// ═══ PRODUCT (LOJA) ═══
-export interface Product {
-  id: string;
-  name: string;
-  category: string;
-  price: number;
-  originalPrice?: number | null;
-  rating: number;
-  reviews: number;
-  tag?: string | null;
-  gradient: string;
-  accent: string;
-  emoji: string;
-  externalUrl?: string;
-}
-
 // ═══ EVENT (CORRIDA / EVENTO) ═══
 export interface RunningEvent {
   id: string;
