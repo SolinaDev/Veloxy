@@ -14,6 +14,21 @@ cp .env.example .env  # ajustar DATABASE_URL e FIREBASE_PROJECT_ID
 .venv/bin/uvicorn app.main:app --reload
 ```
 
+## Testes
+
+```bash
+createdb veloxy_test   # banco separado: a suite apaga os dados entre os testes
+.venv/bin/pip install -r requirements-dev.txt
+DATABASE_URL=postgresql+psycopg://postgres@localhost:5432/veloxy_test .venv/bin/pytest
+```
+
+A suíte (`tests/`) roda contra Postgres de verdade, com o schema criado pelas
+migrations do Alembic, e se recusa a rodar se o nome do banco não contiver `test`.
+Cobre a API de cada domínio (permissões, privacidade, rate limit, WebSocket do grupo,
+exclusão de conta), as regras puras (plausibilidade de corrida, validação de imagem,
+XP) e a paridade das constantes duplicadas entre `src/lib/*.ts` e o backend.
+Roda no CI a cada push (`.github/workflows/ci.yml`), junto com `alembic check`.
+
 ## Estrutura
 
 - `app/models/` — SQLAlchemy models (schema Postgres da Fase 0 do plano de migração).
