@@ -33,6 +33,7 @@ import { toast } from "sonner";
 import { getBestUserPhotoURL } from "@/lib/user-photo";
 import { GLASS_CARD_CLASS } from "@/components/GlassCard";
 import { cn } from "@/lib/utils";
+import { decimateRoute, haversineKm } from "@/lib/route";
 
 const BackgroundGeolocation =
   registerPlugin<BackgroundGeolocationPlugin>("BackgroundGeolocation");
@@ -72,24 +73,6 @@ const SIMULATED_ROUTE: [number, number][] = [
 // 12 km/h (pace 5'00"/km): ritmo de corrida plausivel para demonstracao.
 const SIMULATED_TICK_MS = 1000;
 const SIMULATED_STEP_KM = 12 / 3600;
-
-// As regras do Firestore rejeitam rotas com mais de 5000 pontos; mantemos uma
-// margem de segurança e decimamos localmente antes de salvar em vez de deixar
-// corridas longas falharem ao salvar.
-const MAX_ROUTE_POINTS = 4500;
-
-function decimateRoute(points: [number, number][]): [number, number][] {
-  if (points.length <= MAX_ROUTE_POINTS) return points;
-
-  const step = points.length / MAX_ROUTE_POINTS;
-  const result: [number, number][] = [];
-  for (let i = 0; i < MAX_ROUTE_POINTS; i++) {
-    result.push(points[Math.floor(i * step)]);
-  }
-  // Garante que o ponto final real da corrida seja preservado
-  result[result.length - 1] = points[points.length - 1];
-  return result;
-}
 
 // Snapshot da corrida em andamento, salvo localmente para sobreviver a um
 // fechamento do app pelo sistema operacional (processo morto = serviço de
@@ -272,17 +255,6 @@ const RunTracking = () => {
 
 
   // Função para calcular distância entre dois pontos (Haversine)
-  const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371; // Raio da Terra em km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  }, []);
 
   const applyGpsPoint = useCallback((
     latitude: number,
@@ -314,7 +286,7 @@ const RunTracking = () => {
     setPath(prevPath => {
       if (prevPath.length > 0) {
         const lastPoint = prevPath[prevPath.length - 1];
-        const d = calculateDistance(lastPoint[0], lastPoint[1], latitude, longitude);
+        const d = haversineKm(lastPoint[0], lastPoint[1], latitude, longitude);
 
         if (d > 0.005 && d < 0.5) {
           setDistance(prev => prev + d);
@@ -324,7 +296,7 @@ const RunTracking = () => {
       }
       return [newPoint];
     });
-  }, [calculateDistance]);
+  }, []);
 
   // Cronômetro real
   // Busca sinal antes do usuário iniciar a gravação. No Android nativo isso
@@ -413,7 +385,7 @@ const RunTracking = () => {
           setPath(prevPath => {
             if (prevPath.length > 0) {
               const lastPoint = prevPath[prevPath.length - 1];
-              const d = calculateDistance(lastPoint[0], lastPoint[1], latitude, longitude);
+              const d = haversineKm(lastPoint[0], lastPoint[1], latitude, longitude);
               
               // Filtro de Ruído Geográfico:
               // Limite superior de pulo: mais que 500m (0.5km) entre duas coletas é falha grossa do GPS
@@ -441,7 +413,7 @@ const RunTracking = () => {
     return () => {
       if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
     };
-  }, [calculateDistance, isNativeAndroid, isRunning, isPaused, isSimulating]);
+  }, [isNativeAndroid, isRunning, isPaused, isSimulating]);
 
   // Rastreamento GPS nativo no Android. Mantem a corrida ativa com notificacao fixa.
   useEffect(() => {
@@ -533,7 +505,7 @@ const RunTracking = () => {
           // ~75 km/h - acima do limite de velocidade que o backend aplica.
           const last = prev[prev.length - 1];
           const target = SIMULATED_ROUTE[simulatedPointRef.current % SIMULATED_ROUTE.length];
-          const remaining = calculateDistance(last[0], last[1], target[0], target[1]);
+          const remaining = haversineKm(last[0], last[1], target[0], target[1]);
 
           let next = target;
           if (remaining > SIMULATED_STEP_KM) {
@@ -543,7 +515,7 @@ const RunTracking = () => {
             simulatedPointRef.current += 1;
           }
 
-          const d = calculateDistance(last[0], last[1], next[0], next[1]);
+          const d = haversineKm(last[0], last[1], next[0], next[1]);
           setDistance(old => old + d);
           setCurrentPos(next);
           return [...prev, next];
@@ -551,7 +523,7 @@ const RunTracking = () => {
       }, SIMULATED_TICK_MS);
     }
     return () => clearInterval(interval);
-  }, [calculateDistance, isSimulating, isRunning, isPaused]);
+  }, [isSimulating, isRunning, isPaused]);
 
   // Calorias estimadas (Média de 60kcal por km)
   const getCalories = () => (distance * 60).toFixed(0);
