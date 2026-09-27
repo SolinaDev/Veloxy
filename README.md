@@ -171,10 +171,18 @@ FIREBASE_PROJECT_ID
 ## Testes
 
 ```bash
-npm run test
+npm run test                 # frontend: 52 testes (Vitest)
+cd backend && pytest         # backend: 82 testes contra Postgres (ver backend/README.md)
 ```
 
-Cobre lógica de gamificação, utilitários de feed, o hook de autenticação e a criação de perfil de usuário. Backend tem scripts de smoke test manuais (`backend/test_smoke*.py`) que rodam contra um Postgres real — não fazem parte do `npm run test`.
+Frontend cobre o cliente da API, grupos (incluindo o fallback de demonstração e o
+WebSocket), pet, rota/GPS, gamificação, feed e autenticação. Backend cobre cada
+domínio da API (permissões, privacidade, rate limit, exclusão de conta), as regras
+de plausibilidade de corrida e a paridade das constantes duplicadas entre front e back.
+
+O CI (`.github/workflows/ci.yml`) roda lint, testes e build do frontend e, no
+backend, aplica as migrations num Postgres novo, confere `alembic check` e roda o pytest
+a cada push.
 
 ## Roadmap
 
@@ -186,7 +194,8 @@ Cobre lógica de gamificação, utilitários de feed, o hook de autenticação e
 - [x] Backend próprio (FastAPI + PostgreSQL) para usuários, atividades, grupos, eventos e pet
 - [x] Grupos com feed de publicações e chat em tempo real (WebSocket)
 - [x] Sistema de pet virtual (RunCoin, acessórios)
-- [ ] Cloud Function/validação server-side completa do XP (hoje as regras do Firestore só limitam faixas, o cálculo em si é migrado por partes)
+- [x] XP calculado no servidor, com validação de plausibilidade da corrida (velocidade, rota, limite diário)
+- [x] Testes automatizados e CI (frontend e backend)
 - [ ] Histórico avançado de atividades
 
 ### Fora de escopo (decisão do time)
