@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.auth import FirebaseUser, get_current_user
 from app.database import get_db
 from app.models import User
+from app.pet_catalog import PET_SPECIES, STORE_ACCESSORIES, accessory_slot
 from app.rate_limit import rate_limit
 from app.schemas import UserProfileOut
 from app.schemas_pet import ChoosePetIn, EquipPetAccessoryIn, PurchasePetAccessoryIn
@@ -47,6 +48,8 @@ def choose_pet(
     POST /activities ja faz, em vez de depender de outro fluxo ter rodado
     antes."""
     _require_self(user_id, current_user)
+    if payload.species not in PET_SPECIES:
+        raise HTTPException(status_code=400, detail="Especie de pet invalida.")
     user = get_or_create_user(db, user_id, "Corredor", None)
 
     if user.pet_species:
@@ -74,6 +77,14 @@ def equip_pet_accessory(
     if not field:
         raise HTTPException(status_code=400, detail="Slot de acessorio invalido.")
 
+    if payload.accessory_id is not None:
+        if accessory_slot(payload.accessory_id) != payload.slot:
+            raise HTTPException(status_code=400, detail="Acessorio invalido para este slot.")
+        if payload.accessory_id in STORE_ACCESSORIES and payload.accessory_id not in (
+            user.pet_unlocked_accessory_ids or []
+        ):
+            raise HTTPException(status_code=403, detail="Acessorio da loja ainda nao comprado.")
+
     setattr(user, field, payload.accessory_id)
     db.commit()
     db.refresh(user)
@@ -93,15 +104,19 @@ def purchase_pet_accessory(
     _require_self(user_id, current_user)
     user = _get_or_404(db, user_id)
 
+    if payload.accessory_id not in STORE_ACCESSORIES:
+        raise HTTPException(status_code=400, detail="Acessorio nao esta a venda.")
+    _, price = STORE_ACCESSORIES[payload.accessory_id]
+
     unlocked = list(user.pet_unlocked_accessory_ids or [])
     if payload.accessory_id in unlocked:
         return user
 
     current_coins = user.pet_coins or 0
-    if current_coins < payload.price:
+    if current_coins < price:
         raise HTTPException(status_code=400, detail="RunCoins insuficientes.")
 
-    user.pet_coins = current_coins - payload.price
+    user.pet_coins = current_coins - price
     unlocked.append(payload.accessory_id)
     user.pet_unlocked_accessory_ids = unlocked
 

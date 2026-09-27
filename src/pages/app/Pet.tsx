@@ -212,7 +212,7 @@ export default function Pet() {
     }
     setBusyAccessoryId(accessory.id);
     try {
-      await purchasePetAccessory(user.uid, accessory.id, accessory.price);
+      await purchasePetAccessory(user.uid, accessory.id);
       toast.success(`${accessory.label} comprado!`);
       setProfile((prev) => prev ? {
         ...prev,

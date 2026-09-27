@@ -13,4 +13,6 @@ class EquipPetAccessoryIn(BaseModel):
 
 class PurchasePetAccessoryIn(BaseModel):
     accessory_id: str = Field(validation_alias="accessoryId")
-    price: int = Field(ge=0)
+    # Ignorado: o preco vem de app/pet_catalog.py. Aceito so para APKs
+    # antigos, que ainda enviam o campo, continuarem funcionando.
+    price: int | None = None

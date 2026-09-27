@@ -1,4 +1,4 @@
-import { api, ApiError } from "@/services/apiClient";
+import { api } from "@/services/apiClient";
 import type { PetSpecies, PetAccessorySlot } from "@/types";
 
 // Fase 1: pet* já fazia parte do schema Postgres desde a Fase 0 (mesmos
@@ -12,17 +12,11 @@ export const choosePet = async (userId: string, species: PetSpecies, name: strin
   await api.post(`/users/${userId}/pet/choose`, { species, name: name.trim() });
 };
 
-// Compra um acessório da loja: debita o preço e adiciona o id à lista de
-// desbloqueados. Atômico no backend (commit único por request).
-export const purchasePetAccessory = async (userId: string, accessoryId: string, price: number): Promise<void> => {
-  try {
-    await api.post(`/users/${userId}/pet/purchase`, { accessoryId, price });
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 400) {
-      throw new Error("RunCoins insuficientes.");
-    }
-    throw error;
-  }
+// Compra um acessório da loja: o backend debita o preço do catálogo dele
+// (backend/app/pet_catalog.py), nunca um valor vindo do app, e adiciona o
+// id à lista de desbloqueados. Atômico no backend (commit único por request).
+export const purchasePetAccessory = async (userId: string, accessoryId: string): Promise<void> => {
+  await api.post(`/users/${userId}/pet/purchase`, { accessoryId });
 };
 
 // accessoryId === null desequipa o slot.
