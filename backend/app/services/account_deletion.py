@@ -3,7 +3,8 @@ pertence ao usuario.
 
 O que o banco ja resolve sozinho ao apagar a linha de users (ON DELETE
 CASCADE / cascade do ORM): corridas, participacao em grupos e eventos,
-posts, comentarios e mensagens de chat. O que precisa de tratamento aqui:
+posts, comentarios, mensagens de chat e a memoria do treinador virtual
+(chatbot_profiles). O que precisa de tratamento aqui:
 
 - groups.created_by e RESTRICT: apagar o grupo levaria junto posts e
   mensagens de outras pessoas, entao o grupo passa para o membro mais

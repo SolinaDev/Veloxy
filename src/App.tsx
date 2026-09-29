@@ -45,6 +45,7 @@ const Profile = lazy(() => import("@/pages/app/Profile"));
 const Group = lazy(() => import("@/pages/app/Group"));
 const Pet = lazy(() => import("@/pages/app/Pet"));
 const Achievements = lazy(() => import("@/pages/app/Achievements"));
+const Coach = lazy(() => import("@/pages/app/Coach"));
 
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
@@ -202,6 +203,11 @@ const App = () => {
                   <Route
                     path="conquistas"
                     element={<Achievements />}
+                  />
+
+                  <Route
+                    path="treinador"
+                    element={<Coach />}
                   />
                 </Route>
 

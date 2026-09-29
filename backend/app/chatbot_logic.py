@@ -1,40 +1,31 @@
-#!/usr/bin/env python3
-"""chatbot_runnex.py — Chatbot especialista em corrida (versão standalone de teste)
+"""Motor do chatbot de corrida (treinador virtual do Runnex).
 
-Reescrita de chatbot_corrida.py (o protótipo original) com os bugs
-encontrados na auditoria já corrigidos. Pensada pra testar rápido no
-terminal, com estado salvo em JSON local — não é a versão de produção
-(essa vive na branch feature/chatbot-corrida, integrada ao backend
-FastAPI/Postgres do Veloxy, com isolamento real por usuário via API).
+Veio de chatbot_runnex.py (versao standalone de teste da branch
+ChatbotRunnex), que ja tinha corrigido os bugs do prototipo original:
+pace "4:25" lido como decimal 4.25, zona sempre reportada como "Zona 4",
+estado em pickle e treinos compartilhados entre usuarios.
 
-Uso:
-    python3 chatbot_runnex.py
+O que mudou para rodar dentro do app:
 
-Correções em relação ao script original:
-- Pace "4:25" (min:seg) não é mais lido como decimal "4.25" — isso
-  corrompia todo cálculo de zona/tempo que dependesse do pace informado
-  (4:25 virava 4.25, que reexibia como "4:15").
-- Zona de treino não fica mais fixa em "Zona 4" pra qualquer pace — o
-  texto agora deixa claro que o pace informado é tratado como referência
-  de limiar, em vez de soar como uma conclusão da análise.
-- Treinos/metas/estatísticas agora ficam no mesmo arquivo, namespaced por
-  usuário — no original só a memória de conversa era namespaced
-  (memoria_{nome}.json); treinos e estatísticas ficavam num arquivo
-  global (dados_corrida.json) compartilhado por qualquer um que rodasse
-  o script na mesma pasta.
-- Sem pickle (execução de código arbitrário se o arquivo for adulterado)
-  — tudo em JSON.
-- Extração de pace/distância consolidada numa função só (o original
-  repetia a mesma regex 3x, com validações divergentes entre as cópias).
-- Código morto removido: padroes_perguntas (construído mas nunca lido),
-  preferencias_usuario e historico_paces (nunca usados).
+- Estatisticas, historico e recordes saem das corridas reais do usuario
+  (tabela activities, registradas pelo GPS), nao de treinos digitados no
+  chat. "registrar:" deixou de gravar: uma corrida digitada pularia as
+  regras de plausibilidade (activity_rules.py) e contaria para XP, ranking
+  e RunCoins.
+- "meta:" define a meta semanal do perfil (users.weekly_goal_km), a mesma
+  que a tela de Perfil mostra, em vez de uma meta paralela do chatbot.
+- Sem pace informado na conversa, zonas e tempo estimado usam o pace medio
+  das corridas recentes.
+
+O modulo e puro (sem banco, sem FastAPI): recebe o estado da conversa e um
+retrato dos dados do app e devolve a resposta. routers/chatbot.py carrega e
+salva esse estado; scripts/chatbot_cli.py usa o mesmo motor no terminal.
 """
 
-import json
-import os
 import random
 import re
-from datetime import datetime, timezone
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone, tzinfo
 from typing import Optional
 
 # ---------------------------------------------------------------------------
@@ -245,7 +236,9 @@ MAPEAMENTO_CONHECIMENTO_CURTO: dict[str, str] = {
     "emagrecer": "emagrecimento", "lesão": "lesoes_comuns", "prevenção": "prevencao",
     "respiração": "respirar", "tênis": "tenis", "roupa": "roupa", "acessório": "acessorios",
     "iniciante": "iniciante", "intermediário": "intermediario", "avançado": "avancado",
-    "maratona": "maratona", "5k": "5k", "10k": "10k", "meia": "meia_maratona",
+    # "meia" antes de "maratona": a busca para no primeiro termo deste dict
+    # contido na mensagem, e "meia maratona" contem os dois.
+    "meia": "meia_maratona", "maratona": "maratona", "5k": "5k", "10k": "10k",
     "frequência cardíaca": "frequencia_cardiaca", "vo2": "vo2max", "limiar": "limiar",
     "pace": "conceito_pace", "recorde": "batendo_recordes", "periodização": "periodizacao",
     "cross training": "cross_training", "fortalecimento": "fortalecimento",
@@ -317,6 +310,17 @@ INTENCOES: dict[str, list[str]] = {
 
 DISTANCIAS_PROVA = {"maratona": 42.195, "meia": 21.0975, "10k": 10.0, "5k": 5.0}
 
+# A ordem importa: "meia maratona" contem "maratona", e antes a maratona era
+# testada primeiro — "tempo na meia maratona" calculava 42,2 km. O lookbehind
+# nos numeros evita o mesmo problema com "15km" (que contem "5km").
+_PROVAS: list[tuple[str, re.Pattern]] = [
+    ("meia", re.compile(r"meia[\s-]?maratona|(?<![\d.,])21\s?km?\b")),
+    ("maratona", re.compile(r"maratona|(?<![\d.,])42\s?km?\b")),
+    ("10k", re.compile(r"(?<![\d.,])10k(?:m)?\b")),
+    ("5k", re.compile(r"(?<![\d.,])5k(?:m)?\b")),
+]
+_OBJETIVO_POR_PROVA = {"meia": "meia_maratona", "maratona": "maratona", "10k": "10k", "5k": "5k"}
+
 _AGRADECIMENTOS = [
     "De nada! Qualquer dúvida sobre corrida, é só perguntar.",
     "Sempre às ordens! Bons treinos!",
@@ -331,14 +335,89 @@ _PACE_CONTEXT = re.compile(r"pace|ritmo|min/km|por km|/km")
 _PACE_NUM = re.compile(r"(\d{1,2})[:.]([0-5]\d)")
 _DISTANCIA_NUM = re.compile(r"(\d+(?:[.,]\d+)?)\s*(?:km|quilômetros|quilometros)\b")
 
-_RECORDE_BUCKETS = [
-    ("melhor_pace_5k", 4.5, 5.5), ("melhor_pace_10k", 9.0, 11.0),
-    ("melhor_pace_21k", 20.0, 22.5), ("melhor_pace_42k", 40.0, 44.0),
-]
+# Corrida mais curta que isso nao entra em "melhor pace": 300 m num tiro
+# dariam um recorde que nao diz nada sobre o ritmo do corredor.
+MIN_KM_RECORDE = 1.0
+_RECORDE_BUCKETS = [("5 km", 4.5, 5.5), ("10 km", 9.0, 11.0), ("21 km", 20.0, 22.5), ("42 km", 40.0, 44.0)]
 
-_REGISTRAR_RE = re.compile(r"^\s*([\d.,]+)\s*,\s*(\d+)\s*(?:,\s*(.+))?$")
-_META_RE = re.compile(r"^\s*([\d.,]+)\s*(?:,\s*(.+))?$")
+# Quantas corridas recentes entram no pace medio usado quando o usuario
+# nao informou um pace na conversa.
+CORRIDAS_PACE_MEDIO = 5
 
+# Mesmo limite de UserProfileCreate.weekly_goal_km (PUT /users/{uid}).
+META_SEMANAL_MAX_KM = 500.0
+_META_RE = re.compile(r"^\s*(\d+(?:[.,]\d+)?)\s*(?:km)?\s*(?:,.*)?$", re.IGNORECASE)
+
+# "aprender:" guarda texto do proprio usuario no banco — limites para uma
+# linha de chatbot_profiles nao crescer sem controle.
+MAX_RESPOSTAS_APRENDIDAS = 50
+MAX_PERGUNTA_APRENDIDA = 200
+MAX_RESPOSTA_APRENDIDA = 500
+
+_POSSESSIVO = re.compile(r"\b(meu|meus|minha|minhas)\b")
+_PEDE_RECORDES = re.compile(r"\b(recordes?|records?|pb|melhor(?:es)? tempos?|melhor marca)\b")
+_PEDE_META = re.compile(r"\b(metas?|objetivos)\b")
+_PEDE_ESTATISTICAS = ("estatística", "estatistica", "stats", "meu desempenho", "meu resumo", "meus números", "meus numeros")
+_PEDE_HISTORICO = (
+    "últimos treinos", "ultimos treinos", "últimas corridas", "ultimas corridas", "última corrida",
+    "ultima corrida", "minhas corridas", "histórico", "historico",
+)
+
+
+# ---------------------------------------------------------------------------
+# Dados de entrada
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class Corrida:
+    """Uma corrida salva no app (linha de activities)."""
+
+    distancia_km: float
+    duracao_s: int
+    quando: datetime  # com fuso
+    calorias: Optional[int] = None
+
+    @property
+    def pace(self) -> float:
+        return self.duracao_s / 60 / self.distancia_km
+
+
+@dataclass
+class DadosDoApp:
+    """Retrato somente-leitura do que o app ja sabe do corredor."""
+
+    nome: Optional[str] = None
+    corridas: list[Corrida] = field(default_factory=list)  # mais recente primeiro
+    meta_semanal_km: Optional[float] = None
+    agora: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    # Fuso do aparelho: "ultimos 7 dias" e as datas exibidas seguem o dia
+    # local do usuario, igual a tela de Perfil.
+    fuso: tzinfo = timezone.utc
+
+
+@dataclass
+class EstadoConversa:
+    """O que o bot memoriza entre mensagens (uma linha de chatbot_profiles)."""
+
+    pace_informado: Optional[float] = None
+    distancia_frequente: Optional[float] = None
+    objetivo_principal: Optional[str] = None
+    nivel: Optional[str] = None
+    aguardando_aprofundamento: bool = False
+    ultimo_topico_explicado: Optional[str] = None
+    respostas_aprendidas: dict[str, dict] = field(default_factory=dict)
+
+
+@dataclass
+class Resposta:
+    texto: str
+    # Preenchido por "meta: X" — quem chama grava em users.weekly_goal_km.
+    nova_meta_semanal_km: Optional[float] = None
+
+
+# ---------------------------------------------------------------------------
+# Funções puras de extração e cálculo
+# ---------------------------------------------------------------------------
 
 def formatar_pace(pace: float) -> str:
     minutos = int(pace)
@@ -347,6 +426,13 @@ def formatar_pace(pace: float) -> str:
         minutos += 1
         segundos = 0
     return f"{minutos}:{segundos:02d}"
+
+
+def prova_mencionada(mensagem_lower: str) -> Optional[str]:
+    for nome, padrao in _PROVAS:
+        if padrao.search(mensagem_lower):
+            return nome
+    return None
 
 
 def extrair_pace_e_distancia(mensagem_lower: str) -> tuple[Optional[float], Optional[float]]:
@@ -361,17 +447,8 @@ def extrair_pace_e_distancia(mensagem_lower: str) -> tuple[Optional[float], Opti
             if 1 < candidato < 15:
                 pace = candidato
 
-    distancia = None
-    gatilhos_prova = {
-        "maratona": ["maratona", "42k", "42km"],
-        "meia": ["meia maratona", "meia-maratona", "21k", "21km"],
-        "10k": ["10k", "10km"],
-        "5k": ["5k", "5km"],
-    }
-    for nome, gatilhos in gatilhos_prova.items():
-        if any(t in mensagem_lower for t in gatilhos):
-            distancia = DISTANCIAS_PROVA[nome]
-            break
+    prova = prova_mencionada(mensagem_lower)
+    distancia = DISTANCIAS_PROVA[prova] if prova else None
     if distancia is None:
         match = _DISTANCIA_NUM.search(mensagem_lower)
         if match:
@@ -383,15 +460,8 @@ def extrair_pace_e_distancia(mensagem_lower: str) -> tuple[Optional[float], Opti
 
 
 def detectar_objetivo(mensagem_lower: str) -> Optional[str]:
-    if any(p in mensagem_lower for p in ["maratona", "42k", "42km"]):
-        return "maratona"
-    if any(p in mensagem_lower for p in ["meia maratona", "21k", "21km"]):
-        return "meia_maratona"
-    if any(p in mensagem_lower for p in ["10k", "10km"]):
-        return "10k"
-    if any(p in mensagem_lower for p in ["5k", "5km"]):
-        return "5k"
-    return None
+    prova = prova_mencionada(mensagem_lower)
+    return _OBJETIVO_POR_PROVA[prova] if prova else None
 
 
 def detectar_nivel(mensagem_lower: str) -> Optional[str]:
@@ -452,6 +522,12 @@ def _formatar_tempo(tempo_minutos: float) -> str:
     horas = int(tempo_minutos // 60)
     minutos = int(tempo_minutos % 60)
     segundos = int(round((tempo_minutos * 60) % 60))
+    if segundos == 60:
+        minutos += 1
+        segundos = 0
+    if minutos == 60:
+        horas += 1
+        minutos = 0
     if horas > 0:
         return f"{horas}h{minutos:02d}min{segundos:02d}s"
     return f"{minutos}min{segundos:02d}s"
@@ -504,19 +580,6 @@ def identificar_intencao(mensagem_lower: str) -> Optional[str]:
     return None
 
 
-def texto_intencao(intencao: str, nome_usuario: Optional[str], objetivo_principal: Optional[str]) -> str:
-    nome = f", {nome_usuario}" if nome_usuario else ""
-    if intencao == "saudacao":
-        if objetivo_principal:
-            return f"Olá{nome}! Vejo que seu objetivo é {objetivo_principal}. Como posso ajudar?"
-        return f"Olá{nome}! Sobre o que você quer conversar? Posso falar de treinos, pace, recordes, maratona..."
-    if intencao == "despedida":
-        return f"Até mais{nome}! Se tiver mais dúvidas sobre corrida, é só chamar. Bons treinos!"
-    if intencao == "ajuda":
-        return f"Posso ajudar{nome} com: técnica, treinos, pace, recordes, maratona, nutrição, equipamento, lesões e ciência do treinamento."
-    raise ValueError(f"intenção desconhecida: {intencao}")
-
-
 def buscar_conhecimento_curto(mensagem_lower: str) -> Optional[tuple[str, str]]:
     for palavra, topico in MAPEAMENTO_CONHECIMENTO_CURTO.items():
         if palavra in mensagem_lower and topico in CONHECIMENTO:
@@ -539,8 +602,158 @@ def calcular_similaridade(texto1: str, texto2: str) -> float:
     return len(palavras1 & palavras2) / len(palavras1 | palavras2)
 
 
+# ---------------------------------------------------------------------------
+# Dados reais do app
+# ---------------------------------------------------------------------------
+
+_SEM_CORRIDAS = (
+    "Você ainda não tem corridas no Runnex. Toque em Correr (o botão do meio) pra registrar a "
+    "primeira — assim que salvar, ela já aparece aqui."
+)
+
+
+def _dia_local(dados: DadosDoApp, momento: datetime):
+    return momento.astimezone(dados.fuso).date()
+
+
+def _data_curta(dados: DadosDoApp, corrida: Corrida) -> str:
+    return _dia_local(dados, corrida.quando).strftime("%d/%m")
+
+
+def _quando_relativo(dados: DadosDoApp, corrida: Corrida) -> str:
+    dias = (_dia_local(dados, dados.agora) - _dia_local(dados, corrida.quando)).days
+    if dias <= 0:
+        return "hoje"
+    if dias == 1:
+        return "ontem"
+    if dias < 7:
+        return f"há {dias} dias"
+    return f"em {_data_curta(dados, corrida)}"
+
+
+def km_ultimos_7_dias(dados: DadosDoApp) -> float:
+    """Hoje e os 6 dias anteriores no fuso do usuario — a mesma janela do
+    "km da semana" da tela de Perfil (buildEmptyWeekMap em activitiesApi.ts)."""
+    hoje = _dia_local(dados, dados.agora)
+    inicio = hoje - timedelta(days=6)
+    return sum(c.distancia_km for c in dados.corridas if inicio <= _dia_local(dados, c.quando) <= hoje)
+
+
+def pace_medio_recente(corridas: list[Corrida]) -> Optional[float]:
+    recentes = corridas[:CORRIDAS_PACE_MEDIO]
+    km = sum(c.distancia_km for c in recentes)
+    if km <= 0:
+        return None
+    pace = sum(c.duracao_s for c in recentes) / 60 / km
+    return pace if 1 < pace < 15 else None
+
+
+def texto_estatisticas(dados: DadosDoApp) -> str:
+    corridas = dados.corridas
+    if not corridas:
+        return _SEM_CORRIDAS
+    total_km = sum(c.distancia_km for c in corridas)
+    total_s = sum(c.duracao_s for c in corridas)
+    linhas = [
+        "Suas estatísticas no Runnex:",
+        "",
+        f"Corridas: {len(corridas)}",
+        f"Distância total: {total_km:.1f} km",
+        f"Tempo total: {_formatar_tempo(total_s / 60)}",
+        f"Distância média: {total_km / len(corridas):.1f} km por corrida",
+        f"Pace médio: {formatar_pace(total_s / 60 / total_km)} min/km",
+        f"Maior distância: {max(c.distancia_km for c in corridas):.1f} km",
+        f"Últimos 7 dias: {km_ultimos_7_dias(dados):.1f} km",
+    ]
+    calorias = sum(c.calorias or 0 for c in corridas)
+    if calorias:
+        linhas.append(f"Calorias: {calorias} kcal")
+    return "\n".join(linhas)
+
+
+def texto_historico(dados: DadosDoApp) -> str:
+    if not dados.corridas:
+        return _SEM_CORRIDAS
+    linhas = ["Suas últimas corridas:"]
+    for c in dados.corridas[:5]:
+        linhas.append(
+            f"{_data_curta(dados, c)}: {c.distancia_km:.1f} km em {_formatar_tempo(c.duracao_s / 60)} "
+            f"(pace {formatar_pace(c.pace)})"
+        )
+    return "\n".join(linhas)
+
+
+def texto_recordes(dados: DadosDoApp) -> str:
+    if not dados.corridas:
+        return _SEM_CORRIDAS
+    maior = max(dados.corridas, key=lambda c: c.distancia_km)
+    linhas = ["Seus recordes:", f"Maior distância: {maior.distancia_km:.1f} km ({_data_curta(dados, maior)})"]
+
+    validas = [c for c in dados.corridas if c.distancia_km >= MIN_KM_RECORDE]
+    if validas:
+        melhor = min(validas, key=lambda c: c.pace)
+        linhas.append(f"Melhor pace: {formatar_pace(melhor.pace)} min/km ({_data_curta(dados, melhor)})")
+    for rotulo, minimo, maximo in _RECORDE_BUCKETS:
+        na_faixa = [c for c in dados.corridas if minimo <= c.distancia_km <= maximo]
+        if na_faixa:
+            melhor = min(na_faixa, key=lambda c: c.pace)
+            linhas.append(
+                f"{rotulo}: {formatar_pace(melhor.pace)} min/km — {melhor.distancia_km:.1f} km em "
+                f"{_formatar_tempo(melhor.duracao_s / 60)} ({_data_curta(dados, melhor)})"
+            )
+    return "\n".join(linhas)
+
+
+def texto_meta(dados: DadosDoApp) -> str:
+    km_semana = km_ultimos_7_dias(dados)
+    if not dados.meta_semanal_km:
+        return (
+            f"Você ainda não tem meta semanal. Nos últimos 7 dias você correu {km_semana:.1f} km. "
+            "Pra definir, mande 'meta: 20' (km por semana) ou ajuste na tela de Perfil."
+        )
+    meta = dados.meta_semanal_km
+    progresso = min(km_semana / meta * 100, 100)
+    texto = f"Meta semanal: {meta:g} km\nÚltimos 7 dias: {km_semana:.1f} km ({progresso:.0f}%)\n"
+    if km_semana >= meta:
+        return texto + "Meta batida! Se estiver fácil, suba aos poucos — no máximo 10% por semana."
+    return texto + f"Faltam {meta - km_semana:.1f} km."
+
+
+# ---------------------------------------------------------------------------
+# Textos de intenção e fallback
+# ---------------------------------------------------------------------------
+
+def _saudacao_nome(nome_usuario: Optional[str]) -> str:
+    return f", {nome_usuario}" if nome_usuario else ""
+
+
+def texto_intencao(intencao: str, estado: EstadoConversa, dados: DadosDoApp) -> str:
+    nome = _saudacao_nome(dados.nome)
+    if intencao == "saudacao":
+        partes = [f"Olá{nome}!"]
+        if dados.corridas:
+            ultima = dados.corridas[0]
+            partes.append(
+                f"Sua última corrida foi {ultima.distancia_km:.1f} km a {formatar_pace(ultima.pace)} min/km "
+                f"({_quando_relativo(dados, ultima)})."
+            )
+        if estado.objetivo_principal:
+            partes.append(f"Seu objetivo é {estado.objetivo_principal.replace('_', ' ')}.")
+        partes.append("Como posso ajudar?")
+        return " ".join(partes)
+    if intencao == "despedida":
+        return f"Até mais{nome}! Se tiver mais dúvidas sobre corrida, é só chamar. Bons treinos!"
+    if intencao == "ajuda":
+        return (
+            f"Posso ajudar{nome} com técnica, treinos, pace, zonas, provas (5k à maratona), nutrição, "
+            "equipamento e lesões. Com os seus dados do Runnex: 'minhas estatísticas', 'minhas últimas "
+            "corridas', 'meus recordes' e 'minha meta'. Pra definir a meta semanal: 'meta: 20'."
+        )
+    raise ValueError(f"intenção desconhecida: {intencao}")
+
+
 def gerar_resposta_generica(nome_usuario, pace_atual, distancia_frequente) -> str:
-    nome = f", {nome_usuario}" if nome_usuario else ""
+    nome = _saudacao_nome(nome_usuario)
     if pace_atual and distancia_frequente:
         return (
             f"Entendi{nome}. Você mencionou pace de {formatar_pace(pace_atual)} e distância de "
@@ -553,371 +766,226 @@ def gerar_resposta_generica(nome_usuario, pace_atual, distancia_frequente) -> st
     ])
 
 
-def _sanitizar_nome(nome: str) -> str:
-    """Nome vira parte do nome do arquivo — mesmo em uso local, evita que
-    um nome com "/" ou ".." vire um path acidental."""
-    limpo = re.sub(r"[^\w\-]+", "_", nome.strip())
-    return limpo or "usuario"
-
-
 # ---------------------------------------------------------------------------
-# Bot com estado local (1 arquivo JSON por usuário — sem pickle)
+# Comandos
 # ---------------------------------------------------------------------------
 
-class CorridaChatBot:
-    """Chatbot especialista em corrida, com estado persistido em
-    chatbot_dados_{nome}.json — um arquivo só por usuário (treinos, metas,
-    estatísticas, memória de conversa e respostas aprendidas juntos)."""
-
-    def __init__(self, nome_usuario: Optional[str] = None):
-        self.nome_usuario = _sanitizar_nome(nome_usuario) if nome_usuario else None
-        self.dados = self._estado_padrao()
-        self.aguardando_aprofundamento = False
-        self.ultimo_topico_explicado = None
-        if self.nome_usuario:
-            self._carregar()
-
-    def _arquivo(self) -> str:
-        return f"chatbot_dados_{self.nome_usuario}.json"
-
-    @staticmethod
-    def _estado_padrao() -> dict:
-        return {
-            "pace_atual": None,
-            "distancia_frequente": None,
-            "objetivo_principal": None,
-            "nivel": None,
-            "treinos": [],
-            "meta": None,
-            "estatisticas": {
-                "distancia_total": 0.0,
-                "tempo_total": 0,
-                "treinos_realizados": 0,
-                "calorias_total": 0.0,
-                "melhor_ritmo": None,
-                "maior_distancia": 0.0,
-                "melhor_pace_5k": None,
-                "melhor_pace_10k": None,
-                "melhor_pace_21k": None,
-                "melhor_pace_42k": None,
-            },
-            "respostas_aprendidas": {},
-        }
-
-    def _carregar(self) -> None:
-        if not os.path.exists(self._arquivo()):
-            return
-        try:
-            with open(self._arquivo(), "r", encoding="utf-8") as f:
-                salvo = json.load(f)
-            self.dados.update(salvo)
-            self.dados["estatisticas"] = {**self._estado_padrao()["estatisticas"], **salvo.get("estatisticas", {})}
-        except (OSError, json.JSONDecodeError) as exc:
-            print(f"[aviso] não consegui carregar '{self._arquivo()}' ({exc}) — começando do zero.")
-
-    def salvar(self) -> None:
-        if not self.nome_usuario:
-            return
-        try:
-            with open(self._arquivo(), "w", encoding="utf-8") as f:
-                json.dump(self.dados, f, ensure_ascii=False, indent=2)
-        except OSError as exc:
-            print(f"[aviso] não consegui salvar '{self._arquivo()}' ({exc}).")
-
-    # -- comandos especiais --------------------------------------------------
-
-    def _registrar_treino(self, corpo: str) -> str:
-        match = _REGISTRAR_RE.match(corpo)
-        if not match:
-            return "Formato inválido. Use: 'registrar: distância_km, tempo_minutos[, data]' — ex: 'registrar: 5, 30'"
-        try:
-            distancia = float(match.group(1).replace(",", "."))
-        except ValueError:
-            return "Distância inválida. Use um número, ex: 'registrar: 5, 30'"
-        tempo = int(match.group(2))
-        if distancia <= 0 or tempo <= 0:
-            return "Distância e tempo devem ser positivos."
-
-        ritmo = tempo / distancia
-        calorias = distancia * 60
-        data = (match.group(3) or datetime.now(timezone.utc).strftime("%d/%m/%Y")).strip()
-
-        self.dados["treinos"].append({
-            "data": data, "distancia_km": distancia, "tempo_min": tempo, "ritmo": ritmo, "calorias": calorias,
-        })
-
-        est = self.dados["estatisticas"]
-        est["distancia_total"] += distancia
-        est["tempo_total"] += tempo
-        est["treinos_realizados"] += 1
-        est["calorias_total"] += calorias
-
-        mensagem_extra = ""
-        if est["melhor_ritmo"] is None or ritmo < est["melhor_ritmo"]:
-            est["melhor_ritmo"] = ritmo
-            mensagem_extra = " Novo recorde pessoal de pace!"
-        if distancia > est["maior_distancia"]:
-            est["maior_distancia"] = distancia
-
-        for campo, minimo, maximo in _RECORDE_BUCKETS:
-            if minimo <= distancia <= maximo and (est[campo] is None or ritmo < est[campo]):
-                est[campo] = ritmo
-
-        return f"Treino registrado: {distancia:.1f}km em {tempo}min, pace {formatar_pace(ritmo)}.{mensagem_extra}"
-
-    def _processar_meta(self, corpo: str) -> str:
-        match = _META_RE.match(corpo)
-        if not match:
-            return "Formato inválido. Use: 'meta: distância_km, data_limite'"
-        try:
-            distancia = float(match.group(1).replace(",", "."))
-        except ValueError:
-            return "Distância inválida. Use: 'meta: distância_km, data_limite'"
-        data_limite = (match.group(2) or datetime.now(timezone.utc).strftime("%d/%m/%Y")).strip()
-        self.dados["meta"] = {"distancia": distancia, "data_limite": data_limite}
-        return f"Meta definida: {distancia:.1f}km até {data_limite}."
-
-    def _aprender(self, corpo: str) -> str:
-        partes = corpo.split("|")
-        if len(partes) != 2:
-            return "Formato incorreto. Use: 'aprender: pergunta | resposta'"
-        pergunta, resposta = partes[0].strip(), partes[1].strip()
-        if not pergunta or not resposta:
-            return "Formato incorreto. Use: 'aprender: pergunta | resposta'"
-        chave = normalizar_texto(pergunta)
-        existente = self.dados["respostas_aprendidas"].get(chave)
-        if existente:
-            existente["resposta"] = resposta
-            existente["frequencia"] += 1
-        else:
-            self.dados["respostas_aprendidas"][chave] = {"resposta": resposta, "frequencia": 1}
-        return f"Aprendi! Agora sei responder sobre '{pergunta}'"
-
-    def _encontrar_resposta_similar(self, pergunta_lower: str) -> Optional[str]:
-        aprendidas = self.dados["respostas_aprendidas"]
-        chave = normalizar_texto(pergunta_lower)
-        if chave in aprendidas:
-            aprendidas[chave]["frequencia"] += 1
-            return aprendidas[chave]["resposta"]
-
-        melhor_similaridade, melhor_chave = 0.0, None
-        for chave_conhecida in aprendidas:
-            similaridade = calcular_similaridade(chave, chave_conhecida)
-            if similaridade > melhor_similaridade:
-                melhor_similaridade, melhor_chave = similaridade, chave_conhecida
-        if melhor_similaridade > 0.5 and melhor_chave:
-            aprendidas[melhor_chave]["frequencia"] += 1
-            return aprendidas[melhor_chave]["resposta"]
-        return None
-
-    def _mostrar_estatisticas(self) -> str:
-        est = self.dados["estatisticas"]
-        if est["treinos_realizados"] == 0:
-            return "Você ainda não tem treinos registrados."
-
-        distancia_media = est["distancia_total"] / est["treinos_realizados"]
-        ritmo_medio = est["tempo_total"] / est["distancia_total"]
-        linhas = [
-            "Suas estatísticas:", "",
-            f"Treinos realizados: {est['treinos_realizados']}",
-            f"Distância total: {est['distancia_total']:.1f} km",
-            f"Tempo total: {est['tempo_total']} min",
-            f"Calorias queimadas: {est['calorias_total']:.0f} kcal",
-            f"Distância média: {distancia_media:.1f} km/treino",
-            f"Ritmo médio: {formatar_pace(ritmo_medio)} min/km",
-            f"Melhor pace: {formatar_pace(est['melhor_ritmo'])} min/km",
-            f"Maior distância: {est['maior_distancia']:.1f} km",
-        ]
-        recordes = []
-        for label, campo in [("5km", "melhor_pace_5k"), ("10km", "melhor_pace_10k"),
-                              ("21km", "melhor_pace_21k"), ("42km", "melhor_pace_42k")]:
-            if est[campo] is not None:
-                recordes.append(f"{label}: {formatar_pace(est[campo])} min/km")
-        if recordes:
-            linhas += ["", "Recordes por distância: " + " | ".join(recordes)]
-        return "\n".join(linhas)
-
-    def _mostrar_treinos_recentes(self) -> str:
-        treinos = self.dados["treinos"][-5:]
-        if not treinos:
-            return "Você ainda não tem treinos registrados."
-        linhas = ["Últimos treinos:"]
-        for t in treinos:
-            linhas.append(f"{t['data']}: {t['distancia_km']:.1f}km em {t['tempo_min']}min (pace {formatar_pace(t['ritmo'])})")
-        return "\n".join(linhas)
-
-    def _mostrar_metas(self) -> str:
-        meta = self.dados["meta"]
-        if not meta:
-            return "Você ainda não definiu metas."
-        return f"Meta: {meta['distancia']:.1f}km até {meta['data_limite']}"
-
-    def _mostrar_recordes(self) -> str:
-        treinos = self.dados["treinos"]
-        if not treinos:
-            return "Você ainda não tem recordes."
-        melhor = min(treinos, key=lambda t: t["ritmo"])
-        maior = max(treinos, key=lambda t: t["distancia_km"])
-        return f"Melhor pace: {formatar_pace(melhor['ritmo'])} min/km | Maior distância: {maior['distancia_km']:.1f}km"
-
-    # -- perguntas em linguagem natural --------------------------------------
-
-    def _analisar_pergunta_complexa(self, mensagem_lower: str, pace_extraido, distancia_extraida) -> Optional[str]:
-        if any(p in mensagem_lower for p in
-               ["zona", "zonas", "zona de treino", "zona de treinamento", "qual zona", "minha zona", "zona principal"]):
-            pace_usar = pace_extraido or self.dados["pace_atual"]
-            if pace_usar and 1 < pace_usar < 15:
-                for zona_nome in ZONAS_TREINO:
-                    if zona_nome in mensagem_lower:
-                        texto = texto_zona_especifica(pace_usar, zona_nome)
-                        if texto:
-                            return texto
-                return texto_zonas_treino(pace_usar)
-            return "Me diga seu pace para eu calcular suas zonas de treinamento. Exemplo: 'pace 4:25' ou 'corro a 4:25 por km'"
-
-        tempo_keywords = [
-            "quanto tempo", "tempo estimado", "tempo total", "tempo previsto", "qual tempo", "que tempo",
-            "quanto levaria", "quanto leva", "quanto demora", "faria", "levaria", "completaria", "terminaria",
-            "tempo de percurso", "tempo do percurso",
-        ]
-        if any(p in mensagem_lower for p in tempo_keywords):
-            pace_usar = pace_extraido or self.dados["pace_atual"]
-            distancia_usar = distancia_extraida or self.dados["distancia_frequente"]
-            if not pace_usar:
-                return "Me diga seu pace para eu calcular o tempo. Exemplo: 'pace 4:25' ou 'corro a 4:25 por km'"
-            if not distancia_usar:
-                return "Me diga a distância para eu calcular o tempo. Exemplo: '42km' ou 'maratona'"
-            return calcular_tempo_estimado_texto(pace_usar, distancia_usar)
-
-        if pace_extraido and any(p in mensagem_lower for p in ["maratona", "42k", "42km"]):
-            return texto_pace_maratona(pace_extraido, mensagem_lower)
-
-        if (any(p in mensagem_lower for p in ["preparar", "treinar", "plano", "manter"])
-                and any(p in mensagem_lower for p in ["maratona", "42k", "42km"])):
-            return random.choice(RESPOSTAS_TREINADAS["preparacao_maratona"])
-
-        if (any(p in mensagem_lower for p in ["melhorar", "evoluir", "abaixar"])
-                and any(p in mensagem_lower for p in ["pace", "ritmo"])):
-            pace_usar = pace_extraido or self.dados["pace_atual"]
-            if pace_usar:
-                return texto_melhoria_pace(pace_usar)
-            return CONHECIMENTO["como_melhorar_pace"]["curta"]
-
-        if any(p in mensagem_lower for p in ["o que é", "o que significa", "explique", "me explica", "como funciona"]):
-            direta = responder_pergunta_direta(mensagem_lower)
-            if direta:
-                return direta
-
-        return None
-
-    # -- ponto de entrada ----------------------------------------------------
-
-    def processar_mensagem(self, mensagem_original: str) -> str:
-        mensagem_lower = mensagem_original.lower().strip()
-
-        if self.aguardando_aprofundamento and any(
-            p in mensagem_lower for p in ["mais", "detalhe", "explica", "continua", "aprofundar", "quero saber mais"]
-        ):
-            self.aguardando_aprofundamento = False
-            if self.ultimo_topico_explicado and self.ultimo_topico_explicado in CONHECIMENTO:
-                return CONHECIMENTO[self.ultimo_topico_explicado]["detalhada"]
-
-        pace, distancia = extrair_pace_e_distancia(mensagem_lower)
-        if pace is not None:
-            self.dados["pace_atual"] = pace
-        if distancia is not None:
-            self.dados["distancia_frequente"] = distancia
-
-        objetivo = detectar_objetivo(mensagem_lower)
-        if objetivo:
-            self.dados["objetivo_principal"] = objetivo
-        nivel = detectar_nivel(mensagem_lower)
-        if nivel:
-            self.dados["nivel"] = nivel
-
-        if mensagem_lower.startswith("registrar:"):
-            return self._registrar_treino(mensagem_original.strip()[len("registrar:"):])
-        if mensagem_lower.startswith("meta:"):
-            return self._processar_meta(mensagem_original.strip()[len("meta:"):])
-        if mensagem_lower.startswith("aprender:"):
-            return self._aprender(mensagem_original.strip()[len("aprender:"):])
-
-        aprendida = self._encontrar_resposta_similar(mensagem_lower)
-        if aprendida:
-            return aprendida
-
-        complexa = self._analisar_pergunta_complexa(mensagem_lower, pace, distancia)
-        if complexa:
-            return complexa
-
-        intencao = identificar_intencao(mensagem_lower)
-        if intencao:
-            return texto_intencao(intencao, self.nome_usuario, self.dados["objetivo_principal"])
-
-        curto = buscar_conhecimento_curto(mensagem_lower)
-        if curto:
-            topico, texto = curto
-            self.ultimo_topico_explicado = topico
-            self.aguardando_aprofundamento = True
-            return texto
-
-        if any(p in mensagem_lower for p in ["estatísticas", "estatisticas", "stats", "desempenho"]):
-            return self._mostrar_estatisticas()
-        if any(p in mensagem_lower for p in ["últimos treinos", "ultimos treinos", "histórico", "historico"]):
-            return self._mostrar_treinos_recentes()
-        if "metas" in mensagem_lower or "objetivos" in mensagem_lower:
-            return self._mostrar_metas()
-        if any(p in mensagem_lower for p in ["record", "melhor tempo", "pb"]):
-            return self._mostrar_recordes()
-        if "obrigado" in mensagem_lower or "valeu" in mensagem_lower:
-            return random.choice(_AGRADECIMENTOS)
-
-        return gerar_resposta_generica(self.nome_usuario, self.dados["pace_atual"], self.dados["distancia_frequente"])
+def _comando_registrar() -> str:
+    return (
+        "No Runnex as corridas entram pelo GPS: toque em Correr (o botão do meio) e salve ao terminar. "
+        "Assim ela conta pra XP, RunCoins e ranking — e aparece aqui nas suas estatísticas na hora."
+    )
 
 
-def main() -> None:
-    print("""
-    ==============================================
-    CORRIDA ASSISTANT BOT ESPECIALISTA
-    Com Zonas Personalizadas por Pace
-    ==============================================
+def _comando_meta(corpo: str, dados: DadosDoApp) -> Resposta:
+    match = _META_RE.match(corpo)
+    if not match:
+        return Resposta("Formato: 'meta: 20' — é a meta semanal em km, a mesma da tela de Perfil.")
+    km = float(match.group(1).replace(",", "."))
+    if not 0 < km <= META_SEMANAL_MAX_KM:
+        return Resposta(f"A meta semanal precisa ficar entre 0 e {META_SEMANAL_MAX_KM:g} km.")
+    return Resposta(
+        f"Meta semanal definida: {km:g} km. Nos últimos 7 dias você correu {km_ultimos_7_dias(dados):.1f} km.",
+        nova_meta_semanal_km=km,
+    )
 
-    Olá! Sou especialista em corrida.
-    Eu lembro de tudo que conversamos!
 
-    Pergunte qualquer coisa sobre corrida!
-    """)
+def _comando_aprender(corpo: str, estado: EstadoConversa) -> str:
+    partes = corpo.split("|")
+    if len(partes) != 2:
+        return "Formato incorreto. Use: 'aprender: pergunta | resposta'"
+    pergunta, resposta = partes[0].strip(), partes[1].strip()
+    if not pergunta or not resposta:
+        return "Formato incorreto. Use: 'aprender: pergunta | resposta'"
+    if len(pergunta) > MAX_PERGUNTA_APRENDIDA or len(resposta) > MAX_RESPOSTA_APRENDIDA:
+        return (
+            f"Muito longo pra eu guardar — até {MAX_PERGUNTA_APRENDIDA} caracteres na pergunta "
+            f"e {MAX_RESPOSTA_APRENDIDA} na resposta."
+        )
+    chave = normalizar_texto(pergunta)
+    if not chave:
+        return "Formato incorreto. Use: 'aprender: pergunta | resposta'"
 
-    nome = input("Qual é o seu nome? ").strip()
-    bot = CorridaChatBot(nome_usuario=nome or None)
-
-    if bot.dados["pace_atual"]:
-        print(f"\nBem-vindo de volta, {nome}!")
-        print(f"Seu pace atual: {formatar_pace(bot.dados['pace_atual'])} min/km")
-        if bot.dados["objetivo_principal"]:
-            print(f"Seu objetivo: {bot.dados['objetivo_principal']}")
+    aprendidas = estado.respostas_aprendidas
+    existente = aprendidas.get(chave)
+    if existente:
+        existente["resposta"] = resposta
+        existente["frequencia"] += 1
+    elif len(aprendidas) >= MAX_RESPOSTAS_APRENDIDAS:
+        return f"Já guardei {MAX_RESPOSTAS_APRENDIDAS} respostas suas, que é o meu limite."
     else:
-        print(f"\nPrazer em conhecer você, {nome}!" if nome else "\nVamos lá!")
-        print("Pode perguntar qualquer coisa sobre corrida!")
-
-    while True:
-        try:
-            mensagem = input("\nVocê: ").strip()
-            if not mensagem:
-                continue
-            if mensagem.lower() in ("sair", "exit", "quit"):
-                bot.salvar()
-                print("\nAté mais! Suas informações foram salvas. Continue correndo!")
-                break
-
-            resposta = bot.processar_mensagem(mensagem)
-            print(f"\nBot: {resposta}")
-            bot.salvar()
-        except KeyboardInterrupt:
-            bot.salvar()
-            print("\n\nAté mais! Suas informações foram salvas. Continue correndo!")
-            break
+        aprendidas[chave] = {"resposta": resposta, "frequencia": 1}
+    return f"Aprendi! Agora sei responder sobre '{pergunta}'"
 
 
-if __name__ == "__main__":
-    main()
+def _encontrar_resposta_similar(estado: EstadoConversa, pergunta_lower: str) -> Optional[str]:
+    aprendidas = estado.respostas_aprendidas
+    chave = normalizar_texto(pergunta_lower)
+    if chave in aprendidas:
+        aprendidas[chave]["frequencia"] += 1
+        return aprendidas[chave]["resposta"]
+
+    melhor_similaridade, melhor_chave = 0.0, None
+    for chave_conhecida in aprendidas:
+        similaridade = calcular_similaridade(chave, chave_conhecida)
+        if similaridade > melhor_similaridade:
+            melhor_similaridade, melhor_chave = similaridade, chave_conhecida
+    if melhor_similaridade > 0.5 and melhor_chave:
+        aprendidas[melhor_chave]["frequencia"] += 1
+        return aprendidas[melhor_chave]["resposta"]
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Perguntas em linguagem natural
+# ---------------------------------------------------------------------------
+
+def _pergunta_sobre_dados(mensagem_lower: str, dados: DadosDoApp) -> Optional[str]:
+    """Pedidos sobre os proprios dados do app. Vem antes da base de
+    conhecimento: "meus recordes" caia no topico "recorde" (dicas de como
+    bater recorde) em vez de mostrar os recordes do usuario."""
+    if any(p in mensagem_lower for p in _PEDE_ESTATISTICAS):
+        return texto_estatisticas(dados)
+    if any(p in mensagem_lower for p in _PEDE_HISTORICO):
+        return texto_historico(dados)
+    if _PEDE_RECORDES.search(mensagem_lower) and (
+        _POSSESSIVO.search(mensagem_lower) or re.search(r"\bpb\b|melhor(?:es)? tempos?", mensagem_lower)
+    ) and not any(p in mensagem_lower for p in ["bater", "quebrar", "superar"]):
+        return texto_recordes(dados)
+    if _PEDE_META.search(mensagem_lower):
+        return texto_meta(dados)
+    return None
+
+
+def _pace_referencia(
+    pace_extraido: Optional[float], estado: EstadoConversa, dados: DadosDoApp
+) -> tuple[Optional[float], str]:
+    """Pace da mensagem > pace dito antes na conversa > pace medio das
+    corridas do app. Devolve junto um aviso quando o pace veio das corridas,
+    pra resposta deixar claro de onde saiu o numero."""
+    pace = pace_extraido or estado.pace_informado
+    if pace:
+        return pace, ""
+    pace = pace_medio_recente(dados.corridas)
+    if pace:
+        return pace, (
+            f"\n\n(Usei o pace médio das suas últimas corridas no Runnex: {formatar_pace(pace)} min/km. "
+            "Pra usar outro, me diga, ex.: 'pace 5:00'.)"
+        )
+    return None, ""
+
+
+def _analisar_pergunta_complexa(
+    mensagem_lower: str, pace_extraido: Optional[float], distancia_extraida: Optional[float],
+    estado: EstadoConversa, dados: DadosDoApp,
+) -> Optional[str]:
+    if any(p in mensagem_lower for p in
+           ["zona", "zonas", "zona de treino", "zona de treinamento", "qual zona", "minha zona", "zona principal"]):
+        pace_usar, aviso = _pace_referencia(pace_extraido, estado, dados)
+        if pace_usar and 1 < pace_usar < 15:
+            for zona_nome in ZONAS_TREINO:
+                if zona_nome in mensagem_lower:
+                    texto = texto_zona_especifica(pace_usar, zona_nome)
+                    if texto:
+                        return texto + aviso
+            return texto_zonas_treino(pace_usar) + aviso
+        return "Me diga seu pace para eu calcular suas zonas de treinamento. Exemplo: 'pace 4:25' ou 'corro a 4:25 por km'"
+
+    tempo_keywords = [
+        "quanto tempo", "tempo estimado", "tempo total", "tempo previsto", "qual tempo", "que tempo",
+        "quanto levaria", "quanto leva", "quanto demora", "faria", "levaria", "completaria", "terminaria",
+        "tempo de percurso", "tempo do percurso",
+    ]
+    if any(p in mensagem_lower for p in tempo_keywords):
+        pace_usar, aviso = _pace_referencia(pace_extraido, estado, dados)
+        distancia_usar = distancia_extraida or estado.distancia_frequente
+        if not pace_usar:
+            return "Me diga seu pace para eu calcular o tempo. Exemplo: 'pace 4:25' ou 'corro a 4:25 por km'"
+        if not distancia_usar:
+            return "Me diga a distância para eu calcular o tempo. Exemplo: '42km' ou 'maratona'"
+        return calcular_tempo_estimado_texto(pace_usar, distancia_usar) + aviso
+
+    maratona = prova_mencionada(mensagem_lower) == "maratona"
+    if pace_extraido and maratona:
+        return texto_pace_maratona(pace_extraido, mensagem_lower)
+
+    if maratona and any(p in mensagem_lower for p in ["preparar", "treinar", "plano", "manter"]):
+        return random.choice(RESPOSTAS_TREINADAS["preparacao_maratona"])
+
+    if (any(p in mensagem_lower for p in ["melhorar", "evoluir", "abaixar"])
+            and any(p in mensagem_lower for p in ["pace", "ritmo"])):
+        pace_usar, aviso = _pace_referencia(pace_extraido, estado, dados)
+        if pace_usar:
+            return texto_melhoria_pace(pace_usar) + aviso
+        return CONHECIMENTO["como_melhorar_pace"]["curta"]
+
+    if any(p in mensagem_lower for p in ["o que é", "o que significa", "explique", "me explica", "como funciona"]):
+        direta = responder_pergunta_direta(mensagem_lower)
+        if direta:
+            return direta
+
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Ponto de entrada
+# ---------------------------------------------------------------------------
+
+def responder(mensagem_original: str, estado: EstadoConversa, dados: DadosDoApp) -> Resposta:
+    """Responde uma mensagem. Atualiza `estado` in-place (quem chama salva)."""
+    mensagem_lower = mensagem_original.lower().strip()
+
+    if estado.aguardando_aprofundamento and any(
+        p in mensagem_lower for p in ["mais", "detalhe", "explica", "continua", "aprofundar", "quero saber mais"]
+    ):
+        estado.aguardando_aprofundamento = False
+        if estado.ultimo_topico_explicado and estado.ultimo_topico_explicado in CONHECIMENTO:
+            return Resposta(CONHECIMENTO[estado.ultimo_topico_explicado]["detalhada"])
+
+    pace, distancia = extrair_pace_e_distancia(mensagem_lower)
+    if pace is not None:
+        estado.pace_informado = pace
+    if distancia is not None:
+        estado.distancia_frequente = distancia
+
+    objetivo = detectar_objetivo(mensagem_lower)
+    if objetivo:
+        estado.objetivo_principal = objetivo
+    nivel = detectar_nivel(mensagem_lower)
+    if nivel:
+        estado.nivel = nivel
+
+    if mensagem_lower.startswith("registrar:"):
+        return Resposta(_comando_registrar())
+    if mensagem_lower.startswith("meta:"):
+        return _comando_meta(mensagem_original.strip()[len("meta:"):], dados)
+    if mensagem_lower.startswith("aprender:"):
+        return Resposta(_comando_aprender(mensagem_original.strip()[len("aprender:"):], estado))
+
+    aprendida = _encontrar_resposta_similar(estado, mensagem_lower)
+    if aprendida:
+        return Resposta(aprendida)
+
+    sobre_dados = _pergunta_sobre_dados(mensagem_lower, dados)
+    if sobre_dados:
+        return Resposta(sobre_dados)
+
+    complexa = _analisar_pergunta_complexa(mensagem_lower, pace, distancia, estado, dados)
+    if complexa:
+        return Resposta(complexa)
+
+    intencao = identificar_intencao(mensagem_lower)
+    if intencao:
+        return Resposta(texto_intencao(intencao, estado, dados))
+
+    curto = buscar_conhecimento_curto(mensagem_lower)
+    if curto:
+        topico, texto = curto
+        estado.ultimo_topico_explicado = topico
+        estado.aguardando_aprofundamento = True
+        return Resposta(texto)
+
+    if "obrigado" in mensagem_lower or "valeu" in mensagem_lower:
+        return Resposta(random.choice(_AGRADECIMENTOS))
+
+    return Resposta(gerar_resposta_generica(dados.nome, estado.pace_informado, estado.distancia_frequente))

@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
   Activity,
+  Bot,
+  ChevronRight,
   Flame,
   Loader2,
   MapPin,
@@ -241,6 +243,22 @@ export default function Home() {
                 </div>
               </motion.div>
             ))}
+          </section>
+
+          <section className="mt-6 px-6 lg:px-0">
+            <button
+              onClick={() => navigate("/treinador")}
+              className={cn(GLASS_CARD_CLASS, "flex w-full items-center gap-4 rounded-2xl p-4 text-left transition hover:border-purple-500/40")}
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
+                <Bot size={20} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-black">Treinador virtual</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">Dúvidas de treino, pace, zonas e suas metas</p>
+              </div>
+              <ChevronRight size={18} className="shrink-0 text-muted-foreground" />
+            </button>
           </section>
 
           <section className="mt-8 px-6 lg:px-0">

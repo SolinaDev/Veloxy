@@ -60,10 +60,22 @@ enviada (com folga de 30% + 200 m para a decimação de rotas longas) e mais de 
 de corrida somadas nas últimas 24 horas. Isso limita o XP que um cliente
 adulterado consegue gerar, mas não impede quem fabricar uma rota coerente.
 
+## Treinador virtual (chatbot)
+
+`POST /chatbot/message` responde perguntas de corrida com um motor de regras
+(`app/chatbot_logic.py`, sem LLM nem chave de API). Estatísticas, histórico, recordes
+e o pace usado em zonas e tempo estimado saem das corridas reais do usuário;
+`meta: 20` grava a meta semanal do perfil (`users.weekly_goal_km`). Corridas não são
+registradas pelo chat — só pelo GPS, para passar por `activity_rules.py`. Em
+`chatbot_profiles` fica apenas a memória da conversa (pace informado, objetivo,
+respostas ensinadas com `aprender:`). Para testar respostas no terminal, sem banco
+nem login: `python scripts/chatbot_cli.py`.
+
 ## Exclusão de conta
 
 `DELETE /users/{uid}` (só o próprio usuário) apaga do Postgres perfil, corridas, pet,
-participações, posts, comentários e mensagens (`app/services/account_deletion.py`).
+participações, posts, comentários, mensagens e a memória do treinador virtual
+(`app/services/account_deletion.py`).
 Grupos criados pelo usuário passam para o membro mais antigo e só são apagados se
 ficarem vazios; o uid também sai das curtidas alheias. O login no Firebase Auth é
 apagado pelo app logo depois (`deleteCurrentAccount` em `src/services/auth.ts`),
