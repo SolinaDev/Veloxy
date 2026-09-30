@@ -9,6 +9,7 @@ from app.activity_rules import MAX_DURATION_PER_DAY_SECONDS
 from app.auth import FirebaseUser, get_current_user, require_verified_email
 from app.database import get_db
 from app.gamification import calculate_run_coins, calculate_xp, get_level_from_xp
+from app.listing import MAX_PAGE_SIZE, page_size, visible_to
 from app.models import Activity, User
 from app.rate_limit import rate_limit
 from app.schemas import ActivityCreate, ActivityOut, SaveActivityResult, ToggleLikeIn
@@ -127,8 +128,12 @@ def get_user_activities(
         raise HTTPException(status_code=403, detail="Este perfil e privado.")
 
     q = db.query(Activity).filter(Activity.user_id == user_id).order_by(desc(Activity.created_at))
-    if limit is not None:
-        q = q.limit(limit)
+    if current_user.uid == user_id:
+        # O proprio usuario pode pedir tudo: getUserStats soma o historico inteiro.
+        if limit is not None:
+            q = q.limit(max(1, limit))
+    else:
+        q = q.limit(page_size(limit if limit is not None else MAX_PAGE_SIZE))
     return q.all()
 
 
@@ -137,7 +142,7 @@ def get_activities_by_users(
     user_ids: str,
     limit: int = 50,
     db: Session = Depends(get_db),
-    _: FirebaseUser = Depends(get_current_user),
+    current_user: FirebaseUser = Depends(get_current_user),
 ):
     """Usado pelo feed de grupo (getGroupActivities) — grupos ainda nao migraram
     do Firestore, mas activities so existem aqui desde a Fase 1."""
@@ -146,9 +151,10 @@ def get_activities_by_users(
         return []
     return (
         db.query(Activity)
-        .filter(Activity.user_id.in_(ids))
+        .join(User, User.uid == Activity.user_id)
+        .filter(Activity.user_id.in_(ids), visible_to(current_user.uid))
         .order_by(desc(Activity.created_at))
-        .limit(limit)
+        .limit(page_size(limit))
         .all()
     )
 
@@ -158,17 +164,22 @@ def get_feed(
     limit: int = 10,
     before_id: int | None = None,
     db: Session = Depends(get_db),
-    _: FirebaseUser = Depends(get_current_user),
+    current_user: FirebaseUser = Depends(get_current_user),
 ):
     """Substitui subscribeToFeed (onSnapshot) + loadMoreActivities (cursor).
 
     Real-time via WebSocket fica para a Fase 2 do plano; por enquanto o
     frontend faz polling curto ou refetch manual nesse endpoint.
     """
-    q = db.query(Activity).order_by(desc(Activity.id))
+    q = (
+        db.query(Activity)
+        .join(User, User.uid == Activity.user_id)
+        .filter(visible_to(current_user.uid))
+        .order_by(desc(Activity.id))
+    )
     if before_id is not None:
         q = q.filter(Activity.id < before_id)
-    return q.limit(limit).all()
+    return q.limit(page_size(limit)).all()
 
 
 @router.post("/{activity_id}/like", dependencies=[Depends(rate_limit("activities:like", 60, 60))])

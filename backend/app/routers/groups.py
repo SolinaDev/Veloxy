@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.auth import FirebaseUser, decode_firebase_token, get_current_user
 from app.database import SessionLocal, get_db
+from app.listing import page_size
 from app.models import Group, GroupMember, GroupMessage, GroupPost, GroupPostComment, User
 from app.rate_limit import rate_limit
 from app.schemas_group import (
@@ -251,7 +252,7 @@ def list_group_posts(
         db.query(GroupPost)
         .filter(GroupPost.group_id == group_id)
         .order_by(desc(GroupPost.created_at))
-        .limit(limit)
+        .limit(page_size(limit))
         .all()
     )
     users = _load_users(db, [p.author_id for p in posts])
@@ -393,7 +394,7 @@ def list_group_messages(
         db.query(GroupMessage)
         .filter(GroupMessage.group_id == group_id)
         .order_by(desc(GroupMessage.created_at))
-        .limit(limit)
+        .limit(page_size(limit))
         .all()
     )
     messages = list(reversed(messages))

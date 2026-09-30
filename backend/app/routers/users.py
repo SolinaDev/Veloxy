@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import FirebaseUser, get_current_user
 from app.database import get_db
+from app.listing import MAX_PAGE_SIZE, page_size, visible_to
 from app.models import User
 from app.rate_limit import rate_limit
 from app.schemas import UserProfileCreate, UserProfileOut
@@ -21,14 +22,14 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("/by-ids", response_model=list[UserProfileOut])
 def get_users_by_ids(
-    ids: str, db: Session = Depends(get_db), _: FirebaseUser = Depends(get_current_user)
+    ids: str, db: Session = Depends(get_db), current_user: FirebaseUser = Depends(get_current_user)
 ):
     """Usado pelo ranking de grupo (getGroupLeaderboard) — grupos ainda nao
     migraram do Firestore, mas perfis so existem aqui desde a Fase 1."""
     uid_list = [uid for uid in ids.split(",") if uid]
     if not uid_list:
         return []
-    return db.query(User).filter(User.uid.in_(uid_list)).all()
+    return db.query(User).filter(User.uid.in_(uid_list[:MAX_PAGE_SIZE]), visible_to(current_user.uid)).all()
 
 
 @router.get("/ranking/global", response_model=list[UserProfileOut])
@@ -39,7 +40,7 @@ def get_global_ranking(
         db.query(User)
         .filter(User.private_profile.is_(False))
         .order_by(desc(User.total_xp))
-        .limit(limit)
+        .limit(page_size(limit))
         .all()
     )
     return users
