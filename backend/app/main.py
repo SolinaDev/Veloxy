@@ -11,6 +11,12 @@ app.add_middleware(
         "https://veloxy-run.web.app",
         "https://veloxy-run.firebaseapp.com",
         "http://localhost:5173",
+        # App Android (Capacitor 8 serve o app em https://localhost) e iOS.
+        # Sem estas origens o WebView bloqueia toda chamada autenticada no
+        # preflight de CORS - o APK logava (Firebase direto), mas nao
+        # conseguia salvar corrida nem carregar nada do backend.
+        "https://localhost",
+        "capacitor://localhost",
     ],
     allow_methods=["*"],
     allow_headers=["*"],

@@ -21,3 +21,27 @@ def test_static_routes_are_not_captured_by_user_id(client, make_user):
     assert client.get("/users/by-ids?ids=ana").json()[0]["uid"] == "ana"
     assert client.get("/users/ranking/global").status_code == 200
     assert client.get("/activities/by-users?user_ids=ana").status_code == 200
+
+
+def _preflight(client, origin: str):
+    return client.options(
+        "/users/ana",
+        headers={
+            "Origin": origin,
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "authorization",
+        },
+    )
+
+
+def test_cors_allows_web_and_native_apps(client):
+    # Regressao: o app Android (Capacitor, origem https://localhost) recebia 400
+    # no preflight e nao conseguia chamar nenhuma rota autenticada.
+    for origin in ("https://veloxy-run.web.app", "https://localhost", "capacitor://localhost"):
+        response = _preflight(client, origin)
+        assert response.status_code == 200, origin
+        assert response.headers["access-control-allow-origin"] == origin
+
+
+def test_cors_rejects_unknown_origins(client):
+    assert _preflight(client, "https://site-malicioso.example").status_code == 400
