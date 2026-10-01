@@ -60,3 +60,24 @@ jobs:
       - name: Models e migrations em sincronia (falha se faltar migration)
         run: alembic check
       - run: pytest
+
+  firestore-rules:
+    name: Regras do Firestore (emulador)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: firestore-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: firestore-tests/package-lock.json
+      - run: npm ci
+      - run: npm test
+

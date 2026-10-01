@@ -780,16 +780,18 @@ service cloud.firestore {
     // COLLECTIONS
     // ============================================================
 
+    // Desde 05/09 o app so usa o Firestore para o documento do proprio
+    // usuario (ids de grupos/eventos de demonstracao e foto do Google).
+    // Corridas, grupos, eventos e produtos vivem no backend (Postgres): as
+    // colecoes antigas ficam fechadas. Antes, qualquer usuario logado podia
+    // ler todas as corridas antigas (com rota GPS) e o perfil de qualquer
+    // outro usuario direto pelo SDK.
     match /activities/{activityId} {
-      allow read: if signedIn();
-      allow create: if signedIn() && validActivityCreate();
-      allow update: if signedIn() && validLikeUpdate();
-      allow delete: if signedIn()
-        && request.auth.uid == resource.data.userId;
+      allow read, write: if false;
     }
 
     match /users/{userId} {
-      allow read: if signedIn();
+      allow read: if isOwner(userId);
       allow create: if validUserBase(userId) && validUserCreate(userId);
       allow update: if validUserBase(userId) && validUserUpdate(userId);
       // Exclusao de conta (deleteCurrentAccount): o dono apaga o proprio doc legado.
@@ -797,43 +799,15 @@ service cloud.firestore {
     }
 
     match /products/{productId} {
-      allow read: if signedIn();
-      allow write: if false;
+      allow read, write: if false;
     }
 
     match /events/{eventId} {
-      allow read: if signedIn();
-      allow update: if validEventJoin();
-      allow create, delete: if false;
+      allow read, write: if false;
     }
 
-    match /groups/{groupId} {
-      allow read: if signedIn();
-      allow create: if validGroupCreate();
-      allow update: if validGroupMembershipUpdate()
-        || validGroupWeeklyKmUpdate()
-        || validGroupPhotoUpdate();
-      allow delete: if false;
-
-      match /posts/{postId} {
-        allow read: if isGroupMember(groupId);
-        allow create: if isGroupMember(groupId) && validGroupPostCreate();
-        allow update: if isGroupMember(groupId)
-          && (validLikeUpdate() || validGroupPostCommentCountUpdate());
-        allow delete: if false;
-
-        match /comments/{commentId} {
-          allow read: if isGroupMember(groupId);
-          allow create: if isGroupMember(groupId) && validGroupPostCommentCreate();
-          allow update, delete: if false;
-        }
-      }
-
-      match /messages/{messageId} {
-        allow read: if isGroupMember(groupId);
-        allow create: if isGroupMember(groupId) && validGroupMessageCreate();
-        allow update, delete: if false;
-      }
+    match /groups/{groupId}/{document=**} {
+      allow read, write: if false;
     }
 
     // Bloqueia qualquer coleção não declarada acima
