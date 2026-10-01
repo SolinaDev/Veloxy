@@ -3,6 +3,7 @@ import { MapPin } from "lucide-react";
 import { MapContainer, TileLayer, Polyline, CircleMarker } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import type { RoutePoint } from "@/types";
+import { darkMapTiles } from "@/lib/mapTiles";
 
 interface RouteSVGPreviewProps {
   route: RoutePoint[] | undefined;
@@ -53,7 +54,7 @@ export const RouteSVGPreview = ({ route, uid }: RouteSVGPreviewProps) => {
         attributionControl={false}
         className="absolute inset-0 z-0 h-full w-full [&_.leaflet-pane]:z-0 [&_.leaflet-top]:z-0 [&_.leaflet-bottom]:z-0"
       >
-        <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+        <TileLayer {...darkMapTiles} />
         <Polyline positions={data.positions} color="#9333ea" weight={6} opacity={0.28} />
         <Polyline positions={data.positions} color="#a855f7" weight={3.5} opacity={0.95} />
         <CircleMarker center={data.start} radius={5} pathOptions={{ color: "#22c55e", fillColor: "#22c55e", fillOpacity: 1 }} />

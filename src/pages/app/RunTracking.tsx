@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { MapContainer, TileLayer, Polyline, useMap, Circle } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import { darkMapTiles } from "@/lib/mapTiles";
 import { useAuth } from "@/hooks/useAuth";
 import { saveActivity } from "@/services/database";
 import { ApiError } from "@/services/apiClient";
@@ -668,10 +669,7 @@ const RunTracking = () => {
           zoomControl={false}
           attributionControl={false}
         >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          />
+          <TileLayer {...darkMapTiles} />
           {path.length > 0 && (
             <Polyline 
               positions={path} 
