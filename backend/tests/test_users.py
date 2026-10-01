@@ -35,3 +35,12 @@ def test_rejects_invalid_photo(client, make_user):
     make_user("ana")
     response = client.put("/users/ana", json={"photoURL": "javascript:alert(1)"})
     assert response.status_code == 422
+
+
+def test_terms_acceptance_is_recorded_and_returned(client, make_user):
+    profile = make_user("ana")
+    assert profile["termsVersion"] is None  # ex.: conta Google que nunca aceitou
+
+    updated = client.put("/users/ana", json={"termsVersion": "2026-10-01"}).json()
+    assert updated["termsVersion"] == "2026-10-01"
+    assert client.get("/users/ana").json()["termsVersion"] == "2026-10-01"

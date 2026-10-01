@@ -13,6 +13,7 @@ import {
 
 import BottomNav from "@/components/BottomNav";
 import SideNav from "@/components/SideNav";
+import TermsGate from "@/components/TermsGate";
 import PrivateRoute from "@/components/PrivateRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/hooks/AuthContext";
@@ -78,6 +79,7 @@ function ProtectedLayout() {
         </div>
         {!isRunScreen && <SideNav />}
         <BottomNav />
+        <TermsGate />
       </div>
     </PrivateRoute>
   );

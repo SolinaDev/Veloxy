@@ -18,6 +18,14 @@ e organização do repositório (6,5).
   de 817 para 339 linhas (22 validações sem uso removidas). **Pendente com você:**
   `firebase deploy --only firestore:rules` e excluir a coleção `activities` no console
   (só corridas do modo simulação).
+- **Política de privacidade reescrita** (01/10): o texto descrevia outro app (cupons de
+  parceiros, Spotify/Apple Music, pedalada, login Apple/Microsoft, contatos, sensores). A
+  nova versão (`LEGAL_VERSION` 2026-10-01) lista os dados que o app coleta de verdade,
+  base legal, quem vê o quê, provedores (Firebase, Render), transferência internacional,
+  prazos, direitos do titular e canal de contato. Cada afirmação foi conferida no código.
+- **Aceite dos termos para todos** (01/10): quem entrava com Google nunca aceitava os
+  termos. Agora o app pede o aceite quando a versão aceita difere da atual (inclusive
+  para usuários antigos), sem bloquear o app se o backend estiver fora do ar.
 
 ---
 

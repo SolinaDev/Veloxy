@@ -25,6 +25,9 @@ class UserProfileOut(BaseModel):
     private_profile: bool = Field(serialization_alias="privateProfile")
     weekly_goal_km: float | None = Field(serialization_alias="weeklyGoalKm")
     onboarded: bool
+    # Versao dos termos aceita (src/content/legalContent.ts LEGAL_VERSION).
+    # O app pede novo aceite quando difere da versao atual.
+    terms_version: str | None = Field(serialization_alias="termsVersion")
     pet_species: str | None = Field(serialization_alias="petSpecies")
     pet_name: str | None = Field(serialization_alias="petName")
     pet_coins: int = Field(serialization_alias="petCoins")
