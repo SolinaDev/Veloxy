@@ -11,6 +11,13 @@ e organização do repositório (6,5).
 - **Perfil privado no feed** (`6aadf39`): corridas e perfis privados saíram do feed
   global, do feed do grupo (`by-users`) e do ranking do grupo (`by-ids`). Toda listagem
   tem teto de 100 itens.
+- **Firestore antigo fechado** (01/10): qualquer usuário logado lia o perfil de qualquer
+  outro e as corridas antigas com rota GPS direto pelo SDK. Agora só o dono lê o próprio
+  documento e as coleções antigas (`activities`, `groups`, `events`, `products`) estão
+  fechadas. Regras testadas no emulador oficial (`firestore-tests/`, no CI) e reduzidas
+  de 817 para 339 linhas (22 validações sem uso removidas). **Pendente com você:**
+  `firebase deploy --only firestore:rules` e excluir a coleção `activities` no console
+  (só corridas do modo simulação).
 
 ---
 
